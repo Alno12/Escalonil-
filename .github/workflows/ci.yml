@@ -1,0 +1,35 @@
+name: CI
+
+# Roda em todo pull request: nada chega na main sem lint, testes e build verdes.
+# A publicação é responsabilidade do deploy.yml — aqui só verificamos.
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: Lint, testes e build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          # Mesmo BASE_PATH da publicação, para o build do PR ser fiel ao real.
+          BASE_PATH: /${{ github.event.repository.name }}/

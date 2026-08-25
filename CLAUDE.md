@@ -119,6 +119,13 @@ Os testes cobrem as regras críticas: virada de meia-noite, duração, valor
 esperado, situação do pagamento, conflitos, somas financeiras, insights,
 validação de backup e CSV. Se você mexer nessas regras, ajuste os testes junto.
 
+## Fluxo de contribuição
+
+A `main` é a branch publicada — **não envie commits direto nela**. Trabalhe em
+uma branch e abra um pull request: o `ci.yml` roda lint, testes e build, e o
+merge é que dispara a publicação. Descreva no PR o que mudou e o que você
+verificou; quem lê é o próprio dono do app.
+
 ## Fora de escopo na V1
 
 Login, contas, multiusuário, sincronização em nuvem, integração com Google/Apple

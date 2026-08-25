@@ -1,12 +1,9 @@
 name: Deploy para GitHub Pages
 
+# Só a main publica. Todo o resto passa antes pelo CI do pull request.
 on:
   push:
-    # A `main` é o destino final; a branch de desenvolvimento fica aqui para o
-    # site já subir antes do merge. Pode ser removida depois que a `main` existir.
-    branches:
-      - main
-      - claude/medical-shift-organizer-app-24kf7s
+    branches: [main]
   workflow_dispatch:
 
 # Permissões necessárias para publicar no GitHub Pages.
@@ -22,6 +19,7 @@ concurrency:
 
 jobs:
   build:
+    name: Verificar e empacotar
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,6 +31,8 @@ jobs:
 
       - run: npm ci
 
+      # Repetimos as verificações aqui de propósito: nada é publicado sem estar
+      # verde, mesmo que alguém envie um commit direto na main.
       - run: npm run lint
 
       - run: npm test
@@ -52,6 +52,7 @@ jobs:
           path: dist
 
   deploy:
+    name: Publicar
     needs: build
     runs-on: ubuntu-latest
     environment:

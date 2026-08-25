@@ -44,19 +44,34 @@ Para servir na raiz em vez da subrota do GitHub Pages:
 BASE_PATH=/ npm run dev
 ```
 
+## Como as mudanças chegam no ar
+
+A `main` é a única branch que publica. Todo o resto entra por pull request:
+
+```
+branch de trabalho → pull request → CI verde → merge na main → site publicado
+```
+
+Dois workflows cuidam disso:
+
+| Workflow | Quando roda | O que faz |
+| --- | --- | --- |
+| `.github/workflows/ci.yml` | todo pull request | lint, testes e build — não publica |
+| `.github/workflows/deploy.yml` | push na `main` | lint, testes, build e publicação |
+
+As verificações aparecem nos dois de propósito: assim nada é publicado sem
+estar verde, mesmo que um commit chegue direto na `main`.
+
 ## Publicando no GitHub Pages
 
-O workflow `.github/workflows/deploy.yml` roda lint, testes e build a cada push
-na `main` (e na branch de desenvolvimento atual, enquanto a `main` não existir)
-e publica o `dist/`. Para ativar:
+Uma vez só, no repositório:
 
-1. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-2. Faça push na branch configurada — o workflow cuida do resto.
+**Settings → Pages → Build and deployment → Source: GitHub Actions**
 
-Enquanto o passo 1 não for feito, o job `build` passa (lint, testes e build) e o
-job `deploy` falha com `Failed to create deployment (status: 404) … Ensure
-GitHub Pages has been enabled`. Depois de ativar, é só reexecutar o workflow em
-**Actions → Re-run all jobs**.
+Enquanto isso não for feito, o job `build` passa e o job `deploy` falha com
+`Failed to create deployment (status: 404) … Ensure GitHub Pages has been
+enabled`. Depois de ativar, use **Actions → Re-run all jobs** na última
+execução.
 
 O `BASE_PATH` é derivado do nome do repositório automaticamente no workflow,
 então a publicação funciona em `https://<usuário>.github.io/<repositório>/`.
