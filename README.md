@@ -53,6 +53,11 @@ e publica o `dist/`. Para ativar:
 1. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 2. Faça push na branch configurada — o workflow cuida do resto.
 
+Enquanto o passo 1 não for feito, o job `build` passa (lint, testes e build) e o
+job `deploy` falha com `Failed to create deployment (status: 404) … Ensure
+GitHub Pages has been enabled`. Depois de ativar, é só reexecutar o workflow em
+**Actions → Re-run all jobs**.
+
 O `BASE_PATH` é derivado do nome do repositório automaticamente no workflow,
 então a publicação funciona em `https://<usuário>.github.io/<repositório>/`.
 
