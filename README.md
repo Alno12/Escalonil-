@@ -47,10 +47,11 @@ BASE_PATH=/ npm run dev
 ## Publicando no GitHub Pages
 
 O workflow `.github/workflows/deploy.yml` roda lint, testes e build a cada push
-na `main` e publica o `dist/`. Para ativar:
+na `main` (e na branch de desenvolvimento atual, enquanto a `main` não existir)
+e publica o `dist/`. Para ativar:
 
 1. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-2. Faça push na `main`.
+2. Faça push na branch configurada — o workflow cuida do resto.
 
 O `BASE_PATH` é derivado do nome do repositório automaticamente no workflow,
 então a publicação funciona em `https://<usuário>.github.io/<repositório>/`.
