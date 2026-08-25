@@ -1,0 +1,161 @@
+/* Estrutura do app: área de conteúdo, cabeçalhos e barra de abas. */
+
+:root {
+  --tabbar-height: 62px;
+}
+
+.app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app__main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  /* Espaço para a barra de abas + área do indicador de início do iPhone. */
+  padding-bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom) + var(--sp-6));
+  animation: fade-in var(--dur-mid) var(--ease);
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding: 0 var(--sp-4);
+}
+
+.screen > section {
+  animation: rise-in var(--dur-mid) var(--ease) backwards;
+}
+
+.screen > section:nth-child(2) {
+  animation-delay: 40ms;
+}
+.screen > section:nth-child(3) {
+  animation-delay: 80ms;
+}
+.screen > section:nth-child(4) {
+  animation-delay: 120ms;
+}
+
+/* ---------------- Cabeçalho de tela ---------------- */
+.screen-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: calc(env(safe-area-inset-top) + var(--sp-4)) var(--sp-4) var(--sp-3);
+  background: var(--bg-veil);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.screen-header--bordered {
+  border-bottom-color: var(--border);
+}
+
+.screen-header__bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.screen-header__titles {
+  min-width: 0;
+}
+
+.screen-header__title {
+  font-size: var(--text-title);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.screen-header__subtitle {
+  margin-top: 2px;
+  font-size: var(--text-caption);
+  color: var(--text-2);
+}
+
+.screen-header__below {
+  margin-top: var(--sp-3);
+}
+
+/* ---------------- Barra de abas ---------------- */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--bg-veil);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-top: 1px solid var(--border);
+}
+
+.tabbar__inner {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  height: var(--tabbar-height);
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0 var(--sp-1);
+}
+
+.tabbar__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 100%;
+  color: var(--text-3);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  transition:
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.tabbar__item:active {
+  transform: scale(0.92);
+}
+
+.tabbar__item.is-active {
+  color: var(--accent-text);
+}
+
+.tabbar__fab {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-accent);
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+.tabbar__fab:active {
+  transform: scale(0.9);
+}
+
+/* ---------------- Desktop ---------------- */
+@media (min-width: 46rem) {
+  .app__main {
+    padding-bottom: calc(var(--tabbar-height) + var(--sp-10));
+  }
+
+  .screen-header {
+    padding-top: var(--sp-6);
+  }
+}

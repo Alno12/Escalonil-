@@ -1,0 +1,126 @@
+# Escalonil — guia de arquitetura
+
+Este projeto é mantido principalmente por agentes de IA. A prioridade é
+**simplicidade + boa experiência do usuário**, não sofisticação técnica.
+Leia este arquivo antes de alterar qualquer coisa.
+
+## Regra de ouro
+
+Ao decidir entre duas soluções, escolha a que torna a vida do médico
+plantonista mais simples. Não invente funcionalidades que ninguém pediu.
+
+## Estrutura
+
+```
+src/
+├── db/           types.ts (modelo de dados) e db.ts (Dexie/IndexedDB)
+├── data/         repository.ts (todo CRUD) e backup.ts (JSON/CSV)
+├── domain/       regras puras e testáveis — nenhuma importa React
+│   ├── datetime.ts   datas/horas locais e formatação pt-BR
+│   ├── money.ts      formatação e leitura de valores em BRL
+│   ├── shift.ts      duração, valor esperado, situação do plantão/pagamento
+│   ├── conflicts.ts  sobreposição de horários
+│   ├── summary.ts    somas financeiras e recortes de agenda
+│   ├── reports.ts    indicadores, relatório por local e insights
+│   └── periods.ts    períodos dos relatórios e o período anterior equivalente
+├── state/        providers de dados, tema, toasts e folhas de plantão
+├── components/   ui/ (primitivos) e shifts/ (formulário, detalhe, listas)
+├── screens/      Home, Schedule, Finance, Reports, Settings
+├── layout/       AppShell e TabBar
+└── styles/       tokens → base → ui → layout → screens (nesta ordem)
+```
+
+## Invariantes — quebre isto e o app fica errado
+
+**1. Datas são strings locais, nunca UTC.**
+`startDateTime`/`endDateTime` são `"YYYY-MM-DDTHH:mm"` sem fuso. Um plantão às
+19:00 continua às 19:00 em qualquer fuso, e o backup fica legível. Use
+`toDate()` de `domain/datetime.ts` para converter — **nunca** `new Date(string)`
+direto, que interpreta a string como UTC.
+
+**2. Situação é sempre calculada, nunca armazenada.**
+`getShiftStatus()` e `getPaymentStatus()` recebem o `now`. "Atrasado" depende da
+data de hoje, então gravar esse estado no banco o deixaria velho no dia
+seguinte.
+
+**3. `expectedAmount` é derivado, mas persistido.**
+Fica no banco para listas e relatórios não recalcularem tudo. É sempre
+regravado por `computeExpectedAmount()` dentro de `repository.ts`. Se você
+alterar `paymentMode`, `fixedAmount`, `hourlyRate` ou os horários em qualquer
+outro lugar, o valor sai de sincronia.
+
+**4. Um `Payment` existe apenas para plantões pagos.**
+Sem registro = "ainda não recebido". `expectedAmount`/`expectedDate` no Payment
+são uma fotografia do momento do recebimento, para a divergência (§26)
+sobreviver a edições posteriores do plantão.
+
+**5. Conflito avisa, não bloqueia.**
+`findConflicts()` alimenta um aviso no formulário e um diálogo
+"Revisar / Salvar mesmo assim". Plantões sobrepostos são raros mas legítimos.
+
+**6. Toda escrita passa por `data/repository.ts`.**
+Telas não falam com o Dexie. Excluir um plantão apaga o pagamento junto;
+cancelar um plantão remove o recebimento — essas regras moram lá.
+
+**7. Semana começa no domingo.** Convenção brasileira, usada no calendário e
+nos resumos.
+
+## Como os dados chegam na interface
+
+`AppDataProvider` carrega **o banco inteiro** em memória com `useLiveQuery` e
+monta os `ShiftView` (plantão + local + pagamento + situação). Isso é
+intencional: o app é pessoal, alguns milhares de plantões ocupam poucos
+megabytes, e todo cálculo vira síncrono e instantâneo. Não introduza consultas
+paginadas sem uma razão medida.
+
+Um relógio compartilhado (`useNow`) atualiza no máximo uma vez por minuto e
+imediatamente quando o app volta ao primeiro plano.
+
+## Escopos financeiros (não misture)
+
+- `expected` — soma dos plantões não cancelados do recorte.
+- `pending` — realizados, não pagos, dentro do prazo.
+- `overdue` — realizados, não pagos, prazo vencido.
+- `outstanding` — `pending + overdue`.
+- `received` — soma do que entrou de fato (não do previsto).
+
+`pending` e `overdue` são **disjuntos**. Na tela Financeiro, os cartões do topo
+olham o mês selecionado e as listas abaixo mostram todos os períodos — de
+propósito, para nenhuma pendência antiga sumir por causa de um filtro.
+
+## Interface
+
+- Estado local de formulário é reiniciado por **remontagem via `key`**
+  (`ShiftSheetsProvider`), nunca por `useEffect` de sincronização.
+- `useMountTransition` mantém folhas e diálogos montados durante a animação de
+  saída.
+- Toda cor, espaçamento e sombra vem de `styles/tokens.css`. Não escreva valores
+  literais nos componentes, e defina qualquer token novo nos **dois** temas.
+- Campos de texto usam `font-size: 1rem` (16px) — abaixo disso o Safari dá zoom
+  ao focar.
+- Respeite `env(safe-area-inset-*)` em qualquer elemento fixo.
+
+## PWA e GitHub Pages
+
+- `base` no `vite.config.ts` é `/Escalonil-/` e pode ser trocado por
+  `BASE_PATH`. O workflow deriva do nome do repositório.
+- Rotas em **hash** (`#/agenda`) — funcionam em subrota do GitHub Pages sem
+  configuração de servidor.
+- Service worker em modo `prompt`: o usuário decide quando atualizar.
+- Ícones são gerados por `node scripts/generate-icons.mjs` (sem dependências).
+
+## Antes de terminar qualquer alteração
+
+```bash
+npm run lint && npm test && npm run build
+```
+
+Os testes cobrem as regras críticas: virada de meia-noite, duração, valor
+esperado, situação do pagamento, conflitos, somas financeiras, insights,
+validação de backup e CSV. Se você mexer nessas regras, ajuste os testes junto.
+
+## Fora de escopo na V1
+
+Login, contas, multiusuário, sincronização em nuvem, integração com Google/Apple
+Calendar, notificações push, troca de plantões entre médicos, backend e IA
+externa. Não implemente nada disso sem pedido explícito.

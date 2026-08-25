@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Escalonil">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7C6CFF"/>
+      <stop offset="1" stop-color="#3B2BC9"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="114" fill="url(#g)"/>
+  <path d="M31 271h102l43 87 63-246 59 209 33-50h150"
+        fill="none" stroke="#fff" stroke-width="41"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

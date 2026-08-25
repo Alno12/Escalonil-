@@ -1,0 +1,75 @@
+import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { useMountTransition } from '@/hooks/useMountTransition'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
+import { Icon } from './Icon'
+
+interface SheetProps {
+  open: boolean
+  title: string
+  subtitle?: string
+  onClose: () => void
+  children: ReactNode
+  /** Barra fixa no rodapé, acima da safe area. */
+  footer?: ReactNode
+  /** Ação no canto superior direito (ex.: "Salvar"). */
+  action?: ReactNode
+  /** 'full' ocupa quase a tela toda; 'auto' cresce com o conteúdo. */
+  size?: 'full' | 'auto'
+}
+
+/**
+ * Folha que sobe do rodapé — o padrão que o iPhone usa para criar e editar.
+ * Fecha no toque fora, no botão e com Esc.
+ */
+export function Sheet({
+  open,
+  title,
+  subtitle,
+  onClose,
+  children,
+  footer,
+  action,
+  size = 'full',
+}: SheetProps) {
+  const { mounted, visible } = useMountTransition(open, 240)
+  useBodyScrollLock(mounted)
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  if (!mounted) return null
+
+  return createPortal(
+    <div className={`sheet-root ${visible ? 'is-open' : ''}`}>
+      <div className="sheet-backdrop" onClick={onClose} aria-hidden="true" />
+      <div
+        className={`sheet sheet--${size}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
+        <div className="sheet__grip" aria-hidden="true" />
+        <header className="sheet__header">
+          <button className="sheet__close" onClick={onClose} aria-label="Fechar">
+            <Icon name="close" size={20} />
+          </button>
+          <div className="sheet__titles">
+            <h2 className="sheet__title">{title}</h2>
+            {subtitle && <p className="sheet__subtitle">{subtitle}</p>}
+          </div>
+          <div className="sheet__action">{action}</div>
+        </header>
+        <div className="sheet__body">{children}</div>
+        {footer && <div className="sheet__footer">{footer}</div>}
+      </div>
+    </div>,
+    document.body,
+  )
+}
