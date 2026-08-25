@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   addDays,
   addMonths,
+  baseDayShift,
   buildShiftRange,
+  extraDaysOf,
   daysBetween,
   durationInHours,
   endOfMonth,
@@ -36,6 +38,46 @@ describe('buildShiftRange', () => {
     const range = buildShiftRange('2026-08-25', '07:00', '07:00')
     expect(range.endDateTime).toBe('2026-08-26T07:00')
     expect(durationInHours(range.startDateTime, range.endDateTime)).toBe(24)
+  })
+
+  it('soma dias extras para plantões longos', () => {
+    // 07:00 → 19:00 do dia seguinte = 36 horas.
+    const range = buildShiftRange('2026-08-25', '07:00', '19:00', 1)
+    expect(range.endDateTime).toBe('2026-08-26T19:00')
+    expect(durationInHours(range.startDateTime, range.endDateTime)).toBe(36)
+  })
+
+  it('soma dias extras sobre a virada automática', () => {
+    // 19:00 → 07:00 já vira o dia; mais 1 dia extra = 36 horas.
+    const range = buildShiftRange('2026-08-25', '19:00', '07:00', 1)
+    expect(range.endDateTime).toBe('2026-08-27T07:00')
+    expect(durationInHours(range.startDateTime, range.endDateTime)).toBe(36)
+  })
+
+  it('ignora dias extras negativos', () => {
+    expect(buildShiftRange('2026-08-25', '07:00', '19:00', -3).endDateTime).toBe('2026-08-25T19:00')
+  })
+})
+
+describe('baseDayShift e extraDaysOf', () => {
+  it('reconhece a virada automática', () => {
+    expect(baseDayShift('07:00', '19:00')).toBe(0)
+    expect(baseDayShift('19:00', '07:00')).toBe(1)
+    expect(baseDayShift('07:00', '07:00')).toBe(1)
+  })
+
+  it('recupera os dias extras de um intervalo já salvo', () => {
+    expect(extraDaysOf('2026-08-25T07:00', '2026-08-25T19:00')).toBe(0)
+    expect(extraDaysOf('2026-08-25T19:00', '2026-08-26T07:00')).toBe(0)
+    expect(extraDaysOf('2026-08-25T07:00', '2026-08-26T19:00')).toBe(1)
+    expect(extraDaysOf('2026-08-25T19:00', '2026-08-27T07:00')).toBe(1)
+  })
+
+  it('é o inverso de buildShiftRange', () => {
+    for (const extra of [0, 1, 2, 5]) {
+      const r = buildShiftRange('2026-08-25', '19:00', '07:00', extra)
+      expect(extraDaysOf(r.startDateTime, r.endDateTime)).toBe(extra)
+    }
   })
 })
 

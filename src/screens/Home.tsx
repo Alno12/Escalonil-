@@ -27,6 +27,7 @@ import {
   upcomingShifts,
   weekSummary,
 } from '@/domain/summary'
+import { backupStatus, shouldRemindBackup } from '@/domain/backupReminder'
 
 /**
  * Tela Início: em poucos segundos o usuário precisa saber se tem plantão hoje,
@@ -48,6 +49,12 @@ export function Home() {
 
   const greeting = getGreeting(now.getHours())
   const hasShifts = views.length > 0
+
+  const backup = useMemo(
+    () => backupStatus(settings.lastBackupAt, today),
+    [settings.lastBackupAt, today],
+  )
+  const remindBackup = shouldRemindBackup(backup, views.length)
 
   return (
     <>
@@ -85,6 +92,25 @@ export function Home() {
               />
             )}
           </section>
+
+          {remindBackup && (
+            <section aria-label="Backup">
+              <Link to="/configuracoes" className="backup-nudge">
+                <span className="backup-nudge__icon" aria-hidden="true">
+                  <Icon name="download" size={17} />
+                </span>
+                <span className="backup-nudge__text">
+                  <strong>
+                    {backup.level === 'never'
+                      ? 'Faça um backup dos seus plantões'
+                      : `Faz ${backup.days} dias desde o último backup`}
+                  </strong>
+                  <span>Os dados existem só neste aparelho.</span>
+                </span>
+                <Icon name="chevronRight" size={16} />
+              </Link>
+            </section>
+          )}
 
           {hasShifts && (
             <section aria-label="Resumo da semana">
@@ -170,11 +196,6 @@ export function Home() {
             </section>
           )}
 
-          {settings.paymentTermDays > 0 && !hasShifts && (
-            <p className="screen__footnote">
-              Seus dados ficam apenas neste aparelho. Faça um backup em Configurações.
-            </p>
-          )}
         </div>
       )}
     </>

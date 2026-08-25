@@ -150,6 +150,61 @@
   font-weight: 650;
 }
 
+/* Aviso de backup: presente, mas sem competir com o plantão de hoje. */
+.backup-nudge {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warning);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+.backup-nudge:active {
+  transform: scale(0.985);
+}
+
+.backup-nudge__icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.backup-nudge__text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.backup-nudge__text strong {
+  font-size: var(--text-caption);
+  font-weight: 650;
+}
+
+.backup-nudge__text span {
+  font-size: var(--text-caption);
+  color: var(--text-3);
+}
+
+.backup-nudge > svg:last-child {
+  color: var(--text-3);
+}
+
+.settings-note--warning svg {
+  color: var(--warning);
+}
+
 /* ---------------- Resumo em linha ---------------- */
 .week-summary {
   display: flex;
@@ -629,6 +684,90 @@
   margin-top: var(--sp-1);
 }
 
+/* Dia do término + stepper de dias extras (plantões de 36h, 48h). */
+.day-shift {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: calc(var(--sp-5) * -1 + var(--sp-2));
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+}
+
+.day-shift__label {
+  display: block;
+  font-size: var(--text-micro);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.day-shift__value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  font-size: var(--text-body);
+  font-weight: 650;
+}
+
+.day-shift__offset {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.day-shift__stepper,
+.repeat-count {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.day-shift__stepper button,
+.repeat-count button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+.day-shift__stepper button:active:not(:disabled),
+.repeat-count button:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.day-shift__stepper button:disabled,
+.repeat-count button:disabled {
+  opacity: 0.35;
+}
+
+.repeat-count {
+  margin-top: var(--sp-2);
+  justify-content: flex-start;
+  gap: var(--sp-3);
+}
+
+.repeat-count span {
+  min-width: 5.5rem;
+  text-align: center;
+  font-size: var(--text-body);
+  font-weight: 650;
+}
+
+.repeat-count small {
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--text-3);
+}
+
 /* ---------------- Avisos ---------------- */
 .alert {
   display: flex;
@@ -905,6 +1044,156 @@
   background: var(--warning-soft);
   color: var(--warning);
   font-weight: 700;
+}
+
+/* ---- Seleção múltipla no financeiro ---- */
+.list-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.select-toggle {
+  font-size: var(--text-caption);
+  font-weight: 650;
+  color: var(--accent-text);
+  white-space: nowrap;
+}
+
+.payment-row.is-selecting {
+  padding-left: var(--sp-3);
+}
+
+.payment-row.is-selected {
+  border-color: var(--accent);
+  background: linear-gradient(var(--accent-soft), var(--accent-soft)), var(--surface);
+}
+
+.payment-row__check {
+  display: grid;
+  place-items: center;
+  align-self: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--text-on-accent);
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+.payment-row.is-selected .payment-row__check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.selection-bar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom) + var(--sp-3));
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: min(26rem, calc(100vw - var(--sp-6)));
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3);
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: toast-in var(--dur-mid) var(--ease);
+}
+
+.selection-bar__all {
+  padding: var(--sp-2);
+  font-size: var(--text-caption);
+  font-weight: 650;
+  color: var(--accent-text);
+  white-space: nowrap;
+}
+
+.selection-bar__info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.selection-bar__info strong {
+  font-size: var(--text-caption);
+  font-weight: 650;
+}
+
+.selection-bar__info span {
+  font-size: var(--text-caption);
+  color: var(--text-3);
+}
+
+/* ---- Folha de recebimento em lote ---- */
+.batch-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--sp-4);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+}
+
+.batch-total__label {
+  font-size: var(--text-micro);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.batch-total__value {
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.batch-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  max-height: 34vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.batch-list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-caption);
+}
+
+.batch-list li:last-child {
+  border-bottom: none;
+}
+
+.batch-list__name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.batch-list__meta {
+  color: var(--text-3);
+}
+
+.batch-list__amount {
+  font-weight: 650;
 }
 
 .payment-row__action {

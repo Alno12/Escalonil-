@@ -9,17 +9,40 @@ interface PaymentRowProps {
   today: string
   onOpen: (id: string) => void
   onRegister: (id: string) => void
+  /** Quando definido, a linha vira um seletor em vez de abrir o detalhe. */
+  selection?: { selected: boolean; onToggle: (id: string) => void }
 }
 
 /** Item da lista de pagamentos (§24), com prazo ou atraso em destaque. */
-export function PaymentRow({ view, today, onOpen, onRegister }: PaymentRowProps) {
+export function PaymentRow({ view, today, onOpen, onRegister, selection }: PaymentRowProps) {
   const { shift, location, payment } = view
   const overdue = view.paymentStatus === 'overdue'
   const difference = payment ? paymentDifference(payment) : 0
+  const selecting = selection !== undefined
 
   return (
-    <li className={`payment-row ${overdue ? 'is-overdue' : ''}`}>
-      <button type="button" className="payment-row__main" onClick={() => onOpen(shift.id)}>
+    <li
+      className={[
+        'payment-row',
+        overdue ? 'is-overdue' : '',
+        selecting ? 'is-selecting' : '',
+        selection?.selected ? 'is-selected' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      {selecting && (
+        <span className="payment-row__check" aria-hidden="true">
+          {selection.selected && <Icon name="check" size={15} strokeWidth={2.4} />}
+        </span>
+      )}
+
+      <button
+        type="button"
+        className="payment-row__main"
+        aria-pressed={selecting ? selection.selected : undefined}
+        onClick={() => (selecting ? selection.onToggle(shift.id) : onOpen(shift.id))}
+      >
         <span className="payment-row__top">
           <span className="payment-row__location">{location?.name ?? 'Local removido'}</span>
           <span className="payment-row__amount num">
@@ -55,7 +78,7 @@ export function PaymentRow({ view, today, onOpen, onRegister }: PaymentRowProps)
         </span>
       </button>
 
-      {!payment && (
+      {!payment && !selecting && (
         <button
           type="button"
           className="payment-row__action"

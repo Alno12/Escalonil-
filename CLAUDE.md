@@ -20,6 +20,7 @@ src/
 │   ├── money.ts      formatação e leitura de valores em BRL
 │   ├── shift.ts      duração, valor esperado, situação do plantão/pagamento
 │   ├── conflicts.ts  sobreposição de horários
+│   ├── backupReminder.ts  quando cobrar um backup novo
 │   ├── summary.ts    somas financeiras e recortes de agenda
 │   ├── reports.ts    indicadores, relatório por local e insights
 │   └── periods.ts    períodos dos relatórios e o período anterior equivalente
@@ -64,6 +65,17 @@ cancelar um plantão remove o recebimento — essas regras moram lá.
 
 **7. Semana começa no domingo.** Convenção brasileira, usada no calendário e
 nos resumos.
+
+**8. Dias extras são somados À virada automática, não no lugar dela.**
+`buildShiftRange` soma 1 dia sozinha quando o término é menor ou igual ao
+início; `extraDays` vem por cima disso. Um plantão de 36h é 07:00 → 19:00 com
+`extraDays: 1`, e 19:00 → 07:00 com `extraDays: 1` são 36h também.
+`extraDaysOf` é o inverso exato e é o que reabre o plantão no formulário.
+
+**9. Recebimento em lote nunca rateia valores.**
+`registerPayments` grava cada plantão pelo próprio `expectedAmount`. Se o
+depósito veio diferente, o ajuste é plantão a plantão — inventar um rateio
+criaria divergências que o usuário nunca escolheu.
 
 ## Como os dados chegam na interface
 

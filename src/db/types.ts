@@ -76,6 +76,8 @@ export interface Settings {
   /** Dias somados ao fim do plantão para sugerir a data prevista de pagamento. */
   paymentTermDays: number
   shiftTypes: string[]
+  /** Quando o último backup foi exportado (ISO UTC). null = nunca. */
+  lastBackupAt: string | null
   updatedAt: string
 }
 

@@ -5,6 +5,8 @@ import { Icon } from '@/components/ui/Icon'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useAppData } from '@/state/appDataContext'
 import { useToast } from '@/state/toastContext'
+import { saveSettings } from '@/data/repository'
+import { backupStatus, describeBackupStatus } from '@/domain/backupReminder'
 import {
   backupFileName,
   buildBackup,
@@ -21,17 +23,20 @@ import { sortByStart } from '@/domain/summary'
 
 /** Backup, restauração e exportação CSV (§32–§35). */
 export function BackupSection() {
-  const { views, shifts } = useAppData()
+  const { views, shifts, settings, today } = useAppData()
   const toast = useToast()
   const fileInput = useRef<HTMLInputElement>(null)
   const [pending, setPending] = useState<BackupFile | null>(null)
   const [busy, setBusy] = useState(false)
+  const status = backupStatus(settings.lastBackupAt, today)
 
   async function exportJson() {
     setBusy(true)
     try {
       const backup = await buildBackup()
       await saveFile(backupFileName(), JSON.stringify(backup, null, 2), 'application/json')
+      // Só marca depois que o arquivo foi realmente entregue.
+      await saveSettings({ lastBackupAt: new Date().toISOString() })
       toast.success('Backup criado')
     } catch {
       toast.error('Não foi possível gerar o backup.')
@@ -79,11 +84,12 @@ export function BackupSection() {
     <section aria-label="Backup e exportação">
       <SectionHeader title="Backup" hint="Seus dados ficam só neste aparelho" />
       <Card>
-        <p className="settings-note">
-          <Icon name="info" size={16} />
+        <p className={`settings-note ${status.level !== 'ok' && shifts.length > 0 ? 'settings-note--warning' : ''}`}>
+          <Icon name={status.level === 'ok' ? 'check' : 'info'} size={16} />
           <span>
-            Sem servidor não existe recuperação automática. Exporte um backup de tempos em tempos
-            e guarde o arquivo em um lugar seguro.
+            {shifts.length > 0 ? `${describeBackupStatus(status)} ` : ''}
+            Sem servidor não existe recuperação automática: exporte de tempos em tempos e guarde
+            o arquivo em um lugar seguro.
           </span>
         </p>
 
