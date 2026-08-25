@@ -81,10 +81,9 @@ function validate(input: ShiftInput): void {
   }
 }
 
-export async function createShift(input: ShiftInput): Promise<Shift> {
+function buildShift(input: ShiftInput, stamp: string): Shift {
   validate(input)
-  const stamp = nowStamp()
-  const shift: Shift = {
+  return {
     ...input,
     id: newId(),
     expectedAmount: computeExpectedAmount(input),
@@ -92,8 +91,23 @@ export async function createShift(input: ShiftInput): Promise<Shift> {
     createdAt: stamp,
     updatedAt: stamp,
   }
-  await db.shifts.add(shift)
+}
+
+export async function createShift(input: ShiftInput): Promise<Shift> {
+  const [shift] = await createShifts([input])
   return shift
+}
+
+/**
+ * Cria vários plantões de uma vez (usado pela repetição).
+ * Tudo ou nada: se um input for inválido, nenhum é gravado.
+ */
+export async function createShifts(inputs: ShiftInput[]): Promise<Shift[]> {
+  if (inputs.length === 0) throw new Error('Nenhum plantão para salvar.')
+  const stamp = nowStamp()
+  const shifts = inputs.map((input) => buildShift(input, stamp))
+  await db.shifts.bulkAdd(shifts)
+  return shifts
 }
 
 export async function updateShift(id: string, input: ShiftInput): Promise<Shift> {
@@ -158,6 +172,46 @@ export async function registerPayment(shiftId: string, input: PaymentInput): Pro
   }
   await db.payments.put(payment)
   return payment
+}
+
+/**
+ * Marca vários plantões como recebidos na mesma data.
+ * Cada um entra pelo próprio valor previsto — nenhum valor é inventado ou
+ * rateado. Se algum veio diferente, o ajuste é feito plantão a plantão.
+ * Plantões cancelados ou já pagos são ignorados em silêncio.
+ */
+export async function registerPayments(
+  shiftIds: string[],
+  receivedDate: string,
+): Promise<number> {
+  if (!receivedDate) throw new Error('Informe a data do recebimento.')
+
+  return db.transaction('rw', db.shifts, db.payments, async () => {
+    const stamp = nowStamp()
+    const created: Payment[] = []
+
+    for (const shiftId of shiftIds) {
+      const shift = await db.shifts.get(shiftId)
+      if (!shift || shift.cancelled) continue
+      const existing = await db.payments.where('shiftId').equals(shiftId).first()
+      if (existing) continue
+
+      created.push({
+        id: newId(),
+        shiftId,
+        expectedAmount: shift.expectedAmount,
+        receivedAmount: shift.expectedAmount,
+        expectedDate: shift.expectedPaymentDate,
+        receivedDate,
+        notes: '',
+        createdAt: stamp,
+        updatedAt: stamp,
+      })
+    }
+
+    await db.payments.bulkAdd(created)
+    return created.length
+  })
 }
 
 /** Desfaz o recebimento: o plantão volta a ficar "a receber". */

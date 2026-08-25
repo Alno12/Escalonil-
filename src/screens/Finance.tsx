@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { LoadingScreen } from '@/components/ui/Skeleton'
 import { PaymentRow } from '@/components/shifts/PaymentRow'
+import { BatchPaymentSheet } from '@/components/shifts/BatchPaymentSheet'
 import { useAppData } from '@/state/appDataContext'
 import { useShiftSheets } from '@/state/shiftSheetsContext'
 import { addMonths, formatMonthYear, monthPartOf } from '@/domain/datetime'
@@ -32,6 +33,11 @@ export function Finance() {
 
   const [month, setMonth] = useState(monthPartOf(today))
   const [tab, setTab] = useState<Tab>('pending')
+  // Seleção múltipla: o hospital costuma pagar vários plantões de uma vez.
+  // É um modo explícito — fora dele, tocar numa linha abre o detalhe como sempre.
+  const [selecting, setSelecting] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [batchOpen, setBatchOpen] = useState(false)
 
   const monthTotals = useMemo(() => financeTotals(filterByMonth(views, month)), [views, month])
   const globalTotals = useMemo(() => financeTotals(views), [views])
@@ -47,6 +53,30 @@ export function Finance() {
 
   const current = lists[tab]
   const monthReference = `${month}-01`
+
+  // Só faz sentido selecionar o que ainda não foi pago.
+  const canSelect = tab !== 'received' && current.length > 1
+  const selectedTotal = current
+    .filter((v) => selected.has(v.shift.id))
+    .reduce((sum, v) => sum + v.shift.expectedAmount, 0)
+
+  const exitSelection = () => {
+    setSelecting(false)
+    setSelected(new Set())
+  }
+
+  const toggle = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  const changeTab = (next: Tab) => {
+    exitSelection()
+    setTab(next)
+  }
 
   return (
     <>
@@ -101,20 +131,31 @@ export function Finance() {
                 label: `${t.label}${lists[t.value].length ? ` (${lists[t.value].length})` : ''}`,
               }))}
               value={tab}
-              onChange={setTab}
+              onChange={changeTab}
             />
-            <p className="list-count">
-              Todos os períodos ·{' '}
-              <strong className="num">
-                {formatMoney(
-                  tab === 'received'
-                    ? globalTotals.received
-                    : tab === 'overdue'
-                      ? globalTotals.overdue
-                      : globalTotals.pending,
-                )}
-              </strong>
-            </p>
+            <div className="list-head">
+              <p className="list-count">
+                Todos os períodos ·{' '}
+                <strong className="num">
+                  {formatMoney(
+                    tab === 'received'
+                      ? globalTotals.received
+                      : tab === 'overdue'
+                        ? globalTotals.overdue
+                        : globalTotals.pending,
+                  )}
+                </strong>
+              </p>
+              {canSelect && (
+                <button
+                  type="button"
+                  className="select-toggle"
+                  onClick={() => (selecting ? exitSelection() : setSelecting(true))}
+                >
+                  {selecting ? 'Cancelar' : 'Selecionar'}
+                </button>
+              )}
+            </div>
 
             {current.length > 0 ? (
               <ul className="payment-list">
@@ -125,6 +166,11 @@ export function Finance() {
                     today={today}
                     onOpen={sheets.openShift}
                     onRegister={sheets.openPayment}
+                    selection={
+                      selecting
+                        ? { selected: selected.has(view.shift.id), onToggle: toggle }
+                        : undefined
+                    }
                   />
                 ))}
               </ul>
@@ -156,6 +202,45 @@ export function Finance() {
           </section>
         </div>
       )}
+
+      {selecting && (
+        <div className="selection-bar" role="region" aria-label="Ações da seleção">
+          <button
+            type="button"
+            className="selection-bar__all"
+            onClick={() =>
+              setSelected(
+                selected.size === current.length
+                  ? new Set()
+                  : new Set(current.map((v) => v.shift.id)),
+              )
+            }
+          >
+            {selected.size === current.length ? 'Nenhum' : 'Todos'}
+          </button>
+
+          <div className="selection-bar__info">
+            <strong className="num">{selected.size} selecionados</strong>
+            <span className="num">{formatMoney(selectedTotal)}</span>
+          </div>
+
+          <Button
+            variant="primary"
+            icon="check"
+            disabled={selected.size === 0}
+            onClick={() => setBatchOpen(true)}
+          >
+            Receber
+          </Button>
+        </div>
+      )}
+
+      <BatchPaymentSheet
+        open={batchOpen}
+        shiftIds={[...selected]}
+        onClose={() => setBatchOpen(false)}
+        onDone={exitSelection}
+      />
     </>
   )
 }

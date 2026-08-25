@@ -91,19 +91,41 @@ export function endOfMonth(date: LocalDate): LocalDate {
   return `${date.slice(0, 7)}-${pad(daysInMonth(d.getFullYear(), d.getMonth()))}`
 }
 
-/** Combina data + hora e resolve plantões que atravessam a meia-noite. */
+/**
+ * Quantos dias o plantão avança por conta do horário, sem contar dias extras.
+ * Fim menor ou igual ao início significa que termina no dia seguinte
+ * (19:00 → 07:00 = 12h; 07:00 → 07:00 = 24h).
+ */
+export function baseDayShift(startTime: string, endTime: string): number {
+  return endTime <= startTime ? 1 : 0
+}
+
+/**
+ * Combina data + hora e resolve plantões que atravessam a meia-noite.
+ *
+ * `extraDays` soma dias ALÉM da virada automática, para plantões longos:
+ * 07:00 → 19:00 com extraDays 1 são 36 horas. Zero é o caso normal.
+ */
 export function buildShiftRange(
   date: LocalDate,
   startTime: string,
   endTime: string,
+  extraDays = 0,
 ): { startDateTime: LocalDateTime; endDateTime: LocalDateTime } {
-  // Fim menor ou igual ao início significa que o plantão termina no dia seguinte
-  // (19:00 → 07:00 = 12h; 07:00 → 07:00 = 24h).
-  const endDate = endTime <= startTime ? addDays(date, 1) : date
+  const days = baseDayShift(startTime, endTime) + Math.max(0, extraDays)
   return {
     startDateTime: `${date}T${startTime}`,
-    endDateTime: `${endDate}T${endTime}`,
+    endDateTime: `${days === 0 ? date : addDays(date, days)}T${endTime}`,
   }
+}
+
+/**
+ * Dias extras embutidos num intervalo já salvo — o inverso de `buildShiftRange`,
+ * usado para reabrir um plantão no formulário.
+ */
+export function extraDaysOf(startDateTime: LocalDateTime, endDateTime: LocalDateTime): number {
+  const total = daysBetween(startDateTime.slice(0, 10), endDateTime.slice(0, 10))
+  return Math.max(0, total - baseDayShift(startDateTime.slice(11, 16), endDateTime.slice(11, 16)))
 }
 
 /** Duração em horas, com uma casa decimal de precisão prática. */

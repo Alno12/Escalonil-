@@ -143,6 +143,7 @@ export function parseBackup(text: string): BackupFile {
     shiftTypes: Array.isArray(rawSettings.shiftTypes)
       ? rawSettings.shiftTypes.filter((t): t is string => typeof t === 'string')
       : DEFAULT_SETTINGS.shiftTypes,
+    lastBackupAt: typeof rawSettings.lastBackupAt === 'string' ? rawSettings.lastBackupAt : null,
     id: 'app',
     updatedAt: str(rawSettings.updatedAt, new Date().toISOString()),
   }

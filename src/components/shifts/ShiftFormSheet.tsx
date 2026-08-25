@@ -13,16 +13,24 @@ import {
 } from '@/components/ui/Field'
 import { useAppData } from '@/state/appDataContext'
 import { useToast } from '@/state/toastContext'
-import { createShift, ensureLocation, updateShift, type ShiftInput } from '@/data/repository'
+import { createShifts, ensureLocation, updateShift, type ShiftInput } from '@/data/repository'
 import { findConflicts } from '@/domain/conflicts'
-import { buildShiftRange, formatDate, formatDuration, formatTime } from '@/domain/datetime'
-import { durationInHours } from '@/domain/datetime'
+import {
+  buildShiftRange,
+  formatDate,
+  formatDateShort,
+  formatDuration,
+  formatTime,
+  durationInHours,
+} from '@/domain/datetime'
 import { formatMoney, parseMoneyInput } from '@/domain/money'
 import { suggestPaymentDate } from '@/domain/shift'
 import {
-  formCrossesMidnight,
+  formDayShift,
   formExpectedAmount,
   formRange,
+  repeatDates,
+  type RepeatMode,
   type ShiftFormValues,
 } from './shiftFormValues'
 
@@ -78,11 +86,37 @@ export function ShiftFormSheet({
   const range = useMemo(() => formRange(values), [values])
   const duration = durationInHours(range.startDateTime, range.endDateTime)
   const expectedAmount = useMemo(() => formExpectedAmount(values), [values])
-  const overnight = formCrossesMidnight(values)
+  const dayShift = formDayShift(values)
 
+  // A repetição só existe ao criar: editar ou duplicar trata um plantão só.
+  const canRepeat = mode !== 'edit'
+  const occurrences = useMemo(
+    () => (canRepeat ? repeatDates(values) : [values.date]),
+    [canRepeat, values],
+  )
+
+  /** Todas as ocorrências da série, já com início e fim resolvidos. */
+  const ranges = useMemo(
+    () =>
+      occurrences.map((date) =>
+        buildShiftRange(date, values.startTime, values.endTime, values.extraDays),
+      ),
+    [occurrences, values.startTime, values.endTime, values.extraDays],
+  )
+
+  // Conflito é verificado em TODAS as datas geradas, não só na primeira.
   const conflicts = useMemo(
-    () => findConflicts({ id: shiftId, ...range }, shifts),
-    [range, shifts, shiftId],
+    () => {
+      const seen = new Set<string>()
+      return ranges.flatMap((r) =>
+        findConflicts({ id: shiftId, ...r }, shifts).filter((c) => {
+          if (seen.has(c.id)) return false
+          seen.add(c.id)
+          return true
+        }),
+      )
+    },
+    [ranges, shifts, shiftId],
   )
 
   const locationOptions = useMemo(
@@ -114,8 +148,10 @@ export function ShiftFormSheet({
         await updateShift(shiftId, input)
         toast.success('Plantão atualizado')
       } else {
-        await createShift(input)
-        toast.success('Plantão salvo')
+        const created = await createShifts(ranges.map((r) => ({ ...input, ...r })))
+        toast.success(
+          created.length === 1 ? 'Plantão salvo' : `${created.length} plantões salvos`,
+        )
       }
       onClose()
     } catch (e) {
@@ -157,7 +193,13 @@ export function ShiftFormSheet({
         }
         footer={
           <Button variant="primary" size="lg" block onClick={handleSubmit} disabled={saving}>
-            {saving ? 'Salvando…' : mode === 'edit' ? 'Salvar alterações' : 'Salvar plantão'}
+            {saving
+            ? 'Salvando…'
+            : mode === 'edit'
+              ? 'Salvar alterações'
+              : occurrences.length > 1
+                ? `Salvar ${occurrences.length} plantões`
+                : 'Salvar plantão'}
           </Button>
         }
       >
@@ -196,11 +238,7 @@ export function ShiftFormSheet({
                 required
               />
             </Field>
-            <Field
-              label="Término"
-              htmlFor="shift-end"
-              hint={overnight ? 'Termina no dia seguinte' : undefined}
-            >
+            <Field label="Término" htmlFor="shift-end">
               <TextInput
                 id="shift-end"
                 type="time"
@@ -212,13 +250,49 @@ export function ShiftFormSheet({
             </Field>
           </FieldRow>
 
+          {/* Dia do término sempre visível: o automático cobre o plantão
+              noturno, e o stepper permite plantões longos (36h, 48h). */}
+          <div className="day-shift">
+            <div className="day-shift__text">
+              <span className="day-shift__label">Termina em</span>
+              <strong className="day-shift__value num">
+                {formatDateShort(range.endDateTime)}
+                <span className="day-shift__offset">
+                  {dayShift === 0
+                    ? 'mesmo dia'
+                    : dayShift === 1
+                      ? '+1 dia'
+                      : `+${dayShift} dias`}
+                </span>
+              </strong>
+            </div>
+            <div className="day-shift__stepper">
+              <button
+                type="button"
+                aria-label="Um dia a menos"
+                disabled={values.extraDays === 0}
+                onClick={() => patch({ extraDays: values.extraDays - 1 })}
+              >
+                <Icon name="minus" size={18} />
+              </button>
+              <button
+                type="button"
+                aria-label="Um dia a mais"
+                disabled={values.extraDays >= 6}
+                onClick={() => patch({ extraDays: values.extraDays + 1 })}
+              >
+                <Icon name="plus" size={18} />
+              </button>
+            </div>
+          </div>
+
           {conflicts.length > 0 && (
             <div className="alert alert--warning" role="alert">
               <Icon name="alert" size={18} />
               <div>
                 <strong>Conflito de horários</strong>
                 <p>
-                  Este plantão se sobrepõe a{' '}
+                  {occurrences.length > 1 ? 'Esta série' : 'Este plantão'} se sobrepõe a{' '}
                   {conflicts.length === 1 ? 'outro já cadastrado' : `${conflicts.length} plantões`}:
                 </p>
                 <ul className="alert__list">
@@ -268,6 +342,52 @@ export function ShiftFormSheet({
               allowClear
             />
           </Field>
+
+          {canRepeat && (
+            <Field
+              label="Repetir"
+              optional
+              hint={
+                values.repeat === 'none'
+                  ? 'Cria vários plantões iguais de uma vez.'
+                  : `${occurrences.length} plantões, de ${formatDateShort(occurrences[0])} a ${formatDateShort(occurrences[occurrences.length - 1])}.`
+              }
+            >
+              <ChipGroup
+                ariaLabel="Repetição do plantão"
+                options={[
+                  { value: 'none', label: 'Não repetir' },
+                  { value: 'weekly', label: 'Toda semana' },
+                  { value: 'biweekly', label: 'A cada 15 dias' },
+                ]}
+                value={values.repeat}
+                onChange={(v) => patch({ repeat: v as RepeatMode })}
+              />
+              {values.repeat !== 'none' && (
+                <div className="repeat-count">
+                  <button
+                    type="button"
+                    aria-label="Menos repetições"
+                    disabled={values.repeatCount <= 2}
+                    onClick={() => patch({ repeatCount: values.repeatCount - 1 })}
+                  >
+                    <Icon name="minus" size={18} />
+                  </button>
+                  <span className="num">
+                    {occurrences.length} <small>vezes</small>
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Mais repetições"
+                    disabled={values.repeatCount >= 52}
+                    onClick={() => patch({ repeatCount: values.repeatCount + 1 })}
+                  >
+                    <Icon name="plus" size={18} />
+                  </button>
+                </div>
+              )}
+            </Field>
+          )}
 
           <Field label="Forma de pagamento">
             <ChipGroup
@@ -346,12 +466,12 @@ export function ShiftFormSheet({
         title="Conflito de horários"
         message={
           conflicts.length === 1
-            ? `Este plantão se sobrepõe a ${
+            ? `${occurrences.length > 1 ? 'Esta série' : 'Este plantão'} se sobrepõe a ${
                 locations.find((l) => l.id === conflicts[0]?.locationId)?.name ?? 'outro plantão'
-              }, ${formatTime(conflicts[0]?.startDateTime ?? '')} → ${formatTime(
-                conflicts[0]?.endDateTime ?? '',
-              )}. Deseja salvar mesmo assim?`
-            : `Este plantão se sobrepõe a ${conflicts.length} plantões já cadastrados. Deseja salvar mesmo assim?`
+              }, ${formatDate(conflicts[0]?.startDateTime ?? '')} das ${formatTime(
+                conflicts[0]?.startDateTime ?? '',
+              )} às ${formatTime(conflicts[0]?.endDateTime ?? '')}. Deseja salvar mesmo assim?`
+            : `${occurrences.length > 1 ? 'Esta série' : 'Este plantão'} se sobrepõe a ${conflicts.length} plantões já cadastrados. Deseja salvar mesmo assim?`
         }
         confirmLabel="Salvar mesmo assim"
         cancelLabel="Revisar"

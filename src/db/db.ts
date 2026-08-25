@@ -22,6 +22,7 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultFixedAmount: 0,
   paymentTermDays: 30,
   shiftTypes: DEFAULT_SHIFT_TYPES,
+  lastBackupAt: null,
   updatedAt: new Date(0).toISOString(),
 }
 
