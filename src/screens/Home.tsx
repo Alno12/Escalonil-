@@ -40,7 +40,11 @@ export function Home() {
   const week = useMemo(() => weekSummary(views, today), [views, today])
   const month = useMemo(() => financeTotals(filterByMonth(views, monthPartOf(today))), [views, today])
   const global = useMemo(() => financeTotals(views), [views])
-  const upcoming = useMemo(() => upcomingShifts(views, 6), [views])
+  // O plantão em destaque não se repete na lista logo abaixo.
+  const upcoming = useMemo(
+    () => upcomingShifts(views).filter((v) => v.shift.id !== next?.shift.id).slice(0, 6),
+    [views, next],
+  )
 
   const greeting = getGreeting(now.getHours())
   const hasShifts = views.length > 0
