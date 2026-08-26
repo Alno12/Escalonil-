@@ -238,3 +238,19 @@ export async function registerPayments(
 export async function removePayment(shiftId: string): Promise<void> {
   await db.payments.where('shiftId').equals(shiftId).delete()
 }
+
+// ---------------- Zerar o aplicativo ----------------
+
+/**
+ * Apaga plantões, locais e recebimentos deste aparelho.
+ *
+ * As preferências (tema, valores padrão, tipos de plantão) ficam — são
+ * escolhas, não dados lançados. O aviso de backup volta ao início porque não
+ * há mais nada para salvar.
+ */
+export async function clearAllData(): Promise<void> {
+  await db.transaction('rw', db.shifts, db.locations, db.payments, async () => {
+    await Promise.all([db.shifts.clear(), db.locations.clear(), db.payments.clear()])
+  })
+  await saveSettings({ lastBackupAt: null })
+}

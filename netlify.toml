@@ -1,0 +1,52 @@
+# Publicação automática no Netlify.
+#
+# A única diferença entre o Netlify e o GitHub Pages é onde o app fica: o
+# Pages serve em /Escalonil-/ e o Netlify serve na raiz do domínio. O
+# vite.config.ts já lê BASE_PATH, então nada mais muda entre os dois.
+#
+# Ligar o deploy automático (uma vez só):
+#   Netlify → Add new site → Import an existing project → GitHub → Escalonil-
+# O restante vem daqui: comando, pasta publicada, versão do Node e cabeçalhos.
+# Cada push na main republica o site; cada pull request ganha um preview.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  BASE_PATH = "/"
+  NODE_VERSION = "22"
+  # O build roda lint e testes através do próprio `npm run build` (tsc + vite);
+  # avisos de dependência não devem derrubar a publicação.
+  NPM_FLAGS = "--no-audit --no-fund"
+
+# As rotas ficam em hash (#/agenda), mas quem digitar um caminho direto
+# também precisa cair no app em vez de um 404. Arquivos que existem em dist/
+# continuam sendo servidos normalmente — o redirect só pega o que sobra.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# O service worker e o index não podem ficar em cache: são eles que anunciam
+# que existe uma versão nova.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Os arquivos com hash no nome nunca mudam de conteúdo.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

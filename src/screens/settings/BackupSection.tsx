@@ -5,7 +5,7 @@ import { Icon } from '@/components/ui/Icon'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useAppData } from '@/state/appDataContext'
 import { useToast } from '@/state/toastContext'
-import { saveSettings } from '@/data/repository'
+import { clearAllData, saveSettings } from '@/data/repository'
 import { backupStatus, describeBackupStatus } from '@/domain/backupReminder'
 import {
   backupFileName,
@@ -27,6 +27,7 @@ export function BackupSection() {
   const toast = useToast()
   const fileInput = useRef<HTMLInputElement>(null)
   const [pending, setPending] = useState<BackupFile | null>(null)
+  const [confirmWipe, setConfirmWipe] = useState(false)
   const [busy, setBusy] = useState(false)
   const status = backupStatus(settings.lastBackupAt, today)
 
@@ -80,6 +81,21 @@ export function BackupSection() {
     }
   }
 
+  async function wipe() {
+    setBusy(true)
+    try {
+      await clearAllData()
+      toast.success('Dados apagados')
+    } catch {
+      toast.error('Não foi possível apagar os dados.')
+    } finally {
+      setConfirmWipe(false)
+      setBusy(false)
+    }
+  }
+
+  const total = shifts.length
+
   return (
     <section aria-label="Backup e exportação">
       <SectionHeader title="Backup" hint="Seus dados ficam só neste aparelho" />
@@ -132,6 +148,40 @@ export function BackupSection() {
           }}
         />
       </Card>
+
+      <SectionHeader title="Apagar dados" />
+      <Card>
+        <p className="settings-note">
+          <Icon name="alert" size={16} />
+          <span>
+            Recomeçar do zero apaga plantões, locais e recebimentos deste aparelho. Suas
+            preferências continuam. Exporte um backup antes, se quiser guardar o que já existe.
+          </span>
+        </p>
+        <div className="settings-actions">
+          <Button
+            variant="danger"
+            size="lg"
+            block
+            icon="trash"
+            disabled={busy || total === 0}
+            onClick={() => setConfirmWipe(true)}
+          >
+            Apagar todos os dados
+          </Button>
+        </div>
+      </Card>
+
+      <ConfirmDialog
+        open={confirmWipe}
+        title="Apagar todos os dados?"
+        message={`${total} ${total === 1 ? 'plantão' : 'plantões'}, os locais e os recebimentos serão apagados deste aparelho. Esta ação não poderá ser desfeita.`}
+        confirmLabel="Apagar tudo"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => void wipe()}
+        onCancel={() => setConfirmWipe(false)}
+      />
 
       <ConfirmDialog
         open={pending !== null}
