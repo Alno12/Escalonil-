@@ -278,11 +278,14 @@ export const CSV_BOM = '﻿'
 export { ImportError }
 
 /** Reexportado para o formulário exibir o texto correto no diálogo. */
+/** "1 plantão" / "2 plantões" — o plural irregular não sai de um sufixo. */
+const plural = (count: number, singular: string, plural: string): string =>
+  `${count} ${count === 1 ? singular : plural}`
+
 export function describeBackup(backup: BackupFile): string {
-  const shifts = backup.shifts.length
-  const locations = backup.locations.length
-  const payments = backup.payments.length
-  return `${shifts} plantão${shifts === 1 ? '' : 'es'}, ${locations} local${
-    locations === 1 ? '' : 'is'
-  } e ${payments} recebimento${payments === 1 ? '' : 's'}`
+  return [
+    plural(backup.shifts.length, 'plantão', 'plantões'),
+    plural(backup.locations.length, 'local', 'locais'),
+    plural(backup.payments.length, 'recebimento', 'recebimentos'),
+  ].join(', ').replace(/, ([^,]*)$/, ' e $1')
 }

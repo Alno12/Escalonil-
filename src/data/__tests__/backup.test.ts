@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Shift, ShiftView } from '@/db/types'
-import { BACKUP_FORMAT, buildShiftsCsv, parseBackup } from '../backup'
+import { BACKUP_FORMAT, buildShiftsCsv, describeBackup, parseBackup } from '../backup'
 import { DEFAULT_SETTINGS } from '@/db/db'
 
 const shift: Shift = {
@@ -120,5 +120,25 @@ describe('buildShiftsCsv', () => {
   it('protege campos que contêm o separador', () => {
     const row = buildShiftsCsv([view]).split('\r\n')[1]
     expect(row).toContain('"Extra; solicitado pela coordenação"')
+  })
+})
+
+describe('describeBackup', () => {
+  const arquivo = (shifts: number, locations: number, payments: number) =>
+    ({
+      format: 'escalonil-backup', version: 1, exportedAt: '',
+      shifts: Array.from({ length: shifts }),
+      locations: Array.from({ length: locations }),
+      payments: Array.from({ length: payments }),
+      settings: {},
+    }) as never
+
+  it('usa o plural irregular certo', () => {
+    expect(describeBackup(arquivo(2, 2, 2))).toBe('2 plantões, 2 locais e 2 recebimentos')
+    expect(describeBackup(arquivo(0, 0, 0))).toBe('0 plantões, 0 locais e 0 recebimentos')
+  })
+
+  it('mantém o singular quando é um só', () => {
+    expect(describeBackup(arquivo(1, 1, 1))).toBe('1 plantão, 1 local e 1 recebimento')
   })
 })
