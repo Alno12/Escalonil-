@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useMountTransition } from '@/hooks/useMountTransition'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
+import { useSheetHistory } from '@/hooks/useSheetHistory'
 
 interface SheetProps {
   open: boolean
@@ -36,6 +37,7 @@ export function Sheet({
 }: SheetProps) {
   const { mounted, visible } = useMountTransition(open, 240)
   useBodyScrollLock(mounted)
+  useSheetHistory(open, onClose)
 
   useEffect(() => {
     if (!open) return

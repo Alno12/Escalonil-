@@ -216,6 +216,15 @@ vez por isso.
   juntos, não mexa em um sem os outros.
 - `useMountTransition` mantém folhas e diálogos montados durante a animação de
   saída.
+- `useSheetHistory` faz o gesto de voltar fechar a folha do topo em vez de
+  navegar por baixo dela. Existe **UMA** entrada de histórico enquanto houver
+  qualquer folha aberta: criada quando a primeira abre, recriada quando o
+  gesto fecha uma e ainda sobra outra, desfeita quando a última fecha. Uma
+  entrada por folha seria o caminho óbvio e é armadilha — ao salvar, folha e
+  diálogo fecham juntos, e a ordem em que o React desmonta irmãos não é a
+  ordem em que foram abertos. O ouvinte de `popstate` entra na primeira folha
+  e nunca sai: removê-lo antes do `history.back()` fazia o próprio `popstate`
+  do app não ser contado, e o gesto seguinte do usuário era engolido.
 - `useBodyScrollLock` conta as travas num contador COMPARTILHADO. Cada
   instância guardando e repondo o `overflow` por conta própria travava o app
   inteiro: a folha do plantão trava (guardando ""), o diálogo de excluir trava
