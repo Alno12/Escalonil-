@@ -3,6 +3,7 @@ import type { Shift } from '@/db/types'
 import { findConflicts, overlaps } from '../conflicts'
 
 const base: Omit<Shift, 'id' | 'startDateTime' | 'endDateTime'> = {
+  title: '',
   locationId: 'l1',
   shiftType: '',
   paymentMode: 'fixed',

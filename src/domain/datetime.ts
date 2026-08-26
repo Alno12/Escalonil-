@@ -92,40 +92,21 @@ export function endOfMonth(date: LocalDate): LocalDate {
 }
 
 /**
- * Quantos dias o plantão avança por conta do horário, sem contar dias extras.
- * Fim menor ou igual ao início significa que termina no dia seguinte
- * (19:00 → 07:00 = 12h; 07:00 → 07:00 = 24h).
- */
-export function baseDayShift(startTime: string, endTime: string): number {
-  return endTime <= startTime ? 1 : 0
-}
-
-/**
- * Combina data + hora e resolve plantões que atravessam a meia-noite.
+ * Soma horas a um instante local, atravessando dias quando precisa.
  *
- * `extraDays` soma dias ALÉM da virada automática, para plantões longos:
- * 07:00 → 19:00 com extraDays 1 são 36 horas. Zero é o caso normal.
+ * É o que sustenta os atalhos de duração do formulário (6h, 12h, 24h, 36h,
+ * 48h): o término é sempre início + N horas, sem regra escondida de virada
+ * de meia-noite — o usuário vê a data final e confere.
  */
-export function buildShiftRange(
-  date: LocalDate,
-  startTime: string,
-  endTime: string,
-  extraDays = 0,
-): { startDateTime: LocalDateTime; endDateTime: LocalDateTime } {
-  const days = baseDayShift(startTime, endTime) + Math.max(0, extraDays)
-  return {
-    startDateTime: `${date}T${startTime}`,
-    endDateTime: `${days === 0 ? date : addDays(date, days)}T${endTime}`,
-  }
+export function addHours(value: LocalDateTime, hours: number): LocalDateTime {
+  const d = toDate(value)
+  d.setMinutes(d.getMinutes() + Math.round(hours * 60))
+  return toLocalDateTime(d)
 }
 
-/**
- * Dias extras embutidos num intervalo já salvo — o inverso de `buildShiftRange`,
- * usado para reabrir um plantão no formulário.
- */
-export function extraDaysOf(startDateTime: LocalDateTime, endDateTime: LocalDateTime): number {
-  const total = daysBetween(startDateTime.slice(0, 10), endDateTime.slice(0, 10))
-  return Math.max(0, total - baseDayShift(startDateTime.slice(11, 16), endDateTime.slice(11, 16)))
+/** Junta data e hora num LocalDateTime. */
+export function joinDateTime(date: LocalDate, time: string): LocalDateTime {
+  return `${date}T${time}`
 }
 
 /** Duração em horas, com uma casa decimal de precisão prática. */
@@ -233,6 +214,21 @@ export function formatCountdown(target: LocalDateTime, now: Date = new Date()): 
   }
   const days = Math.floor(hours / 24)
   return days === 1 ? 'Em 1 dia' : `Em ${days} dias`
+}
+
+/** "2h35" / "45min" / "3 dias" — versão curta, para caber em pílulas. */
+export function formatCountdownShort(target: LocalDateTime, now: Date = new Date()): string {
+  const diff = toDate(target).getTime() - now.getTime()
+  if (diff <= 0) return 'agora'
+  const minutes = Math.floor(diff / 60_000)
+  if (minutes < 60) return `${minutes}min`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) {
+    const rest = minutes % 60
+    return rest === 0 ? `${hours}h` : `${hours}h${pad(rest)}`
+  }
+  const days = Math.floor(hours / 24)
+  return days === 1 ? '1 dia' : `${days} dias`
 }
 
 /** Rótulo relativo de dia: "Hoje", "Amanhã", "Ontem" ou a data por extenso. */

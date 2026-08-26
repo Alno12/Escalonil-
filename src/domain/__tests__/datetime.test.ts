@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   addDays,
+  addHours,
   addMonths,
-  baseDayShift,
-  buildShiftRange,
-  extraDaysOf,
   daysBetween,
   durationInHours,
   endOfMonth,
@@ -19,65 +17,30 @@ import {
   toLocalDateTime,
 } from '../datetime'
 
-describe('buildShiftRange', () => {
+describe('addHours', () => {
   it('mantém o mesmo dia quando o plantão termina antes da meia-noite', () => {
-    expect(buildShiftRange('2026-08-25', '07:00', '19:00')).toEqual({
-      startDateTime: '2026-08-25T07:00',
-      endDateTime: '2026-08-25T19:00',
-    })
+    expect(addHours('2026-08-25T07:00', 12)).toBe('2026-08-25T19:00')
   })
 
-  it('avança um dia quando o plantão atravessa a meia-noite', () => {
-    expect(buildShiftRange('2026-08-25', '19:00', '07:00')).toEqual({
-      startDateTime: '2026-08-25T19:00',
-      endDateTime: '2026-08-26T07:00',
-    })
+  it('atravessa a meia-noite somando horas', () => {
+    expect(addHours('2026-08-25T19:00', 12)).toBe('2026-08-26T07:00')
   })
 
-  it('trata início igual ao término como plantão de 24 horas', () => {
-    const range = buildShiftRange('2026-08-25', '07:00', '07:00')
-    expect(range.endDateTime).toBe('2026-08-26T07:00')
-    expect(durationInHours(range.startDateTime, range.endDateTime)).toBe(24)
+  it('monta um plantão de 24 horas', () => {
+    expect(addHours('2026-08-25T07:00', 24)).toBe('2026-08-26T07:00')
   })
 
-  it('soma dias extras para plantões longos', () => {
-    // 07:00 → 19:00 do dia seguinte = 36 horas.
-    const range = buildShiftRange('2026-08-25', '07:00', '19:00', 1)
-    expect(range.endDateTime).toBe('2026-08-26T19:00')
-    expect(durationInHours(range.startDateTime, range.endDateTime)).toBe(36)
+  it('monta plantões longos atravessando vários dias', () => {
+    expect(addHours('2026-08-25T07:00', 36)).toBe('2026-08-26T19:00')
+    expect(addHours('2026-08-25T19:00', 48)).toBe('2026-08-27T19:00')
   })
 
-  it('soma dias extras sobre a virada automática', () => {
-    // 19:00 → 07:00 já vira o dia; mais 1 dia extra = 36 horas.
-    const range = buildShiftRange('2026-08-25', '19:00', '07:00', 1)
-    expect(range.endDateTime).toBe('2026-08-27T07:00')
-    expect(durationInHours(range.startDateTime, range.endDateTime)).toBe(36)
+  it('aceita frações de hora', () => {
+    expect(addHours('2026-08-25T07:00', 6.5)).toBe('2026-08-25T13:30')
   })
 
-  it('ignora dias extras negativos', () => {
-    expect(buildShiftRange('2026-08-25', '07:00', '19:00', -3).endDateTime).toBe('2026-08-25T19:00')
-  })
-})
-
-describe('baseDayShift e extraDaysOf', () => {
-  it('reconhece a virada automática', () => {
-    expect(baseDayShift('07:00', '19:00')).toBe(0)
-    expect(baseDayShift('19:00', '07:00')).toBe(1)
-    expect(baseDayShift('07:00', '07:00')).toBe(1)
-  })
-
-  it('recupera os dias extras de um intervalo já salvo', () => {
-    expect(extraDaysOf('2026-08-25T07:00', '2026-08-25T19:00')).toBe(0)
-    expect(extraDaysOf('2026-08-25T19:00', '2026-08-26T07:00')).toBe(0)
-    expect(extraDaysOf('2026-08-25T07:00', '2026-08-26T19:00')).toBe(1)
-    expect(extraDaysOf('2026-08-25T19:00', '2026-08-27T07:00')).toBe(1)
-  })
-
-  it('é o inverso de buildShiftRange', () => {
-    for (const extra of [0, 1, 2, 5]) {
-      const r = buildShiftRange('2026-08-25', '19:00', '07:00', extra)
-      expect(extraDaysOf(r.startDateTime, r.endDateTime)).toBe(extra)
-    }
+  it('atravessa a virada do mês', () => {
+    expect(addHours('2026-08-31T19:00', 12)).toBe('2026-09-01T07:00')
   })
 })
 

@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Card, SectionHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Icon } from '@/components/ui/Icon'
 import { TextInput } from '@/components/ui/Field'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useAppData } from '@/state/appDataContext'
 import { useToast } from '@/state/toastContext'
-import { deleteLocation, renameLocation } from '@/data/repository'
+import { deleteLocation, renameLocation, setLocationColor } from '@/data/repository'
+import { ColorPicker } from '@/components/ui/ColorPicker'
+import type { LocationColor } from '@/db/types'
 
 /** Gestão dos locais cadastrados (§52). */
 export function LocationsSection() {
@@ -16,6 +17,7 @@ export function LocationsSection() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [colorFor, setColorFor] = useState<string | null>(null)
 
   const usage = useMemo(() => {
     const map = new Map<string, number>()
@@ -49,7 +51,10 @@ export function LocationsSection() {
 
   return (
     <section aria-label="Locais cadastrados">
-      <SectionHeader title="Locais" hint={`${locations.length} cadastrado(s)`} />
+      <SectionHeader
+        title="Locais"
+        hint={`${locations.length} ${locations.length === 1 ? 'local' : 'locais'} · toque na cor para trocar`}
+      />
       <Card padded={false}>
         {locations.length === 0 ? (
           <p className="settings-empty">
@@ -85,9 +90,17 @@ export function LocationsSection() {
                     </>
                   ) : (
                     <>
-                      <span className="settings-row__icon" aria-hidden="true">
-                        <Icon name="pin" size={17} />
-                      </span>
+                      <button
+                        type="button"
+                        className="settings-row__color"
+                        aria-label={`Trocar a cor de ${location.name}`}
+                        onClick={() => setColorFor(colorFor === location.id ? null : location.id)}
+                      >
+                        <span
+                          className="loc-dot loc-dot--lg"
+                          style={{ background: `var(--loc-${location.color})` }}
+                        />
+                      </button>
                       <span className="settings-row__body">
                         <span className="settings-row__title">{location.name}</span>
                         <span className="settings-row__hint">
@@ -115,6 +128,17 @@ export function LocationsSection() {
                         />
                       </div>
                     </>
+                  )}
+                  {colorFor === location.id && (
+                    <div className="settings-row__palette">
+                      <ColorPicker
+                        value={location.color}
+                        onChange={(color: LocationColor) => {
+                          void setLocationColor(location.id, color)
+                          setColorFor(null)
+                        }}
+                      />
+                    </div>
                   )}
                 </li>
               )

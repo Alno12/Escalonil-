@@ -16,8 +16,27 @@ export type LocalDate = string
 
 export type PaymentMode = 'fixed' | 'hourly'
 
+/**
+ * Cores dos locais. Guardamos a CHAVE, não o hexadecimal, para que cada tema
+ * possa usar o tom certo (ver `--loc-*` em tokens.css).
+ */
+export const LOCATION_COLORS = [
+  'blue',
+  'teal',
+  'green',
+  'orange',
+  'red',
+  'purple',
+  'pink',
+  'indigo',
+] as const
+
+export type LocationColor = (typeof LOCATION_COLORS)[number]
+
 export interface Shift {
   id: string
+  /** Complemento livre do local ("Plantão da coordenação"). Vazio = sem título. */
+  title: string
   startDateTime: LocalDateTime
   endDateTime: LocalDateTime
   locationId: string
@@ -43,6 +62,8 @@ export interface Shift {
 export interface Location {
   id: string
   name: string
+  /** Identifica o local de relance na agenda e nas listas. */
+  color: LocationColor
   createdAt: string
 }
 

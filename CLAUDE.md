@@ -66,11 +66,21 @@ cancelar um plantão remove o recebimento — essas regras moram lá.
 **7. Semana começa no domingo.** Convenção brasileira, usada no calendário e
 nos resumos.
 
-**8. Dias extras são somados À virada automática, não no lugar dela.**
-`buildShiftRange` soma 1 dia sozinha quando o término é menor ou igual ao
-início; `extraDays` vem por cima disso. Um plantão de 36h é 07:00 → 19:00 com
-`extraDays: 1`, e 19:00 → 07:00 com `extraDays: 1` são 36h também.
-`extraDaysOf` é o inverso exato e é o que reabre o plantão no formulário.
+**8. Início e fim são datas completas, sem regra escondida.**
+O formulário guarda `startDate`+`startTime` e `endDate`+`endTime`. Não existe
+mais "virada automática de meia-noite": os atalhos de duração usam `addHours`,
+o usuário vê a data final na tela e confere. É o que torna 36h e 48h possíveis
+sem nenhuma aritmética invisível.
+
+**10. A cor pertence ao LOCAL, não ao plantão.**
+`Location.color` guarda a CHAVE da cor (`blue`, `teal`…), nunca o hexadecimal,
+para que cada tema use o tom certo via `--loc-*`. Escolher a cor no formulário
+altera o local inteiro — todos os plantões daquele lugar mudam junto, que é o
+que faz a agenda ficar legível de relance.
+
+**11. O título complementa o local, nunca o substitui.**
+`Shift.title` aparece depois do nome do local nas listas. Um plantão sem título
+continua mostrando o local normalmente.
 
 **9. Recebimento em lote nunca rateia valores.**
 `registerPayments` grava cada plantão pelo próprio `expectedAmount`. Se o
@@ -100,7 +110,22 @@ imediatamente quando o app volta ao primeiro plano.
 olham o mês selecionado e as listas abaixo mostram todos os períodos — de
 propósito, para nenhuma pendência antiga sumir por causa de um filtro.
 
-## Interface
+## Interface — linguagem visual do iOS
+
+O app segue a linguagem do Apple Saúde:
+
+- Fundo cinza agrupado, cartões **sem borda e sem sombra**. A separação vem do
+  contraste de fundo, não de traços.
+- Dentro dos cartões, as linhas são separadas por **hairlines recuadas**
+  (`left: var(--row-pad)`), nunca por bordas completas.
+- Cinco abas no rodapé, sem botão de ação no meio. **Novo plantão** vive no
+  canto superior direito de cada tela (`ScreenHeader`).
+- Números usam `.num` (tabular) para alinhar em colunas.
+
+Cuidado com a cascata: modificadores com a MESMA especificidade da regra base
+dependem da ordem no arquivo. Prefira regras descendentes
+(`.agenda-day--free .agenda-day__date`) a modificadores soltos — já quebrou uma
+vez por isso.
 
 - Estado local de formulário é reiniciado por **remontagem via `key`**
   (`ShiftSheetsProvider`), nunca por `useEffect` de sincronização.

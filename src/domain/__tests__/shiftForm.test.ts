@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS } from '@/db/db'
 import {
+  activeDurationShortcut,
+  applyDuration,
   emptyForm,
-  formDayShift,
+  formDuration,
   formExpectedAmount,
+  formFromDuplicate,
   formFromShift,
   formRange,
+  MAX_OCCURRENCES,
   repeatDates,
-  REPEAT_INTERVAL_DAYS,
+  syncMoney,
   type ShiftFormValues,
 } from '@/components/shifts/shiftFormValues'
-import { durationInHours } from '../datetime'
 import type { Shift } from '@/db/types'
 
 const base = (overrides: Partial<ShiftFormValues> = {}): ShiftFormValues => ({
@@ -18,13 +21,71 @@ const base = (overrides: Partial<ShiftFormValues> = {}): ShiftFormValues => ({
   ...overrides,
 })
 
+const shift = (startDateTime: string, endDateTime: string, extra: Partial<Shift> = {}): Shift => ({
+  id: 's1',
+  title: '',
+  startDateTime,
+  endDateTime,
+  locationId: 'l1',
+  shiftType: '',
+  paymentMode: 'fixed',
+  fixedAmount: 1200,
+  hourlyRate: 0,
+  expectedAmount: 1200,
+  expectedPaymentDate: null,
+  notes: '',
+  cancelled: false,
+  createdAt: '2026-08-01T00:00:00.000Z',
+  updatedAt: '2026-08-01T00:00:00.000Z',
+  ...extra,
+})
+
+describe('emptyForm', () => {
+  it('propõe um plantão noturno de 12 horas', () => {
+    const values = base()
+    expect(values.startDate).toBe('2026-08-25')
+    expect(values.startTime).toBe('19:00')
+    expect(values.endDate).toBe('2026-08-26')
+    expect(values.endTime).toBe('07:00')
+    expect(formDuration(values)).toBe(12)
+  })
+})
+
+describe('atalhos de duração', () => {
+  it('preenchem o término a partir do início', () => {
+    const values = applyDuration(base({ startTime: '07:00' }), 36)
+    expect(values.endDate).toBe('2026-08-26')
+    expect(values.endTime).toBe('19:00')
+    expect(formDuration(values)).toBe(36)
+  })
+
+  it('permitem plantões de 48 horas', () => {
+    expect(formDuration(applyDuration(base(), 48))).toBe(48)
+  })
+
+  it('reconhecem qual atalho corresponde ao intervalo atual', () => {
+    expect(activeDurationShortcut(base())).toBe(12)
+    expect(activeDurationShortcut(applyDuration(base(), 24))).toBe(24)
+    expect(activeDurationShortcut(base({ endTime: '20:00', endDate: '2026-08-25' }))).toBeNull()
+  })
+})
+
 describe('repeatDates', () => {
   it('devolve só a data informada quando não repete', () => {
     expect(repeatDates(base())).toEqual(['2026-08-25'])
   })
 
-  it('gera a série semanal a partir da primeira data', () => {
-    expect(repeatDates(base({ repeat: 'weekly', repeatCount: 4 }))).toEqual([
+  it('gera a série diária até a data limite', () => {
+    expect(repeatDates(base({ repeat: 'daily', repeatUntil: '2026-08-28' }))).toEqual([
+      '2026-08-25',
+      '2026-08-26',
+      '2026-08-27',
+      '2026-08-28',
+    ])
+  })
+
+  it('gera a série semanal', () => {
+    expect(repeatDates(base({ repeat: 'weekly', repeatUntil: '2026-09-15' }))).toEqual([
       '2026-08-25',
       '2026-09-01',
       '2026-09-08',
@@ -33,81 +94,91 @@ describe('repeatDates', () => {
   })
 
   it('gera a série quinzenal', () => {
-    expect(repeatDates(base({ repeat: 'biweekly', repeatCount: 3 }))).toEqual([
+    expect(repeatDates(base({ repeat: 'biweekly', repeatUntil: '2026-09-30' }))).toEqual([
       '2026-08-25',
       '2026-09-08',
       '2026-09-22',
     ])
   })
 
-  it('limita a série a um ano e nunca devolve lista vazia', () => {
-    expect(repeatDates(base({ repeat: 'weekly', repeatCount: 999 }))).toHaveLength(52)
-    expect(repeatDates(base({ repeat: 'weekly', repeatCount: 0 }))).toHaveLength(1)
+  it('gera a série mensal preservando o dia', () => {
+    expect(repeatDates(base({ repeat: 'monthly', repeatUntil: '2026-11-30' }))).toEqual([
+      '2026-08-25',
+      '2026-09-25',
+      '2026-10-25',
+      '2026-11-25',
+    ])
   })
 
-  it('mantém os intervalos coerentes com os rótulos', () => {
-    expect(REPEAT_INTERVAL_DAYS.weekly).toBe(7)
-    expect(REPEAT_INTERVAL_DAYS.biweekly).toBe(14)
-    expect(REPEAT_INTERVAL_DAYS.none).toBe(0)
+  it('nunca devolve lista vazia, mesmo com limite anterior ao início', () => {
+    expect(repeatDates(base({ repeat: 'weekly', repeatUntil: '2026-01-01' }))).toEqual([
+      '2026-08-25',
+    ])
+  })
+
+  it('respeita o teto de segurança da série', () => {
+    const dates = repeatDates(base({ repeat: 'daily', repeatUntil: '2030-01-01' }))
+    expect(dates).toHaveLength(MAX_OCCURRENCES)
   })
 })
 
-describe('dias extras no formulário', () => {
-  it('um plantão diurno normal não avança dia', () => {
-    const values = base({ startTime: '07:00', endTime: '19:00' })
-    expect(formDayShift(values)).toBe(0)
-    expect(durationInHours(formRange(values).startDateTime, formRange(values).endDateTime)).toBe(12)
+describe('syncMoney', () => {
+  it('deriva o valor por hora quando o total é digitado', () => {
+    const values = syncMoney(base({ amountText: '1200' }), 'fixed')
+    expect(values.paymentMode).toBe('fixed')
+    expect(values.hourlyText).toBe('100')
+    expect(formExpectedAmount(values)).toBe(1200)
   })
 
-  it('um plantão noturno avança um dia sozinho', () => {
-    expect(formDayShift(base({ startTime: '19:00', endTime: '07:00' }))).toBe(1)
+  it('deriva o total quando o valor por hora é digitado', () => {
+    const values = syncMoney(base({ hourlyText: '100' }), 'hourly')
+    expect(values.paymentMode).toBe('hourly')
+    expect(values.amountText).toBe('1200')
+    expect(formExpectedAmount(values)).toBe(1200)
   })
 
-  it('permite montar um plantão de 36 horas', () => {
-    const values = base({ startTime: '07:00', endTime: '19:00', extraDays: 1 })
-    const range = formRange(values)
-    expect(formDayShift(values)).toBe(1)
-    expect(durationInHours(range.startDateTime, range.endDateTime)).toBe(36)
+  it('acompanha a duração: 36h a R$ 100/h dão R$ 3.600', () => {
+    const values = syncMoney(applyDuration(base(), 36), 'hourly')
+    expect(formExpectedAmount({ ...values, hourlyText: '100' })).toBe(3600)
   })
 
-  it('calcula o valor por hora sobre a duração real do plantão longo', () => {
-    const values = base({
-      startTime: '07:00',
-      endTime: '19:00',
-      extraDays: 1,
-      paymentMode: 'hourly',
-      hourlyRateText: '100',
-    })
-    expect(formExpectedAmount(values)).toBe(3600)
+  it('limpa o outro campo quando o valor é zerado', () => {
+    expect(syncMoney(base({ amountText: '' }), 'fixed').hourlyText).toBe('')
   })
 })
 
 describe('formFromShift', () => {
-  const shift = (startDateTime: string, endDateTime: string): Shift => ({
-    id: 's1',
-    startDateTime,
-    endDateTime,
-    locationId: 'l1',
-    shiftType: '',
-    paymentMode: 'fixed',
-    fixedAmount: 100,
-    hourlyRate: 0,
-    expectedAmount: 100,
-    expectedPaymentDate: null,
-    notes: '',
-    cancelled: false,
-    createdAt: '2026-08-01T00:00:00.000Z',
-    updatedAt: '2026-08-01T00:00:00.000Z',
-  })
-
-  it('reabre um plantão longo preservando os dias extras', () => {
-    const values = formFromShift(shift('2026-08-25T07:00', '2026-08-26T19:00'), 'UPA')
-    expect(values.extraDays).toBe(1)
-    expect(formRange(values).endDateTime).toBe('2026-08-26T19:00')
+  it('reabre um plantão longo com o término correto', () => {
+    const values = formFromShift(shift('2026-08-25T07:00', '2026-08-26T19:00'), 'UPA', 'teal')
+    expect(values.endDate).toBe('2026-08-26')
+    expect(values.endTime).toBe('19:00')
+    expect(formDuration(values)).toBe(36)
+    expect(values.color).toBe('teal')
   })
 
   it('nunca reabre um plantão já com repetição marcada', () => {
-    const values = formFromShift(shift('2026-08-25T19:00', '2026-08-26T07:00'), 'UPA')
-    expect(values.repeat).toBe('none')
+    expect(formFromShift(shift('2026-08-25T19:00', '2026-08-26T07:00'), 'UPA', 'blue').repeat).toBe(
+      'none',
+    )
+  })
+
+  it('traz o título como complemento, não no lugar do local', () => {
+    const values = formFromShift(
+      shift('2026-08-25T19:00', '2026-08-26T07:00', { title: 'Coordenação' }),
+      'UPA Centro',
+      'blue',
+    )
+    expect(values.title).toBe('Coordenação')
+    expect(values.locationName).toBe('UPA Centro')
+  })
+})
+
+describe('formFromDuplicate', () => {
+  it('move para hoje preservando a duração', () => {
+    const original = shift('2026-08-10T07:00', '2026-08-11T19:00')
+    const values = formFromDuplicate(original, 'UPA', 'blue', DEFAULT_SETTINGS)
+    expect(formDuration(values)).toBe(36)
+    expect(values.startDate).not.toBe('2026-08-10')
+    expect(formRange(values).startDateTime.slice(11)).toBe('07:00')
   })
 })

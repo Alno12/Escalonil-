@@ -4,8 +4,16 @@
  * os dados para outro aparelho — por isso a importação valida tudo antes
  * de tocar no banco.
  */
-import { db, DEFAULT_SETTINGS } from '@/db/db'
-import type { Location, Payment, Settings, Shift, ShiftView } from '@/db/types'
+import { colorForIndex, db, DEFAULT_SETTINGS } from '@/db/db'
+import {
+  LOCATION_COLORS,
+  type Location,
+  type LocationColor,
+  type Payment,
+  type Settings,
+  type Shift,
+  type ShiftView,
+} from '@/db/types'
 import { formatDate, formatTime, todayISO } from '@/domain/datetime'
 import { paymentStatusLabel, shiftStatusLabel } from '@/domain/shift'
 
@@ -81,9 +89,13 @@ export function parseBackup(text: string): BackupFile {
     throw new ImportError('O backup está incompleto.')
   }
 
-  const locations: Location[] = raw.locations.filter(isObject).map((l) => ({
+  const locations: Location[] = raw.locations.filter(isObject).map((l, index) => ({
     id: str(l.id),
     name: str(l.name, 'Local'),
+    // Backups da v1 não têm cor: a paleta é distribuída na ordem do arquivo.
+    color: LOCATION_COLORS.includes(str(l.color) as LocationColor)
+      ? (str(l.color) as LocationColor)
+      : colorForIndex(index),
     createdAt: str(l.createdAt, new Date().toISOString()),
   }))
 
@@ -96,6 +108,7 @@ export function parseBackup(text: string): BackupFile {
     const expectedPaymentDate = str(s.expectedPaymentDate)
     return {
       id: str(s.id),
+      title: str(s.title),
       startDateTime,
       endDateTime,
       locationId: str(s.locationId),

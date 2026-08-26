@@ -1,43 +1,53 @@
 /** Estado do formulário de plantão e conversões de/para o banco. */
-import type { LocalDate, PaymentMode, Settings, Shift } from '@/db/types'
+import type { LocalDate, LocalDateTime, LocationColor, PaymentMode, Settings, Shift } from '@/db/types'
 import {
   addDays,
-  baseDayShift,
-  buildShiftRange,
+  addHours,
+  addMonths,
   datePartOf,
-  extraDaysOf,
+  durationInHours,
+  joinDateTime,
   timePartOf,
   todayISO,
 } from '@/domain/datetime'
-import { computeExpectedAmount } from '@/domain/shift'
-import { parseMoneyInput } from '@/domain/money'
-import { suggestPaymentDate } from '@/domain/shift'
+import { computeExpectedAmount, suggestPaymentDate } from '@/domain/shift'
+import { parseMoneyInput, roundMoney } from '@/domain/money'
 
-/** Repetição do plantão. `none` é o caso normal. */
-export type RepeatMode = 'none' | 'weekly' | 'biweekly'
+/** Frequências oferecidas na recorrência. */
+export type RepeatMode = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly'
 
-/** Quantos dias separam cada ocorrência da série. */
-export const REPEAT_INTERVAL_DAYS: Record<RepeatMode, number> = {
-  none: 0,
-  weekly: 7,
-  biweekly: 14,
+export const REPEAT_LABELS: Record<RepeatMode, string> = {
+  none: 'Nunca',
+  daily: 'Todo dia',
+  weekly: 'Toda semana',
+  biweekly: 'A cada 2 semanas',
+  monthly: 'Todo mês',
 }
 
+/** Teto de segurança para uma série — evita gerar milhares de plantões. */
+export const MAX_OCCURRENCES = 120
+
+/** Atalhos de duração do formulário, em horas. */
+export const DURATION_SHORTCUTS = [6, 12, 24, 36, 48]
+
 export interface ShiftFormValues {
-  date: LocalDate
-  startTime: string
-  endTime: string
-  /** Dias somados além da virada automática — plantões de 36h e afins. */
-  extraDays: number
-  repeat: RepeatMode
-  /** Total de ocorrências da série, contando a primeira. */
-  repeatCount: number
+  /** Complemento do local; nunca substitui o nome do local. */
+  title: string
   locationName: string
+  color: LocationColor
   shiftType: string
+  startDate: LocalDate
+  startTime: string
+  endDate: LocalDate
+  endTime: string
+  repeat: RepeatMode
+  repeatUntil: LocalDate
+  /** Valor total do plantão, como texto enquanto o usuário digita. */
+  amountText: string
+  /** Valor por hora, como texto. Espelha `amountText` pela duração. */
+  hourlyText: string
+  /** Qual dos dois campos o usuário editou por último. */
   paymentMode: PaymentMode
-  /** Texto livre; convertido com `parseMoneyInput` só na hora de salvar. */
-  fixedAmountText: string
-  hourlyRateText: string
   expectedPaymentDate: string
   notes: string
 }
@@ -46,71 +56,105 @@ const moneyToText = (value: number) =>
   value > 0 ? value.toFixed(2).replace('.', ',').replace(/,00$/, '') : ''
 
 export function emptyForm(settings: Settings, date?: LocalDate): ShiftFormValues {
-  const day = date ?? todayISO()
-  const { endDateTime } = buildShiftRange(day, '07:00', '19:00')
+  const startDate = date ?? todayISO()
+  const start = joinDateTime(startDate, '19:00')
+  const end = addHours(start, 12)
   return {
-    date: day,
-    startTime: '07:00',
-    endTime: '19:00',
-    extraDays: 0,
-    repeat: 'none',
-    repeatCount: 4,
+    title: '',
     locationName: '',
+    color: 'blue',
     shiftType: '',
+    startDate,
+    startTime: '19:00',
+    endDate: datePartOf(end),
+    endTime: timePartOf(end),
+    repeat: 'none',
+    repeatUntil: addMonths(startDate, 3),
+    amountText: moneyToText(settings.defaultFixedAmount),
+    hourlyText: moneyToText(settings.defaultHourlyRate),
     paymentMode: settings.defaultPaymentMode,
-    fixedAmountText: moneyToText(settings.defaultFixedAmount),
-    hourlyRateText: moneyToText(settings.defaultHourlyRate),
-    expectedPaymentDate: suggestPaymentDate(endDateTime, settings.paymentTermDays),
+    expectedPaymentDate: suggestPaymentDate(end, settings.paymentTermDays),
     notes: '',
   }
 }
 
-export function formFromShift(shift: Shift, locationName: string): ShiftFormValues {
+export function formFromShift(
+  shift: Shift,
+  locationName: string,
+  color: LocationColor,
+): ShiftFormValues {
+  const hours = durationInHours(shift.startDateTime, shift.endDateTime)
   return {
-    date: datePartOf(shift.startDateTime),
+    title: shift.title,
+    locationName,
+    color,
+    shiftType: shift.shiftType,
+    startDate: datePartOf(shift.startDateTime),
     startTime: timePartOf(shift.startDateTime),
+    endDate: datePartOf(shift.endDateTime),
     endTime: timePartOf(shift.endDateTime),
-    extraDays: extraDaysOf(shift.startDateTime, shift.endDateTime),
     // Repetição é sempre uma escolha nova: editar ou duplicar não recria a série.
     repeat: 'none',
-    repeatCount: 4,
-    locationName,
-    shiftType: shift.shiftType,
+    repeatUntil: addMonths(datePartOf(shift.startDateTime), 3),
+    amountText: moneyToText(shift.expectedAmount),
+    hourlyText: moneyToText(
+      shift.hourlyRate > 0 ? shift.hourlyRate : hours > 0 ? roundMoney(shift.expectedAmount / hours) : 0,
+    ),
     paymentMode: shift.paymentMode,
-    fixedAmountText: moneyToText(shift.fixedAmount),
-    hourlyRateText: moneyToText(shift.hourlyRate),
     expectedPaymentDate: shift.expectedPaymentDate ?? '',
     notes: shift.notes,
   }
 }
 
-/** Cópia para "Duplicar": mantém tudo e traz a data para hoje (§48). */
+/** Cópia para "Duplicar": mantém tudo e traz a data para hoje. */
 export function formFromDuplicate(
   shift: Shift,
   locationName: string,
+  color: LocationColor,
   settings: Settings,
 ): ShiftFormValues {
-  const base = formFromShift(shift, locationName)
+  const base = formFromShift(shift, locationName, color)
   const today = todayISO()
-  const { endDateTime } = buildShiftRange(today, base.startTime, base.endTime, base.extraDays)
+  // Preserva a duração original ao mover a data.
+  const hours = durationInHours(shift.startDateTime, shift.endDateTime)
+  const start = joinDateTime(today, base.startTime)
+  const end = addHours(start, hours)
   return {
     ...base,
-    date: today,
-    expectedPaymentDate: suggestPaymentDate(endDateTime, settings.paymentTermDays),
+    startDate: today,
+    endDate: datePartOf(end),
+    endTime: timePartOf(end),
+    repeatUntil: addMonths(today, 3),
+    expectedPaymentDate: suggestPaymentDate(end, settings.paymentTermDays),
   }
 }
 
-/** Início e fim resolvidos, incluindo virada de meia-noite e dias extras. */
-export function formRange(values: ShiftFormValues) {
-  return buildShiftRange(values.date, values.startTime, values.endTime, values.extraDays)
+/** Início e fim do plantão como estão no formulário. */
+export function formRange(values: ShiftFormValues): {
+  startDateTime: LocalDateTime
+  endDateTime: LocalDateTime
+} {
+  return {
+    startDateTime: joinDateTime(values.startDate, values.startTime),
+    endDateTime: joinDateTime(values.endDate, values.endTime),
+  }
 }
 
-/** Datas de início de cada ocorrência da série (a primeira é a do formulário). */
-export function repeatDates(values: ShiftFormValues): LocalDate[] {
-  const step = REPEAT_INTERVAL_DAYS[values.repeat]
-  if (step === 0) return [values.date]
-  const total = Math.max(1, Math.min(52, values.repeatCount))
-  return Array.from({ length: total }, (_, i) => addDays(values.date, i * step))
+export function formDuration(values: ShiftFormValues): number {
+  const { startDateTime, endDateTime } = formRange(values)
+  return durationInHours(startDateTime, endDateTime)
+}
+
+/** Aplica um atalho de duração: o término passa a ser início + N horas. */
+export function applyDuration(values: ShiftFormValues, hours: number): ShiftFormValues {
+  const end = addHours(joinDateTime(values.startDate, values.startTime), hours)
+  return { ...values, endDate: datePartOf(end), endTime: timePartOf(end) }
+}
+
+/** Qual atalho de duração corresponde ao intervalo atual, se algum. */
+export function activeDurationShortcut(values: ShiftFormValues): number | null {
+  const hours = formDuration(values)
+  return DURATION_SHORTCUTS.find((h) => Math.abs(h - hours) < 0.01) ?? null
 }
 
 /** Valor previsto conforme o que está digitado agora. */
@@ -120,12 +164,51 @@ export function formExpectedAmount(values: ShiftFormValues): number {
     startDateTime,
     endDateTime,
     paymentMode: values.paymentMode,
-    fixedAmount: parseMoneyInput(values.fixedAmountText),
-    hourlyRate: parseMoneyInput(values.hourlyRateText),
+    fixedAmount: parseMoneyInput(values.amountText),
+    hourlyRate: parseMoneyInput(values.hourlyText),
   })
 }
 
-/** Quantos dias inteiros o plantão avança do início ao fim. */
-export function formDayShift(values: ShiftFormValues): number {
-  return baseDayShift(values.startTime, values.endTime) + Math.max(0, values.extraDays)
+/**
+ * Mantém total e valor/hora coerentes: quem foi editado manda, o outro é
+ * recalculado pela duração. Assim os dois campos sempre contam a mesma história.
+ */
+export function syncMoney(values: ShiftFormValues, edited: PaymentMode): ShiftFormValues {
+  const hours = formDuration(values)
+  if (hours <= 0) return { ...values, paymentMode: edited }
+
+  if (edited === 'fixed') {
+    const total = parseMoneyInput(values.amountText)
+    return {
+      ...values,
+      paymentMode: 'fixed',
+      hourlyText: total > 0 ? moneyToText(roundMoney(total / hours)) : '',
+    }
+  }
+
+  const hourly = parseMoneyInput(values.hourlyText)
+  return {
+    ...values,
+    paymentMode: 'hourly',
+    amountText: hourly > 0 ? moneyToText(roundMoney(hourly * hours)) : '',
+  }
+}
+
+/** Datas de início de cada ocorrência da série, respeitando a data limite. */
+export function repeatDates(values: ShiftFormValues): LocalDate[] {
+  if (values.repeat === 'none') return [values.startDate]
+
+  const dates: LocalDate[] = []
+  let current = values.startDate
+
+  while (current <= values.repeatUntil && dates.length < MAX_OCCURRENCES) {
+    dates.push(current)
+    current =
+      values.repeat === 'monthly'
+        ? addMonths(current, 1)
+        : addDays(current, values.repeat === 'daily' ? 1 : values.repeat === 'weekly' ? 7 : 14)
+  }
+
+  // A primeira ocorrência sempre entra, mesmo se o limite for anterior a ela.
+  return dates.length > 0 ? dates : [values.startDate]
 }

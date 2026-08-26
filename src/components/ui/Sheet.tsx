@@ -2,7 +2,6 @@ import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useMountTransition } from '@/hooks/useMountTransition'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
-import { Icon } from './Icon'
 
 interface SheetProps {
   open: boolean
@@ -57,8 +56,8 @@ export function Sheet({
       >
         <div className="sheet__grip" aria-hidden="true" />
         <header className="sheet__header">
-          <button className="sheet__close" onClick={onClose} aria-label="Fechar">
-            <Icon name="close" size={20} />
+          <button className="sheet__close" onClick={onClose}>
+            Cancelar
           </button>
           <div className="sheet__titles">
             <h2 className="sheet__title">{title}</h2>

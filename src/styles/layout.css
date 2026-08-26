@@ -1,7 +1,7 @@
-/* Estrutura do app: área de conteúdo, cabeçalhos e barra de abas. */
+/* Estrutura do app: conteúdo, cabeçalhos e barra de abas no padrão do iOS. */
 
 :root {
-  --tabbar-height: 62px;
+  --tabbar-height: 52px;
 }
 
 .app {
@@ -15,7 +15,6 @@
   width: 100%;
   max-width: var(--content-max);
   margin: 0 auto;
-  /* Espaço para a barra de abas + área do indicador de início do iPhone. */
   padding-bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom) + var(--sp-6));
   animation: fade-in var(--dur-mid) var(--ease);
 }
@@ -23,7 +22,7 @@
 .screen {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
+  gap: var(--sp-4);
   padding: 0 var(--sp-4);
 }
 
@@ -46,16 +45,10 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  padding: calc(env(safe-area-inset-top) + var(--sp-4)) var(--sp-4) var(--sp-3);
+  padding: calc(env(safe-area-inset-top) + var(--sp-3)) var(--sp-4) var(--sp-3);
   background: var(--bg-veil);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  border-bottom: 1px solid transparent;
-  transition: border-color var(--dur-fast) var(--ease);
-}
-
-.screen-header--bordered {
-  border-bottom-color: var(--border);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .screen-header__bar {
@@ -69,20 +62,61 @@
   min-width: 0;
 }
 
+.screen-header__eyebrow {
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 1px;
+}
+
 .screen-header__title {
-  font-size: var(--text-title);
+  font-size: var(--text-large-title);
   font-weight: 700;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.032em;
+  line-height: 1.1;
 }
 
 .screen-header__subtitle {
-  margin-top: 2px;
-  font-size: var(--text-caption);
+  margin-top: 3px;
+  font-size: var(--text-subhead);
   color: var(--text-2);
 }
 
 .screen-header__below {
   margin-top: var(--sp-3);
+}
+
+/* Botão de novo plantão, no canto superior direito. */
+.header-add {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+.header-add:active {
+  transform: scale(0.9);
+}
+
+/* Ação secundária no cabeçalho (mesmo tamanho, sem preenchimento). */
+.header-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--text-2);
 }
 
 /* ---------------- Barra de abas ---------------- */
@@ -94,9 +128,9 @@
   z-index: 50;
   padding-bottom: env(safe-area-inset-bottom);
   background: var(--bg-veil);
-  backdrop-filter: saturate(180%) blur(18px);
-  -webkit-backdrop-filter: saturate(180%) blur(18px);
-  border-top: 1px solid var(--border);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid var(--separator);
 }
 
 .tabbar__inner {
@@ -106,7 +140,6 @@
   height: var(--tabbar-height);
   max-width: var(--content-max);
   margin: 0 auto;
-  padding: 0 var(--sp-1);
 }
 
 .tabbar__item {
@@ -114,42 +147,20 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   height: 100%;
   color: var(--text-3);
-  font-size: var(--text-micro);
-  font-weight: 600;
-  transition:
-    color var(--dur-fast) var(--ease),
-    transform var(--dur-fast) var(--ease);
-}
-
-.tabbar__item:active {
-  transform: scale(0.92);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  transition: color var(--dur-fast) var(--ease);
 }
 
 .tabbar__item.is-active {
   color: var(--accent-text);
 }
 
-.tabbar__fab {
-  display: grid;
-  place-items: center;
-  width: 50px;
-  height: 50px;
-  margin: 0 auto;
-  border-radius: 50%;
-  background: var(--accent);
-  color: var(--text-on-accent);
-  box-shadow: var(--shadow-accent);
-  transition: transform var(--dur-fast) var(--ease);
-}
-
-.tabbar__fab:active {
-  transform: scale(0.9);
-}
-
-/* ---------------- Desktop ---------------- */
+/* ---------------- Telas maiores ---------------- */
 @media (min-width: 46rem) {
   .app__main {
     padding-bottom: calc(var(--tabbar-height) + var(--sp-10));
