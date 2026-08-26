@@ -122,6 +122,17 @@ continua na série depois de ajustado. Excluir um plantão de uma série pergunt
 apagar plantão por plantão. `deleteSeries` roda numa transação só, senão meio
 caminho andado deixaria recebimento órfão.
 
+**14b. Editar pergunta "só este" ou "este e os próximos".**
+`updateSeriesFrom` propaga o que DESCREVE o plantão — local, tipo, título,
+forma de pagamento, valores, anotações — mais a hora de início e a duração,
+aplicadas sobre a data que cada plantão já tem. A **data não propaga**: ela vem
+do ritmo da escala, e reescrevê-la a partir de uma edição solta é a única
+mudança capaz de destruir um ano de agenda de uma vez; o diálogo avisa isso
+quando a data mudou. Só alcança os plantões que começam DEPOIS do editado —
+o que já passou é histórico. Plantão cancelado continua cancelado.
+A seção "Repetir" não aparece ao editar: um plantão que já existe não ganha
+escala, e um seletor que não faz nada é pior que nenhum.
+
 **13. Só existe UMA regra de "mesmo local", e ela mora em `domain/location.ts`.**
 `sameLocationName` ignora maiúsculas e espaço sobrando; `ensureLocation`, o
 formulário e o seletor usam todos ela. Já quebrou uma vez por ter duas contas

@@ -6,7 +6,13 @@ import { Icon } from '@/components/ui/Icon'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { useAppData } from '@/state/appDataContext'
 import { useToast } from '@/state/toastContext'
-import { createShifts, ensureLocation, updateShift, type ShiftInput } from '@/data/repository'
+import {
+  createShifts,
+  ensureLocation,
+  updateSeriesFrom,
+  updateShift,
+  type ShiftInput,
+} from '@/data/repository'
 import { useMoneyMask } from '@/hooks/useMoneyMask'
 import { findConflicts } from '@/domain/conflicts'
 import { findLocationByName } from '@/domain/location'
@@ -75,6 +81,7 @@ export function ShiftFormSheet({
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [confirmConflict, setConfirmConflict] = useState(false)
+  const [confirmSeries, setConfirmSeries] = useState(false)
   const [pickingRecurrence, setPickingRecurrence] = useState(false)
   const [pickingLocation, setPickingLocation] = useState(false)
 
@@ -153,6 +160,25 @@ export function ShiftFormSheet({
       return { ...applyDuration(prev, hours ?? formDuration(prev)), recurrence }
     })
 
+  /**
+   * Plantões da mesma escala que vêm DEPOIS deste. Só existe ao editar, e é o
+   * que decide se a gravação pergunta o alcance.
+   */
+  const original = mode === 'edit' && shiftId ? shifts.find((s) => s.id === shiftId) : undefined
+  const following = useMemo(
+    () =>
+      original?.seriesId
+        ? shifts.filter(
+            (s) =>
+              s.seriesId === original.seriesId &&
+              s.id !== original.id &&
+              s.startDateTime > original.startDateTime,
+          )
+        : [],
+    [shifts, original],
+  )
+  const dateChanged = original ? datePartOf(original.startDateTime) !== values.startDate : false
+
   const canRepeat = mode !== 'edit'
   const repeats = canRepeat && values.recurrence.kind !== 'none'
   const occurrences = useMemo(
@@ -183,7 +209,7 @@ export function ShiftFormSheet({
 
   const knownLocation = findLocationByName(locations, values.locationName)
 
-  async function persist() {
+  async function persist(scope: 'one' | 'forward' = 'one') {
     setSaving(true)
     try {
       const location = await ensureLocation(values.locationName, values.color)
@@ -199,8 +225,15 @@ export function ShiftFormSheet({
       }
 
       if (mode === 'edit' && shiftId) {
-        await updateShift(shiftId, input)
-        toast.success('Plantão atualizado')
+        if (scope === 'forward') {
+          const total = await updateSeriesFrom(shiftId, input)
+          toast.success(
+            total === 1 ? 'Plantão atualizado' : `${total} plantões atualizados`,
+          )
+        } else {
+          await updateShift(shiftId, input)
+          toast.success('Plantão atualizado')
+        }
       } else {
         const created = await createShifts(ranges.map((r) => ({ ...input, ...r })))
         toast.success(created.length === 1 ? 'Plantão salvo' : `${created.length} plantões salvos`)
@@ -211,6 +244,7 @@ export function ShiftFormSheet({
     } finally {
       setSaving(false)
       setConfirmConflict(false)
+      setConfirmSeries(false)
     }
   }
 
@@ -228,7 +262,17 @@ export function ShiftFormSheet({
       setConfirmConflict(true)
       return
     }
-    void persist()
+    askScope()
+  }
+
+  /** Editar um plantão de escala pergunta o alcance antes de gravar. */
+  function askScope() {
+    setConfirmConflict(false)
+    if (following.length > 0) {
+      setConfirmSeries(true)
+      return
+    }
+    void persist('one')
   }
 
   const saveLabel =
@@ -379,6 +423,11 @@ export function ShiftFormSheet({
           </p>
 
           {/* ---- Recorrência ---- */}
+          {/* Um plantão que já existe não ganha escala: mostrar o seletor aqui
+              seria um controle que não faz nada. Para mexer numa escala já
+              criada, edite um plantão dela e escolha "e os próximos". */}
+          {canRepeat && (
+          <>
           <div className="section-header">
             <h2 className="section-header__title">Repetir</h2>
           </div>
@@ -435,6 +484,8 @@ export function ShiftFormSheet({
               {occurrences.length} {occurrences.length === 1 ? 'plantão' : 'plantões'}, de{' '}
               {formatDayMonth(occurrences[0])} a {formatDayMonth(occurrences[occurrences.length - 1])}.
             </p>
+          )}
+          </>
           )}
 
           {conflicts.length > 0 && (
@@ -542,6 +593,27 @@ export function ShiftFormSheet({
         onClose={() => setPickingLocation(false)}
       />
 
+      <ConfirmDialog
+        open={confirmSeries}
+        title="Salvar na escala"
+        message={
+          `Este plantão faz parte de uma escala com mais ${following.length} ` +
+          `${following.length === 1 ? 'plantão depois dele' : 'plantões depois dele'}.` +
+          (dateChanged
+            ? ' A data muda só neste plantão — os outros mantêm as datas da escala.'
+            : '')
+        }
+        cancelLabel="Cancelar"
+        choices={[
+          { label: 'Salvar só neste plantão', onClick: () => void persist('one') },
+          {
+            label: `Salvar neste e nos ${following.length} próximos`,
+            onClick: () => void persist('forward'),
+          },
+        ]}
+        onCancel={() => setConfirmSeries(false)}
+      />
+
       <RecurrenceSheet
         open={pickingRecurrence}
         value={values.recurrence}
@@ -564,7 +636,7 @@ export function ShiftFormSheet({
         }
         confirmLabel="Salvar mesmo assim"
         cancelLabel="Revisar"
-        onConfirm={() => void persist()}
+        onConfirm={askScope}
         onCancel={() => setConfirmConflict(false)}
       />
     </>
