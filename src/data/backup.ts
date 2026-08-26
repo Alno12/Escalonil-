@@ -14,8 +14,8 @@ import {
   type Shift,
   type ShiftView,
 } from '@/db/types'
-import { formatDate, formatTime, todayISO } from '@/domain/datetime'
-import { paymentStatusLabel, shiftStatusLabel } from '@/domain/shift'
+import { formatDate, formatTime, toDate, toLocalDateTime, todayISO } from '@/domain/datetime'
+import { computeExpectedAmount, paymentStatusLabel, shiftStatusLabel } from '@/domain/shift'
 
 export const BACKUP_FORMAT = 'escalonil-backup'
 export const BACKUP_VERSION = 1
@@ -68,6 +68,24 @@ const DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 
 /**
+ * O formato bater não basta: "2026-02-31" passa na expressão regular e vira
+ * 3 de março ao ser convertido. Um plantão importado escorregaria de dia sem
+ * ninguém perceber, então a data tem que sobreviver à ida e volta.
+ */
+const isRealDateTime = (value: string): boolean =>
+  DATE_TIME.test(value) && toLocalDateTime(toDate(value)) === value
+
+/** Primeiro identificador que aparece duas vezes, se algum. */
+function firstDuplicate(ids: string[]): string | undefined {
+  const seen = new Set<string>()
+  for (const id of ids) {
+    if (seen.has(id)) return id
+    seen.add(id)
+  }
+  return undefined
+}
+
+/**
  * Lê e valida o conteúdo de um arquivo de backup.
  * Lança `Error` com mensagem em português quando o arquivo não serve.
  */
@@ -102,9 +120,24 @@ export function parseBackup(text: string): BackupFile {
   const shifts: Shift[] = raw.shifts.filter(isObject).map((s) => {
     const startDateTime = str(s.startDateTime)
     const endDateTime = str(s.endDateTime)
-    if (!DATE_TIME.test(startDateTime) || !DATE_TIME.test(endDateTime)) {
+    if (!isRealDateTime(startDateTime) || !isRealDateTime(endDateTime)) {
       throw new ImportError('Há plantões com data ou hora inválida no backup.')
     }
+    if (endDateTime < startDateTime) {
+      throw new ImportError(
+        `Há um plantão que termina antes de começar no backup (${formatDate(startDateTime)}).`,
+      )
+    }
+
+    const fixedAmount = num(s.fixedAmount)
+    const hourlyRate = num(s.hourlyRate)
+    if (fixedAmount < 0 || hourlyRate < 0) {
+      throw new ImportError(
+        `Há um plantão com valor negativo no backup (${formatDate(startDateTime)}).`,
+      )
+    }
+
+    const paymentMode = s.paymentMode === 'hourly' ? 'hourly' : 'fixed'
     return {
       id: str(s.id),
       // Backups anteriores à v4 não têm série: viram plantões avulsos.
@@ -114,10 +147,19 @@ export function parseBackup(text: string): BackupFile {
       endDateTime,
       locationId: str(s.locationId),
       shiftType: str(s.shiftType),
-      paymentMode: s.paymentMode === 'hourly' ? 'hourly' : 'fixed',
-      fixedAmount: num(s.fixedAmount),
-      hourlyRate: num(s.hourlyRate),
-      expectedAmount: num(s.expectedAmount),
+      paymentMode,
+      fixedAmount,
+      hourlyRate,
+      // O valor previsto é DERIVADO (invariante 3). Gravar o que veio no
+      // arquivo deixaria um número inconsistente no banco para sempre, fora
+      // do alcance de `computeExpectedAmount`, que é quem manda nessa conta.
+      expectedAmount: computeExpectedAmount({
+        startDateTime,
+        endDateTime,
+        paymentMode,
+        fixedAmount,
+        hourlyRate,
+      }),
       notes: str(s.notes),
       cancelled: bool(s.cancelled),
       createdAt: str(s.createdAt, new Date().toISOString()),
@@ -126,6 +168,17 @@ export function parseBackup(text: string): BackupFile {
   })
 
   if (shifts.some((s) => !s.id)) throw new ImportError('Há plantões sem identificador no backup.')
+
+  // Identificador repetido faria a gravação falhar no meio; melhor dizer o
+  // que há de errado com o arquivo do que devolver um erro genérico.
+  const shiftClash = firstDuplicate(shifts.map((s) => s.id))
+  if (shiftClash) {
+    throw new ImportError('Há plantões com o mesmo identificador no backup.')
+  }
+  const locationClash = firstDuplicate(locations.map((l) => l.id))
+  if (locationClash) {
+    throw new ImportError('Há locais com o mesmo identificador no backup.')
+  }
 
   const shiftIds = new Set(shifts.map((s) => s.id))
   const payments: Payment[] = (Array.isArray(raw.payments) ? raw.payments : [])
@@ -142,6 +195,18 @@ export function parseBackup(text: string): BackupFile {
       createdAt: str(p.createdAt, new Date().toISOString()),
       updatedAt: str(p.updatedAt, new Date().toISOString()),
     }))
+
+  // Um plantão tem no máximo um recebimento — é índice único no banco. Sem
+  // conferir aqui, a gravação falharia com um erro genérico.
+  if (firstDuplicate(payments.map((p) => p.shiftId))) {
+    throw new ImportError('Há mais de um recebimento para o mesmo plantão no backup.')
+  }
+  if (firstDuplicate(payments.map((p) => p.id))) {
+    throw new ImportError('Há recebimentos com o mesmo identificador no backup.')
+  }
+  if (payments.some((p) => p.receivedAmount < 0)) {
+    throw new ImportError('Há recebimentos com valor negativo no backup.')
+  }
 
   const rawSettings = isObject(raw.settings) ? raw.settings : {}
   const settings: Settings = {
@@ -193,6 +258,21 @@ function csvCell(value: string | number): string {
   return /[";\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
 
+/**
+ * Texto escrito pelo usuário (local, tipo, anotações).
+ *
+ * Uma anotação começando com "=", "+", "-" ou "@" é lida como FÓRMULA pelo
+ * Excel e pelo Google Sheets ao abrir o arquivo. O apóstrofo na frente é a
+ * neutralização padrão: some na planilha e o texto aparece como escrito.
+ * Não vale para as colunas numéricas, onde o "-" é sinal de verdade.
+ *
+ * Só marca o texto — quem põe aspas é o `csvCell` no fim da montagem, e
+ * escapar aqui deixaria as aspas dobradas duas vezes.
+ */
+function csvText(value: string): string {
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+}
+
 /** Números com vírgula decimal, para abrir direto no Excel em português. */
 function csvNumber(value: number): string {
   return value.toFixed(2).replace('.', ',')
@@ -219,14 +299,14 @@ export function buildShiftsCsv(views: ShiftView[]): string {
     formatTime(v.shift.startDateTime),
     formatTime(v.shift.endDateTime),
     csvNumber(v.durationHours),
-    v.location?.name ?? '',
-    v.shift.shiftType,
+    csvText(v.location?.name ?? ''),
+    csvText(v.shift.shiftType),
     csvNumber(v.shift.expectedAmount),
     v.payment ? csvNumber(v.payment.receivedAmount) : '',
     v.payment ? formatDate(v.payment.receivedDate) : '',
     shiftStatusLabel[v.status],
     paymentStatusLabel[v.paymentStatus],
-    v.shift.notes,
+    csvText(v.shift.notes),
   ])
 
   return [header, ...rows]
