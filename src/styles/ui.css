@@ -586,6 +586,24 @@ input[type='time'] {
   color: var(--text-on-accent);
 }
 
+/* Uma linha só: sete períodos empilhados comiam 88px do topo da tela. */
+.chip-group--scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Sangra a rolagem até a borda, mas mantém o recuo do primeiro chip. */
+  margin: 0 calc(var(--sp-4) * -1);
+  padding: 0 var(--sp-4);
+}
+
+.chip-group--scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.chip-group--scroll .chip {
+  flex: none;
+}
+
 /* Chips que dividem a largura igualmente (atalhos de duração). */
 .chip-group--even {
   flex-wrap: nowrap;

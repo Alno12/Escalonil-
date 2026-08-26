@@ -2,8 +2,8 @@
  * Indicadores, relatório por local e insights (§27–§30 do blueprint).
  * Tudo é calculado localmente, sem nenhum serviço externo.
  */
-import type { LocalDate, ShiftView } from '@/db/types'
-import { daysBetween } from './datetime'
+import type { LocalDate, LocationColor, ShiftView } from '@/db/types'
+import { addMonths, daysBetween, monthPartOf } from './datetime'
 import { formatDuration } from './datetime'
 import { formatMoney, formatNumber, roundMoney } from './money'
 import { periodSummary, type PeriodSummary } from './summary'
@@ -32,6 +32,8 @@ export function buildIndicators(
 export interface LocationReportRow {
   locationId: string
   name: string
+  /** A cor pertence ao LOCAL (invariante 10) — é ela que tinge a barra. */
+  color: LocationColor
   shifts: number
   hours: number
   expected: number
@@ -51,6 +53,7 @@ export function buildLocationReport(views: ShiftView[]): LocationReportRow[] {
     const row = groups.get(id) ?? {
       locationId: id,
       name: v.location?.name ?? 'Local removido',
+      color: v.location?.color ?? 'blue',
       shifts: 0,
       hours: 0,
       expected: 0,
@@ -86,12 +89,24 @@ export interface MonthBucket {
   received: number
 }
 
-/** Série mensal do período, já ordenada — base do gráfico de barras. */
-export function buildMonthlySeries(views: ShiftView[]): MonthBucket[] {
+/**
+ * Série mensal de tamanho FIXO terminando em `endMonth` ("YYYY-MM").
+ *
+ * Mês sem plantão entra zerado de propósito: sem isso o eixo mudaria de
+ * largura conforme o histórico e as barras trocariam de lugar ao andar de mês,
+ * que é justamente o que o gráfico existe para comparar. Recebe o acervo
+ * inteiro, não o período escolhido — a evolução olha para trás por conta
+ * própria.
+ */
+export function buildMonthlySeries(
+  views: ShiftView[],
+  endMonth: string,
+  count = 12,
+): MonthBucket[] {
   const buckets = new Map<string, MonthBucket>()
   for (const v of views) {
     if (v.shift.cancelled) continue
-    const month = v.shift.startDateTime.slice(0, 7)
+    const month = monthPartOf(v.shift.startDateTime)
     const bucket = buckets.get(month) ?? { month, shifts: 0, hours: 0, expected: 0, received: 0 }
     bucket.shifts += 1
     bucket.hours += v.durationHours
@@ -99,14 +114,19 @@ export function buildMonthlySeries(views: ShiftView[]): MonthBucket[] {
     bucket.received += v.payment?.receivedAmount ?? 0
     buckets.set(month, bucket)
   }
-  return [...buckets.values()]
-    .map((b) => ({
+
+  const series: MonthBucket[] = []
+  for (let i = count - 1; i >= 0; i--) {
+    const month = monthPartOf(addMonths(`${endMonth}-01`, -i))
+    const b = buckets.get(month) ?? { month, shifts: 0, hours: 0, expected: 0, received: 0 }
+    series.push({
       ...b,
       hours: Math.round(b.hours * 10) / 10,
       expected: roundMoney(b.expected),
       received: roundMoney(b.received),
-    }))
-    .sort((a, b) => a.month.localeCompare(b.month))
+    })
+  }
+  return series
 }
 
 export type InsightTone = 'neutral' | 'positive' | 'warning'

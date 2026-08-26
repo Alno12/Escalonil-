@@ -104,6 +104,13 @@
   --info: #0071e3;
   --info-soft: rgba(0, 122, 255, 0.12);
 
+  /* Barras do gráfico de evolução: o previsto vazio e o mês selecionado. */
+  --chart-bar: rgba(88, 86, 214, 0.2);
+  --chart-bar-strong: rgba(88, 86, 214, 0.34);
+  /* Pílula ativa do seletor segmentado (padrão do iOS, com sombra sutil). */
+  --seg-active: #ffffff;
+  --seg-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+
   --shadow-sm: none;
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.18);
@@ -158,6 +165,12 @@
   --danger-soft: rgba(255, 69, 58, 0.2);
   --info: #0a84ff;
   --info-soft: rgba(10, 132, 255, 0.2);
+
+  /* No escuro a barra precisa de mais corpo para sair de cima do cartão. */
+  --chart-bar: rgba(94, 92, 230, 0.34);
+  --chart-bar-strong: rgba(94, 92, 230, 0.5);
+  --seg-active: #48484a;
+  --seg-shadow: none;
 
   --shadow-sm: none;
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);

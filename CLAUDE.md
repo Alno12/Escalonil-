@@ -187,6 +187,22 @@ O app segue a linguagem do Apple Saúde:
   (`left: var(--row-pad)`), nunca por bordas completas.
 - Cinco abas no rodapé, sem botão de ação no meio. **Novo plantão** vive no
   canto superior direito de cada tela (`ScreenHeader`).
+- Nos Relatórios, as setas do cartão de Indicadores andam o período INTEIRO:
+  um mês em "Mês atual", um trimestre em "3 meses". `buildPeriod` recebe um
+  `offset` e, fora do zero, reescreve os rótulos das frases — "neste mês" seria
+  mentira num mês que não é o de hoje. O cartão de Indicadores continua na tela
+  mesmo em período vazio: sem isso, andar até um mês sem plantão escondia as
+  próprias setas e prendia o usuário lá.
+- O gráfico de Evolução lê o BANCO INTEIRO, não o período escolhido. São sempre
+  12 meses até o fim do período, com os meses vazios zerados — sem isso o eixo
+  mudaria de largura conforme o histórico e as barras trocariam de lugar, que é
+  justamente o que o gráfico existe para comparar. A seleção do mês é estado
+  local, então o gráfico é remontado por `key` quando o mês muda.
+- A barra do relatório por local usa a cor do LOCAL, não o roxo do tema
+  (invariante 10). A estrela marca o melhor valor por hora, que nem sempre é
+  quem rendeu mais no total.
+- `metric-grid` só vira três colunas a partir de **34rem**. Em 30rem o
+  "R$ 21.400,00" não cabia e era cortado no meio.
 - Os resumos "Esta semana" e "Este mês" do Início são recortes da AGENDA, não
   dos relatórios: cada um abre `#/agenda?v=semana` ou `?v=mes` e cai na
   visualização certa. `Schedule` lê esse parâmetro uma vez, na montagem.
