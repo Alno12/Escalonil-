@@ -210,7 +210,17 @@ vez por isso.
 - Rotas em **hash** (`#/agenda`) — funcionam em subrota do GitHub Pages sem
   configuração de servidor.
 - Service worker em modo `prompt`: o usuário decide quando atualizar.
-- Ícones são gerados por `node scripts/generate-icons.mjs` (sem dependências).
+- O ícone do app é `assets/icon-source.png` (512×512). Para trocar, substitua
+  esse arquivo e rode `node scripts/generate-icons.mjs`: ele deriva os seis
+  arquivos de `public/` sozinho, ainda sem nenhuma dependência — o script traz
+  leitor e gravador de PNG próprios.
+- Os ícones `maskable` são gerados a **80% do quadrado**, com o fundo
+  completando as bordas. O Android recorta o ícone em círculo, squircle ou gota
+  conforme o aparelho, e só garante o círculo central de 80%: em tamanho cheio,
+  o topo da cabeça seria cortado.
+- `background_color` do manifest é o fundo CLARO do app, não o amarelo do
+  ícone. Amarelo com amarelo faria o ícone sumir dentro da própria tela de
+  abertura.
 
 ## Antes de terminar qualquer alteração
 
