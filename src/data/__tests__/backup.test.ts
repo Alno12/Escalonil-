@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from '@/db/db'
 
 const shift: Shift = {
   id: 's1',
+  seriesId: '',
   title: '',
   startDateTime: '2026-08-12T19:00',
   endDateTime: '2026-08-13T07:00',

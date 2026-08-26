@@ -23,6 +23,7 @@ const base = (overrides: Partial<ShiftFormValues> = {}): ShiftFormValues => ({
 
 const shift = (startDateTime: string, endDateTime: string, extra: Partial<Shift> = {}): Shift => ({
   id: 's1',
+  seriesId: '',
   title: '',
   startDateTime,
   endDateTime,

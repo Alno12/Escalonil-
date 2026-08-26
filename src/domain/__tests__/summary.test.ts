@@ -28,6 +28,7 @@ function shift(
 ): Shift {
   return {
     id,
+    seriesId: '',
     title: '',
     startDateTime,
     endDateTime,

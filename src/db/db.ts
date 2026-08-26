@@ -71,6 +71,19 @@ class EscalonilDB extends Dexie {
       payments: 'id, &shiftId, receivedDate',
       settings: 'id',
     })
+
+    // v4: plantões de uma mesma escala passam a se conhecer, para dar para
+    // excluir a série inteira. Quem já existia vira plantão avulso.
+    this.version(4)
+      .stores({
+        shifts: 'id, startDateTime, endDateTime, locationId, seriesId',
+        locations: 'id, name',
+        payments: 'id, &shiftId, receivedDate',
+        settings: 'id',
+      })
+      .upgrade(async (tx) => {
+        await tx.table('shifts').toCollection().modify({ seriesId: '' })
+      })
   }
 }
 

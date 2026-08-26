@@ -3,6 +3,11 @@ import { useMountTransition } from '@/hooks/useMountTransition'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { Button } from './Button'
 
+export interface DialogChoice {
+  label: string
+  onClick: () => void
+}
+
 interface ConfirmDialogProps {
   open: boolean
   title: string
@@ -10,7 +15,13 @@ interface ConfirmDialogProps {
   confirmLabel?: string
   cancelLabel?: string
   destructive?: boolean
-  onConfirm: () => void
+  /**
+   * Mais de um caminho para a mesma ação (ex.: excluir só este plantão ou a
+   * série inteira). Quando informado, os botões ficam empilhados e
+   * `confirmLabel`/`onConfirm` não são usados.
+   */
+  choices?: DialogChoice[]
+  onConfirm?: () => void
   onCancel: () => void
 }
 
@@ -22,6 +33,7 @@ export function ConfirmDialog({
   confirmLabel = 'Confirmar',
   cancelLabel = 'Cancelar',
   destructive = false,
+  choices,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -36,20 +48,39 @@ export function ConfirmDialog({
       <div className="dialog" role="alertdialog" aria-modal="true" aria-label={title}>
         <h2 className="dialog__title">{title}</h2>
         <p className="dialog__message">{message}</p>
-        <div className="dialog__actions">
-          <Button variant="secondary" size="lg" block onClick={onCancel}>
-            {cancelLabel}
-          </Button>
-          <Button
-            variant={destructive ? 'danger' : 'primary'}
-            size="lg"
-            block
-            onClick={onConfirm}
-            autoFocus
-          >
-            {confirmLabel}
-          </Button>
-        </div>
+        {choices ? (
+          <div className="dialog__actions dialog__actions--stack">
+            {choices.map((choice) => (
+              <Button
+                key={choice.label}
+                variant={destructive ? 'danger' : 'primary'}
+                size="lg"
+                block
+                onClick={choice.onClick}
+              >
+                {choice.label}
+              </Button>
+            ))}
+            <Button variant="secondary" size="lg" block onClick={onCancel} autoFocus>
+              {cancelLabel}
+            </Button>
+          </div>
+        ) : (
+          <div className="dialog__actions">
+            <Button variant="secondary" size="lg" block onClick={onCancel}>
+              {cancelLabel}
+            </Button>
+            <Button
+              variant={destructive ? 'danger' : 'primary'}
+              size="lg"
+              block
+              onClick={onConfirm}
+              autoFocus
+            >
+              {confirmLabel}
+            </Button>
+          </div>
+        )}
       </div>
     </div>,
     document.body,

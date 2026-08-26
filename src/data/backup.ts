@@ -107,6 +107,8 @@ export function parseBackup(text: string): BackupFile {
     }
     return {
       id: str(s.id),
+      // Backups anteriores à v4 não têm série: viram plantões avulsos.
+      seriesId: str(s.seriesId),
       title: str(s.title),
       startDateTime,
       endDateTime,

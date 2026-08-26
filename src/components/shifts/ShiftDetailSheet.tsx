@@ -6,7 +6,7 @@ import { Icon, type IconName } from '@/components/ui/Icon'
 import { PaymentStatusPill, ShiftStatusPill } from '@/components/ui/StatusPill'
 import { useAppData } from '@/state/appDataContext'
 import { useToast } from '@/state/toastContext'
-import { deleteShift, setShiftCancelled } from '@/data/repository'
+import { deleteSeries, deleteShift, setShiftCancelled } from '@/data/repository'
 import {
   formatDate,
   formatDuration,
@@ -35,7 +35,7 @@ export function ShiftDetailSheet({
   onDuplicate,
   onPayment,
 }: ShiftDetailSheetProps) {
-  const { viewById } = useAppData()
+  const { viewById, shifts } = useAppData()
   const toast = useToast()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -47,6 +47,15 @@ export function ShiftDetailSheet({
   const overnight = !isSameDay(shift.startDateTime, shift.endDateTime)
   const difference = payment ? paymentDifference(payment) : 0
 
+  // Um plantão sem `seriesId` — ou cuja série já perdeu os irmãos — se comporta
+  // como avulso: uma pergunta só, sem escolha nenhuma.
+  const series = shift.seriesId ? shifts.filter((s) => s.seriesId === shift.seriesId) : []
+  const inSeries = series.length > 1
+  // Excluir a série apaga os recebimentos junto: se houver algum, o aviso diz.
+  const seriesReceived = series.filter(
+    (s) => viewById.get(s.id)?.paymentStatus === 'received',
+  ).length
+
   async function toggleCancelled() {
     await setShiftCancelled(shift.id, !shift.cancelled)
     toast.show(shift.cancelled ? 'Plantão reativado' : 'Plantão cancelado')
@@ -57,6 +66,13 @@ export function ShiftDetailSheet({
   async function remove() {
     await deleteShift(shift.id)
     toast.success('Plantão excluído')
+    setConfirmDelete(false)
+    onClose()
+  }
+
+  async function removeSeries() {
+    const total = await deleteSeries(shift.seriesId)
+    toast.success(total === 1 ? 'Plantão excluído' : `${total} plantões excluídos`)
     setConfirmDelete(false)
     onClose()
   }
@@ -76,6 +92,7 @@ export function ShiftDetailSheet({
               <ShiftStatusPill status={view.status} />
               <PaymentStatusPill status={view.paymentStatus} />
               {shift.shiftType && <span className="pill pill--neutral">{shift.shiftType}</span>}
+              {inSeries && <span className="pill pill--neutral">Série de {series.length}</span>}
             </div>
           </div>
 
@@ -174,10 +191,33 @@ export function ShiftDetailSheet({
 
       <ConfirmDialog
         open={confirmDelete}
-        title="Excluir este plantão?"
-        message="Esta ação não poderá ser desfeita."
+        title={inSeries ? 'Excluir plantão da série' : 'Excluir este plantão?'}
+        message={
+          inSeries
+            ? `Este plantão faz parte de uma série de ${series.length} plantões.${
+                seriesReceived > 0
+                  ? ` ${seriesReceived} já ${
+                      seriesReceived === 1 ? 'foi recebido' : 'foram recebidos'
+                    }, e excluir a série apaga ${
+                      seriesReceived === 1 ? 'esse recebimento' : 'esses recebimentos'
+                    } junto.`
+                  : ''
+              } Esta ação não poderá ser desfeita.`
+            : 'Esta ação não poderá ser desfeita.'
+        }
         confirmLabel="Excluir"
         destructive
+        choices={
+          inSeries
+            ? [
+                { label: 'Excluir só este plantão', onClick: () => void remove() },
+                {
+                  label: `Excluir a série (${series.length})`,
+                  onClick: () => void removeSeries(),
+                },
+              ]
+            : undefined
+        }
         onConfirm={() => void remove()}
         onCancel={() => setConfirmDelete(false)}
       />
