@@ -153,9 +153,16 @@ O app segue a linguagem do Apple Saúde:
   (`left: var(--row-pad)`), nunca por bordas completas.
 - Cinco abas no rodapé, sem botão de ação no meio. **Novo plantão** vive no
   canto superior direito de cada tela (`ScreenHeader`).
-- Os cards "Esta semana" e "Este mês" do Início são recortes da AGENDA, não dos
-  relatórios: cada um abre `#/agenda?v=semana` ou `?v=mes` e cai na
+- Os resumos "Esta semana" e "Este mês" do Início são recortes da AGENDA, não
+  dos relatórios: cada um abre `#/agenda?v=semana` ou `?v=mes` e cai na
   visualização certa. `Schedule` lê esse parâmetro uma vez, na montagem.
+- O Início cabe numa tela até o começo de "Próximos plantões". Os dois resumos
+  são DUAS LINHAS de um cartão só, e o cartão Financeiro não repete o previsto
+  do mês (que já está na linha "Este mês"). Ao acrescentar qualquer coisa ali,
+  meça de novo: o objetivo é o primeiro plantão da lista aparecer sem rolar.
+- O cartão do próximo plantão é tingido com a COR DO LOCAL, em degradê que some
+  para baixo. Chapado, as cores quentes embarram o tema escuro e o texto
+  secundário perde contraste — foi por isso que virou degradê.
 - Números usam `.num` (tabular) para alinhar em colunas.
 
 Cuidado com a cascata: modificadores com a MESMA especificidade da regra base

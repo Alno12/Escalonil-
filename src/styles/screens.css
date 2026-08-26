@@ -35,11 +35,28 @@
 
 /* ---------------- Cartão do próximo plantão ---------------- */
 .next {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   width: 100%;
   text-align: left;
   transition: transform var(--dur-fast) var(--ease);
+}
+
+/* Véu com a cor do local, atrás do conteúdo.
+   É um DEGRADÊ, e não uma cor chapada, por dois motivos: a cor fica forte
+   onde está o título (que também é dela) e some embaixo, onde ficam
+   "duração" e "valor previsto" — que em cima de laranja ou vermelho chapados
+   perdiam contraste no tema escuro. */
+.next::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to bottom, var(--loc, var(--loc-blue)), transparent 78%);
+  opacity: var(--tint-loc);
+  pointer-events: none;
 }
 
 .next:active {
@@ -54,7 +71,7 @@
 }
 
 .next__label {
-  color: var(--accent-text);
+  color: var(--loc, var(--accent-text));
 }
 
 .next__live {
@@ -69,7 +86,8 @@
   margin-left: auto;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
-  background: var(--fill);
+  /* Sólido, e não translúcido: sobre o véu o cinza do --fill fica sujo. */
+  background: var(--surface);
   font-size: var(--text-footnote);
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -139,6 +157,45 @@
   margin-top: 1px;
   font-size: var(--text-caption);
   color: var(--text-2);
+}
+
+/* ---------------- Resumo da semana e do mês ---------------- */
+.summary-row {
+  align-items: center;
+  color: var(--text);
+}
+
+.summary-row__body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.summary-row__title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.summary-row__values {
+  font-size: var(--text-subhead);
+  letter-spacing: -0.02em;
+  color: var(--text-2);
+}
+
+.summary-row__values strong {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.summary-row__sep {
+  margin: 0 5px;
+  color: var(--text-3);
 }
 
 /* ---------------- Cartões de resumo (semana / mês) ---------------- */
