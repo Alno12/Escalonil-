@@ -107,6 +107,11 @@ export interface Settings {
   vacationDate: LocalDate | null
   /** Desliga a contagem sem apagar a data. */
   vacationEnabled: boolean
+  /**
+   * Última versão cujas novidades já foram mostradas. null = nunca mostrou,
+   * o que também é o estado de quem acabou de instalar.
+   */
+  lastSeenVersion: string | null
   updatedAt: string
 }
 

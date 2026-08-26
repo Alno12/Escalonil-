@@ -18,13 +18,17 @@ import {
   weekdayNamesMin,
 } from '@/domain/datetime'
 import { formatMoneyCompact, formatNumber } from '@/domain/money'
-import { filterByMonth, periodSummary, shiftsOnDay } from '@/domain/summary'
+import { filterByMonth, occupiedDays, periodSummary, shiftsOnDay } from '@/domain/summary'
+import type { LocationColor } from '@/db/types'
 import { PeriodNav } from './PeriodNav'
 
 interface MonthViewProps {
   selected: string
   onSelect: (date: string) => void
 }
+
+/** Quatro bolinhas já não cabem na largura da célula sem encostar uma na outra. */
+const MAX_DOTS = 3
 
 /** Calendário mensal: toque num dia para ver os plantões dele (§21). */
 export function MonthView({ selected, onSelect }: MonthViewProps) {
@@ -38,12 +42,21 @@ export function MonthView({ selected, onSelect }: MonthViewProps) {
   const gridStart = startOfWeek(startOfMonth(selected))
   const cells = useMemo(() => Array.from({ length: 42 }, (_, i) => addDays(gridStart, i)), [gridStart])
 
-  const countByDay = useMemo(() => {
-    const map = new Map<string, number>()
+  /**
+   * Cor do local de cada plantão, dia a dia. Usa os mesmos dias que a lista
+   * embaixo do calendário vai mostrar (`occupiedDays`), para o anel e as
+   * bolinhas nunca discordarem dela.
+   */
+  const marksByDay = useMemo(() => {
+    const map = new Map<string, LocationColor[]>()
     for (const view of views) {
       if (view.shift.cancelled) continue
-      const day = view.shift.startDateTime.slice(0, 10)
-      map.set(day, (map.get(day) ?? 0) + 1)
+      const color = view.location?.color ?? 'blue'
+      for (const day of occupiedDays(view.shift)) {
+        const marks = map.get(day)
+        if (marks) marks.push(color)
+        else map.set(day, [color])
+      }
     }
     return map
   }, [views])
@@ -78,7 +91,8 @@ export function MonthView({ selected, onSelect }: MonthViewProps) {
         </div>
         <div className="calendar__grid" role="grid" aria-label={`Calendário de ${formatMonthYear(selected)}`}>
           {cells.map((day) => {
-            const count = countByDay.get(day) ?? 0
+            const marks = marksByDay.get(day) ?? []
+            const count = marks.length
             const inMonth = monthPartOf(day) === month
             return (
               <button
@@ -104,6 +118,19 @@ export function MonthView({ selected, onSelect }: MonthViewProps) {
                 {/* O número mora no próprio círculo: é ele que recebe o anel do
                     dia com plantão e o preenchimento do dia selecionado. */}
                 <span className="calendar__num num">{toDate(day).getDate()}</span>
+                {/* As bolinhas dizem QUANTOS e de QUAL local; o anel só diz que
+                    tem. Ficam fora do círculo, então mantêm a cor do local
+                    mesmo no dia selecionado. O contêiner existe sempre, senão
+                    os dias sem plantão subiriam meia bolinha. */}
+                <span className="calendar__dots" aria-hidden="true">
+                  {marks.slice(0, MAX_DOTS).map((color, i) => (
+                    <span
+                      key={i}
+                      className="calendar__dot"
+                      style={{ background: `var(--loc-${color})` }}
+                    />
+                  ))}
+                </span>
               </button>
             )
           })}

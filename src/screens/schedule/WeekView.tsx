@@ -33,8 +33,8 @@ export function WeekView({ reference, onReferenceChange }: WeekViewProps) {
   const summary = useMemo(
     () =>
       periodSummary(
-        // Um plantão que atravessa a meia-noite aparece nos dois dias, mas
-        // só conta uma vez no resumo.
+        // Um plantão longo o bastante para ocupar dois dias (ver
+        // `occupiesDay`) aparece nos dois, mas só conta uma vez no resumo.
         [...new Map(dayShifts.flat().map((v) => [v.shift.id, v])).values()],
       ),
     [dayShifts],

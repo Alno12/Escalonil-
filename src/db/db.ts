@@ -27,6 +27,7 @@ export const DEFAULT_SETTINGS: Settings = {
   // o easter egg, não uma configuração que alguém precise descobrir.
   vacationDate: '2026-10-11',
   vacationEnabled: true,
+  lastSeenVersion: null,
   updatedAt: new Date(0).toISOString(),
 }
 

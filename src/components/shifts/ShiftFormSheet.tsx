@@ -16,6 +16,7 @@ import {
 import { useMoneyMask } from '@/hooks/useMoneyMask'
 import { findConflicts } from '@/domain/conflicts'
 import { findLocationByName } from '@/domain/location'
+import { buildShiftTemplates, type ShiftTemplate } from '@/domain/templates'
 import {
   addHours,
   datePartOf,
@@ -38,9 +39,11 @@ import {
 } from '@/domain/recurrence'
 import { LocationSheet } from './LocationSheet'
 import { RecurrenceSheet } from './RecurrenceSheet'
+import { ShiftTemplateSheet } from './ShiftTemplateSheet'
 import {
   activeDurationShortcut,
   applyDuration,
+  applyTemplate,
   DURATION_SHORTCUTS,
   formDuration,
   formExpectedAmount,
@@ -84,6 +87,7 @@ export function ShiftFormSheet({
   const [confirmSeries, setConfirmSeries] = useState(false)
   const [pickingRecurrence, setPickingRecurrence] = useState(false)
   const [pickingLocation, setPickingLocation] = useState(false)
+  const [pickingTemplate, setPickingTemplate] = useState(false)
 
   const patch = (next: Partial<ShiftFormValues>) => {
     setValues((prev) => ({ ...prev, ...next }))
@@ -159,6 +163,18 @@ export function ShiftFormSheet({
       const hours = recurrenceShiftHours(recurrence)
       return { ...applyDuration(prev, hours ?? formDuration(prev)), recurrence }
     })
+
+  /**
+   * Modelos deduzidos do histórico. Só na criação: duplicar já traz tudo do
+   * plantão de origem, e editar um plantão que existe não recomeça do zero.
+   */
+  const templates = useMemo(
+    () => (mode === 'create' ? buildShiftTemplates(shifts, locations) : []),
+    [mode, shifts, locations],
+  )
+
+  const chooseTemplate = (template: ShiftTemplate) =>
+    setValues((prev) => applyTemplate(prev, template))
 
   /**
    * Plantões da mesma escala que vêm DEPOIS deste. Só existe ao editar, e é o
@@ -291,6 +307,27 @@ export function ShiftFormSheet({
         }
       >
         <div className="form">
+          {/* ---- Modelos ---- */}
+          {/* Cartão próprio, acima de tudo: é uma AÇÃO que preenche o resto,
+              não mais um campo do plantão. Some quando ainda não existe
+              nenhuma rotina no histórico — abrir uma folha vazia é pior do
+              que não oferecer a linha. */}
+          {templates.length > 0 && (
+            <div className="card rows">
+              <button
+                type="button"
+                className="row row--action"
+                onClick={() => setPickingTemplate(true)}
+              >
+                <span className="row__icon row__icon--soft" aria-hidden="true">
+                  <Icon name="copy" size={18} />
+                </span>
+                <span className="row__label">Usar um modelo</span>
+                <Icon name="chevronRight" size={17} className="row__chevron" />
+              </button>
+            </div>
+          )}
+
           {/* ---- Identificação ---- */}
           <div className="card rows">
             <label className="row">
@@ -584,6 +621,14 @@ export function ShiftFormSheet({
           </Button>
         </div>
       </Sheet>
+
+      <ShiftTemplateSheet
+        open={pickingTemplate}
+        templates={templates}
+        startDate={values.startDate}
+        onPick={chooseTemplate}
+        onClose={() => setPickingTemplate(false)}
+      />
 
       <LocationSheet
         open={pickingLocation}

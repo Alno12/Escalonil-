@@ -1,11 +1,16 @@
 import { useEffect } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
-import { Button } from '@/components/ui/Button'
+import { NoticeDialog } from '@/components/ui/NoticeDialog'
 import { Icon } from '@/components/ui/Icon'
 
 /**
  * Atualização da PWA (§43): quando uma versão nova é publicada, o usuário
  * recebe um aviso e decide quando recarregar — nunca fica preso na antiga.
+ *
+ * O aviso é um diálogo no centro da tela, e não uma barrinha no rodapé: já
+ * tem gente usando o app, e uma tarja discreta em cima da barra de abas era
+ * fácil demais de ignorar. Sem lista do que mudou — quem mostra este aviso é
+ * a versão ANTIGA, que não sabe o que vem na nova (ver `WhatsNew`).
  */
 export function UpdatePrompt() {
   const {
@@ -23,18 +28,16 @@ export function UpdatePrompt() {
 
   if (needRefresh) {
     return (
-      <div className="update-prompt" role="status">
-        <Icon name="refresh" size={18} />
-        <span>Nova versão disponível</span>
-        <div className="update-prompt__actions">
-          <Button variant="quiet" size="sm" onClick={() => setNeedRefresh(false)}>
-            Depois
-          </Button>
-          <Button variant="primary" size="sm" onClick={() => void updateServiceWorker(true)}>
-            Atualizar
-          </Button>
-        </div>
-      </div>
+      <NoticeDialog
+        open
+        icon="refresh"
+        title="Tem uma versão nova"
+        message="O Escalonil vai recarregar para instalar. Seus plantões não são afetados — tudo continua no aparelho."
+        closeLabel="Depois"
+        onClose={() => setNeedRefresh(false)}
+        confirmLabel="Atualizar"
+        onConfirm={() => void updateServiceWorker(true)}
+      />
     )
   }
 
