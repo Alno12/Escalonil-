@@ -17,12 +17,23 @@ import {
 } from '@/domain/datetime'
 import { filterByRange, sortByStart } from '@/domain/summary'
 
-type RangeFilter = 'upcoming' | 'done' | 'thisMonth' | 'nextMonth' | 'lastMonth' | 'custom'
+type RangeFilter =
+  | 'upcoming'
+  | 'done'
+  | 'cancelled'
+  | 'thisMonth'
+  | 'nextMonth'
+  | 'lastMonth'
+  | 'custom'
 type StatusFilter = 'all' | 'pending' | 'received'
 
 const RANGE_OPTIONS: { value: RangeFilter; label: string }[] = [
+  // As três primeiras são situações; as demais, períodos. Um plantão
+  // cancelado não é "próximo" nem "realizado", então sem esta opção ele só
+  // aparecia caindo no mês certo — difícil de achar para reativar.
   { value: 'upcoming', label: 'Próximos' },
   { value: 'done', label: 'Realizados' },
+  { value: 'cancelled', label: 'Cancelados' },
   { value: 'thisMonth', label: 'Mês atual' },
   { value: 'nextMonth', label: 'Próximo mês' },
   { value: 'lastMonth', label: 'Mês anterior' },
@@ -59,6 +70,9 @@ export function ListView() {
         break
       case 'done':
         result = sortByStart(result.filter((v) => v.status === 'done'), 'desc')
+        break
+      case 'cancelled':
+        result = sortByStart(result.filter((v) => v.status === 'cancelled'), 'desc')
         break
       case 'thisMonth':
         result = sortByStart(
@@ -152,7 +166,13 @@ export function ListView() {
           ariaLabel="Período"
           options={RANGE_OPTIONS}
           value={range}
-          onChange={(v) => setRange(v as RangeFilter)}
+          onChange={(v) => {
+            const next = v as RangeFilter
+            setRange(next)
+            // A situação do pagamento não se aplica a cancelado — deixar
+            // "A receber" marcado esvaziaria a lista por construção.
+            if (next === 'cancelled') setStatus('all')
+          }}
         />
 
         {range === 'custom' && (
@@ -178,12 +198,14 @@ export function ListView() {
 
         {showFilters && (
           <div className="filters__extra">
-            <ChipGroup
-              ariaLabel="Situação do pagamento"
-              options={STATUS_OPTIONS}
-              value={status}
-              onChange={(v) => setStatus(v as StatusFilter)}
-            />
+            {range !== 'cancelled' && (
+              <ChipGroup
+                ariaLabel="Situação do pagamento"
+                options={STATUS_OPTIONS}
+                value={status}
+                onChange={(v) => setStatus(v as StatusFilter)}
+              />
+            )}
 
             {locations.length > 1 && (
               <ChipGroup
@@ -213,15 +235,23 @@ export function ListView() {
         </ul>
       ) : (
         <EmptyState
-          icon={hasFilters ? 'filter' : 'calendar'}
-          title={hasFilters ? 'Nenhum plantão com esses filtros' : 'Nenhum plantão neste período'}
+          icon={range === 'cancelled' ? 'ban' : hasFilters ? 'filter' : 'calendar'}
+          title={
+            range === 'cancelled' && !hasFilters
+              ? 'Nenhum plantão cancelado'
+              : hasFilters
+                ? 'Nenhum plantão com esses filtros'
+                : 'Nenhum plantão neste período'
+          }
           description={
-            hasFilters
-              ? 'Ajuste a busca ou os filtros para ver mais resultados.'
-              : 'Cadastre um plantão para começar a acompanhar horas e valores.'
+            range === 'cancelled' && !hasFilters
+              ? 'Cancelar um plantão o guarda aqui, com o recebimento intacto. Reativar devolve tudo.'
+              : hasFilters
+                ? 'Ajuste a busca ou os filtros para ver mais resultados.'
+                : 'Cadastre um plantão para começar a acompanhar horas e valores.'
           }
           action={
-            hasFilters ? (
+            range === 'cancelled' && !hasFilters ? undefined : hasFilters ? (
               <Button
                 variant="secondary"
                 icon="refresh"
