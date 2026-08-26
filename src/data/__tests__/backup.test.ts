@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from '@/db/db'
 
 const shift: Shift = {
   id: 's1',
+  title: '',
   startDateTime: '2026-08-12T19:00',
   endDateTime: '2026-08-13T07:00',
   locationId: 'l1',
@@ -25,7 +26,7 @@ const validBackup = {
   version: 1,
   exportedAt: '2026-08-25T12:00:00.000Z',
   shifts: [shift],
-  locations: [{ id: 'l1', name: 'UPA Centro', createdAt: '2026-08-01T00:00:00.000Z' }],
+  locations: [{ id: 'l1', name: 'UPA Centro', color: 'blue', createdAt: '2026-08-01T00:00:00.000Z' }],
   payments: [
     {
       id: 'p1',
@@ -104,7 +105,7 @@ describe('parseBackup', () => {
 describe('buildShiftsCsv', () => {
   const view: ShiftView = {
     shift,
-    location: { id: 'l1', name: 'UPA Centro', createdAt: '2026-08-01T00:00:00.000Z' },
+    location: { id: 'l1', name: 'UPA Centro', color: 'blue', createdAt: '2026-08-01T00:00:00.000Z' },
     payment: undefined,
     status: 'done',
     paymentStatus: 'pending',

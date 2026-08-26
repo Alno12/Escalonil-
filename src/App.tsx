@@ -27,7 +27,7 @@ export function App() {
                 <Route path="/agenda" element={<Schedule />} />
                 <Route path="/financeiro" element={<Finance />} />
                 <Route path="/relatorios" element={<Reports />} />
-                <Route path="/configuracoes" element={<Settings />} />
+                <Route path="/ajustes" element={<Settings />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>

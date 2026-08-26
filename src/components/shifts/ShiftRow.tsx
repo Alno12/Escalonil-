@@ -1,19 +1,18 @@
 import type { ShiftView } from '@/db/types'
 import { formatDateShort, formatDuration, formatTime, isSameDay } from '@/domain/datetime'
-import { formatMoney } from '@/domain/money'
+import { formatMoneyCompact } from '@/domain/money'
 import { PaymentStatusPill } from '@/components/ui/StatusPill'
-import { Icon } from '@/components/ui/Icon'
 
 interface ShiftRowProps {
   view: ShiftView
   onClick: (id: string) => void
-  /** Mostra a data na coluna da esquerda — usado em listas sem agrupamento. */
+  /** Mostra a data — usado em listas sem agrupamento por dia. */
   showDate?: boolean
 }
 
 /**
- * Linha de plantão pensada para leitura rápida (§11): horário à esquerda,
- * local em destaque, duração e valor logo abaixo.
+ * Linha de plantão dentro de um cartão agrupado: cor do local à esquerda,
+ * nome em destaque, horário e valor. Mesma anatomia da agenda do Início.
  */
 export function ShiftRow({ view, onClick, showDate = false }: ShiftRowProps) {
   const { shift, location } = view
@@ -23,36 +22,34 @@ export function ShiftRow({ view, onClick, showDate = false }: ShiftRowProps) {
     <li>
       <button
         type="button"
-        className={`shift-row ${shift.cancelled ? 'is-cancelled' : ''} status-${view.status}`}
+        className={`shift-row ${shift.cancelled ? 'is-cancelled' : ''}`}
         onClick={() => onClick(shift.id)}
       >
-        <span className="shift-row__rail" aria-hidden="true" />
+        <span
+          className="loc-dot"
+          style={{ background: `var(--loc-${location?.color ?? 'blue'})` }}
+          aria-hidden="true"
+        />
 
-        <span className="shift-row__time num">
-          {showDate && <span className="shift-row__date">{formatDateShort(shift.startDateTime)}</span>}
-          <span className="shift-row__start">{formatTime(shift.startDateTime)}</span>
-          <span className="shift-row__end">
-            {formatTime(shift.endDateTime)}
-            {overnight && <span className="shift-row__plus">+1</span>}
+        <span className="shift-row__body">
+          <span className="shift-row__top">
+            <span className="shift-row__location">{location?.name ?? 'Local removido'}</span>
+            <span className="shift-row__amount num">
+              {formatMoneyCompact(shift.expectedAmount)}
+            </span>
           </span>
-        </span>
 
-        <span className="shift-row__main">
-          <span className="shift-row__location">{location?.name ?? 'Local removido'}</span>
           <span className="shift-row__meta num">
-            {formatDuration(view.durationHours)}
+            {showDate && <span className="shift-row__date">{formatDateShort(shift.startDateTime)} · </span>}
+            {formatTime(shift.startDateTime)} → {formatTime(shift.endDateTime)}
+            {overnight && <span className="shift-row__plus">+1</span>}
             <span aria-hidden="true"> · </span>
-            {formatMoney(shift.expectedAmount)}
-            {shift.shiftType && (
-              <>
-                <span aria-hidden="true"> · </span>
-                {shift.shiftType}
-              </>
-            )}
+            {formatDuration(view.durationHours)}
+            {shift.title && <span className="shift-row__title"> · {shift.title}</span>}
           </span>
         </span>
 
-        <span className="shift-row__end-slot">
+        <span className="shift-row__end">
           {view.status === 'inProgress' ? (
             <span className="pill pill--success">
               <span className="pill__dot" aria-hidden="true" />
@@ -63,7 +60,6 @@ export function ShiftRow({ view, onClick, showDate = false }: ShiftRowProps) {
           ) : (
             <PaymentStatusPill status={view.paymentStatus} />
           )}
-          <Icon name="chevronRight" size={16} className="shift-row__chevron" />
         </span>
       </button>
     </li>

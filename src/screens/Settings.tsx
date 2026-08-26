@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Card, SectionHeader } from '@/components/ui/Card'
 import { ChipGroup } from '@/components/ui/Field'
@@ -23,18 +22,11 @@ export function Settings() {
 
   return (
     <>
-      <ScreenHeader
-        title="Configurações"
-        action={
-          <Link to="/" className="icon-link" aria-label="Voltar ao início">
-            <Icon name="close" size={20} />
-          </Link>
-        }
-      />
+      <ScreenHeader title="Ajustes" hideAdd />
 
       <div className="screen">
         <section aria-label="Aparência">
-          <SectionHeader title="Tema" />
+          <SectionHeader title="Aparência" />
           <Card>
             <ChipGroup
               ariaLabel="Tema do aplicativo"

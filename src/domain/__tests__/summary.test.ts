@@ -15,8 +15,8 @@ import { buildIndicators, buildInsights, buildLocationReport, buildMonthlySeries
 import { formatMoney, parseMoneyInput, roundMoney } from '../money'
 
 const LOCATIONS: Location[] = [
-  { id: 'upa', name: 'UPA Centro', createdAt: '2026-01-01T00:00:00.000Z' },
-  { id: 'hosp', name: 'Hospital Regional', createdAt: '2026-01-01T00:00:00.000Z' },
+  { id: 'upa', name: 'UPA Centro', color: 'blue', createdAt: '2026-01-01T00:00:00.000Z' },
+  { id: 'hosp', name: 'Hospital Regional', color: 'teal', createdAt: '2026-01-01T00:00:00.000Z' },
 ]
 
 function shift(
@@ -28,6 +28,7 @@ function shift(
 ): Shift {
   return {
     id,
+    title: '',
     startDateTime,
     endDateTime,
     locationId: 'upa',

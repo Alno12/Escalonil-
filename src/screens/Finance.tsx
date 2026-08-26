@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { KpiCard } from '@/components/ui/KpiCard'
+import { MoneyRow } from '@/components/ui/KpiCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { LoadingScreen } from '@/components/ui/Skeleton'
@@ -10,7 +10,7 @@ import { BatchPaymentSheet } from '@/components/shifts/BatchPaymentSheet'
 import { useAppData } from '@/state/appDataContext'
 import { useShiftSheets } from '@/state/shiftSheetsContext'
 import { addMonths, formatMonthYear, monthPartOf } from '@/domain/datetime'
-import { formatMoney, formatMoneyCompact } from '@/domain/money'
+import { formatMoney } from '@/domain/money'
 import { filterByMonth, financeTotals, sortByStart } from '@/domain/summary'
 import { PeriodNav } from './schedule/PeriodNav'
 
@@ -101,25 +101,11 @@ export function Finance() {
               onToday={() => setMonth(monthPartOf(today))}
               showToday={month !== monthPartOf(today)}
             />
-            <div className="kpi-grid">
-              <KpiCard label="Previsto" value={formatMoneyCompact(monthTotals.expected)} />
-              <KpiCard
-                label="Recebido"
-                value={formatMoneyCompact(monthTotals.received)}
-                tone="success"
-                muted={monthTotals.received === 0}
-              />
-              <KpiCard
-                label="A receber"
-                value={formatMoneyCompact(monthTotals.pending)}
-                muted={monthTotals.pending === 0}
-              />
-              <KpiCard
-                label="Atrasado"
-                value={formatMoneyCompact(monthTotals.overdue)}
-                tone={monthTotals.overdue > 0 ? 'danger' : 'neutral'}
-                muted={monthTotals.overdue === 0}
-              />
+            <div className="card rows">
+              <MoneyRow label="Previsto" value={monthTotals.expected} strong />
+              <MoneyRow label="Recebido" value={monthTotals.received} tone="success" />
+              <MoneyRow label="A receber" value={monthTotals.pending} strong />
+              <MoneyRow label="Atrasado" value={monthTotals.overdue} tone="danger" />
             </div>
           </section>
 

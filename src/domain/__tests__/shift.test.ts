@@ -13,6 +13,7 @@ import {
 function makeShift(overrides: Partial<Shift> = {}): Shift {
   return {
     id: 's1',
+    title: '',
     startDateTime: '2026-08-25T19:00',
     endDateTime: '2026-08-26T07:00',
     locationId: 'l1',

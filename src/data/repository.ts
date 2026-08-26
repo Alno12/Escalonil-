@@ -3,8 +3,8 @@
  * toda escrita passa por aqui, o que mantém regras (valor esperado, limpeza
  * de pagamentos órfãos) em um lugar só.
  */
-import { db, newId, nowStamp, DEFAULT_SETTINGS } from '@/db/db'
-import type { Location, Payment, Settings, Shift } from '@/db/types'
+import { db, newId, nowStamp, nextLocationColor, DEFAULT_SETTINGS } from '@/db/db'
+import type { Location, LocationColor, Payment, Settings, Shift } from '@/db/types'
 import { computeExpectedAmount } from '@/domain/shift'
 
 // ---------------- Configurações ----------------
@@ -25,16 +25,38 @@ export async function saveSettings(patch: Partial<Omit<Settings, 'id'>>): Promis
 
 const normalizeName = (name: string) => name.trim().replace(/\s+/g, ' ')
 
-/** Busca por nome (sem diferenciar maiúsculas) ou cria um local novo. */
-export async function ensureLocation(name: string): Promise<Location> {
+/**
+ * Busca por nome (sem diferenciar maiúsculas) ou cria um local novo.
+ * `color` só é aplicada quando informada — assim salvar um plantão sem mexer
+ * na cor nunca sobrescreve a que o local já tinha.
+ */
+export async function ensureLocation(name: string, color?: LocationColor): Promise<Location> {
   const clean = normalizeName(name)
   if (!clean) throw new Error('O local não pode ficar em branco.')
+
   const all = await db.locations.toArray()
   const found = all.find((l) => l.name.toLowerCase() === clean.toLowerCase())
-  if (found) return found
-  const location: Location = { id: newId(), name: clean, createdAt: nowStamp() }
+  if (found) {
+    if (color && color !== found.color) {
+      await db.locations.update(found.id, { color })
+      return { ...found, color }
+    }
+    return found
+  }
+
+  const location: Location = {
+    id: newId(),
+    name: clean,
+    color: color ?? nextLocationColor(all.map((l) => l.color)),
+    createdAt: nowStamp(),
+  }
   await db.locations.add(location)
   return location
+}
+
+/** Troca a cor de um local já existente. */
+export async function setLocationColor(id: string, color: LocationColor): Promise<void> {
+  await db.locations.update(id, { color })
 }
 
 export async function renameLocation(id: string, name: string): Promise<void> {
@@ -62,6 +84,7 @@ export async function deleteLocation(id: string): Promise<void> {
 /** Campos que a interface envia ao salvar um plantão. */
 export type ShiftInput = Pick<
   Shift,
+  | 'title'
   | 'startDateTime'
   | 'endDateTime'
   | 'locationId'

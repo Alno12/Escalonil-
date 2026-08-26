@@ -64,7 +64,11 @@ export function ShiftSheetsProvider({ children }: { children: ReactNode }) {
         openSession(setForm, {
           mode: 'edit',
           shiftId: id,
-          values: formFromShift(view.shift, view.location?.name ?? ''),
+          values: formFromShift(
+            view.shift,
+            view.location?.name ?? '',
+            view.location?.color ?? 'blue',
+          ),
         })
       },
 
@@ -74,7 +78,12 @@ export function ShiftSheetsProvider({ children }: { children: ReactNode }) {
         closeDetail()
         openSession(setForm, {
           mode: 'duplicate',
-          values: formFromDuplicate(view.shift, view.location?.name ?? '', settings),
+          values: formFromDuplicate(
+            view.shift,
+            view.location?.name ?? '',
+            view.location?.color ?? 'blue',
+            settings,
+          ),
         })
       },
 

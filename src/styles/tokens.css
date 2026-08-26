@@ -1,24 +1,29 @@
 /*
- * Design tokens do Escalonil.
- * Toda cor, espaçamento e sombra do app sai daqui — não escreva valores
- * literais nos componentes. Os dois temas definem o MESMO conjunto de
- * variáveis, então qualquer tela funciona nos dois sem ajuste extra.
+ * Design tokens do Escalonil — linguagem visual do iOS (estilo Apple Saúde).
+ *
+ * Regras da casa:
+ * - Fundo cinza agrupado, cartões brancos SEM borda e SEM sombra. A separação
+ *   vem do contraste de fundo, não de traços.
+ * - Separadores são hairlines recuadas, nunca bordas completas.
+ * - Toda cor sai daqui e existe nos DOIS temas.
  */
 
 :root {
-  /* Tipografia */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
-  --font-numeric: 'SF Pro Display', var(--font-sans);
+  /* Tipografia — escala do iOS */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, sans-serif;
 
-  --text-display: 2rem;      /* 32px — números financeiros de destaque */
-  --text-title: 1.375rem;    /* 22px — títulos de tela */
-  --text-headline: 1.0625rem;/* 17px — títulos de cartão */
-  --text-body: 0.9375rem;    /* 15px */
-  --text-caption: 0.8125rem; /* 13px */
-  --text-micro: 0.6875rem;   /* 11px — rótulos em caixa alta */
+  --text-large-title: 2.125rem; /* 34px */
+  --text-title: 1.375rem;       /* 22px */
+  --text-title-3: 1.25rem;      /* 20px */
+  --text-headline: 1.0625rem;   /* 17px */
+  --text-body: 1.0625rem;       /* 17px */
+  --text-subhead: 0.9375rem;    /* 15px */
+  --text-footnote: 0.8125rem;   /* 13px */
+  --text-caption: 0.75rem;      /* 12px */
+  --text-micro: 0.6875rem;      /* 11px */
 
-  /* Espaçamento (escala de 4px) */
+  /* Espaçamento */
   --sp-1: 0.25rem;
   --sp-2: 0.5rem;
   --sp-3: 0.75rem;
@@ -29,22 +34,23 @@
   --sp-10: 2.5rem;
   --sp-12: 3rem;
 
-  /* Raios */
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 26px;
+  /* Raios — cartões agrupados do iOS */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
   --radius-pill: 999px;
 
-  /* Movimento — discreto, nunca chamativo */
+  /* Movimento */
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --dur-fast: 140ms;
   --dur-mid: 240ms;
   --dur-slow: 380ms;
 
-  /* Larguras */
-  --content-max: 34rem; /* o app é mobile-first; no desktop centraliza */
-  --tap-min: 44px;      /* área de toque mínima confortável no iPhone */
+  --content-max: 34rem;
+  --tap-min: 44px;
+  /* Recuo das hairlines dentro dos cartões. */
+  --row-pad: 16px;
 }
 
 /* ---------------- Tema claro ---------------- */
@@ -52,86 +58,113 @@
 :root[data-theme='light'] {
   color-scheme: light;
 
-  --bg: #f4f5f8;
-  --bg-veil: rgba(244, 245, 248, 0.82);
-  --surface: #ffffff;
-  --surface-2: #f0f1f5;
-  --surface-3: #e7e9ef;
+  --bg: #f2f2f7;              /* systemGroupedBackground */
+  --bg-veil: rgba(242, 242, 247, 0.82);
+  --surface: #ffffff;          /* secondarySystemGroupedBackground */
+  --surface-2: #f2f2f7;
+  --surface-3: #e5e5ea;
 
-  --border: rgba(15, 23, 42, 0.08);
-  --border-strong: rgba(15, 23, 42, 0.16);
+  --fill: rgba(120, 120, 128, 0.12);
+  --fill-2: rgba(120, 120, 128, 0.2);
 
-  --text: #10151f;
-  --text-2: #5a6478;
-  --text-3: #8b94a6;
+  --separator: rgba(60, 60, 67, 0.2);
+  --border: rgba(60, 60, 67, 0.2);
+  --border-strong: rgba(60, 60, 67, 0.29);
+
+  --text: #000000;
+  --text-2: rgba(60, 60, 67, 0.62);
+  --text-3: rgba(60, 60, 67, 0.34);
   --text-on-accent: #ffffff;
 
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-soft: rgba(79, 70, 229, 0.1);
-  --accent-text: #4338ca;
+  --accent: #5856d6;           /* systemIndigo */
+  --accent-hover: #4a48c4;
+  --accent-soft: rgba(88, 86, 214, 0.12);
+  --accent-text: #5856d6;
 
-  --success: #0a8f5f;
-  --success-soft: rgba(10, 143, 95, 0.12);
-  --warning: #a55a00;
-  --warning-soft: rgba(165, 90, 0, 0.12);
-  --danger: #cf2b2b;
-  --danger-soft: rgba(207, 43, 43, 0.1);
-  --info: #0369a1;
-  --info-soft: rgba(3, 105, 161, 0.1);
+  --blue: #007aff;
+  --teal: #30b0c7;
+  --green: #34c759;
+  --orange: #ff9500;
+  --red: #ff3b30;
+  --purple: #af52de;
+  --pink: #ff2d55;
+  --indigo: #5856d6;
 
-  --shadow-sm: 0 1px 2px rgba(16, 21, 31, 0.05), 0 1px 3px rgba(16, 21, 31, 0.04);
-  --shadow-md: 0 2px 6px rgba(16, 21, 31, 0.06), 0 8px 24px rgba(16, 21, 31, 0.06);
-  --shadow-lg: 0 8px 20px rgba(16, 21, 31, 0.1), 0 24px 48px rgba(16, 21, 31, 0.1);
-  --shadow-accent: 0 6px 20px rgba(79, 70, 229, 0.35);
+  --success: #248a3d;
+  --success-soft: rgba(52, 199, 89, 0.14);
+  --warning: #b25000;
+  --warning-soft: rgba(255, 149, 0, 0.14);
+  --danger: #d70015;
+  --danger-soft: rgba(255, 59, 48, 0.12);
+  --info: #0071e3;
+  --info-soft: rgba(0, 122, 255, 0.12);
 
-  --hero-from: #4f46e5;
-  --hero-to: #6d28d9;
-  --hero-text: #ffffff;
-  --hero-text-2: rgba(255, 255, 255, 0.76);
-  --hero-line: rgba(255, 255, 255, 0.2);
+  --shadow-sm: none;
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.18);
+  --shadow-accent: 0 4px 14px rgba(88, 86, 214, 0.35);
 }
 
 /* ---------------- Tema escuro ---------------- */
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --bg: #0b0f14;
-  --bg-veil: rgba(11, 15, 20, 0.8);
-  --surface: #151b23;
-  --surface-2: #1c242e;
-  --surface-3: #26303c;
+  --bg: #000000;
+  --bg-veil: rgba(0, 0, 0, 0.8);
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --surface-3: #3a3a3c;
 
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  --fill: rgba(120, 120, 128, 0.24);
+  --fill-2: rgba(120, 120, 128, 0.36);
 
-  --text: #eef1f6;
-  --text-2: #a3aec0;
-  --text-3: #6f7b8c;
+  --separator: rgba(84, 84, 88, 0.6);
+  --border: rgba(84, 84, 88, 0.6);
+  --border-strong: rgba(84, 84, 88, 0.8);
+
+  --text: #ffffff;
+  --text-2: rgba(235, 235, 245, 0.62);
+  --text-3: rgba(235, 235, 245, 0.32);
   --text-on-accent: #ffffff;
 
-  --accent: #8b85ff;
-  --accent-hover: #9d97ff;
-  --accent-soft: rgba(139, 133, 255, 0.16);
-  --accent-text: #a9a4ff;
+  --accent: #5e5ce6;
+  --accent-hover: #7d7aff;
+  --accent-soft: rgba(94, 92, 230, 0.24);
+  --accent-text: #7d7aff;
 
-  --success: #34d399;
-  --success-soft: rgba(52, 211, 153, 0.16);
-  --warning: #fbbf24;
-  --warning-soft: rgba(251, 191, 36, 0.16);
-  --danger: #f87171;
-  --danger-soft: rgba(248, 113, 113, 0.16);
-  --info: #60a5fa;
-  --info-soft: rgba(96, 165, 250, 0.16);
+  --blue: #0a84ff;
+  --teal: #40c8e0;
+  --green: #30d158;
+  --orange: #ff9f0a;
+  --red: #ff453a;
+  --purple: #bf5af2;
+  --pink: #ff375f;
+  --indigo: #5e5ce6;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45), 0 10px 28px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.5), 0 28px 56px rgba(0, 0, 0, 0.45);
-  --shadow-accent: 0 6px 20px rgba(79, 70, 229, 0.45);
+  --success: #30d158;
+  --success-soft: rgba(48, 209, 88, 0.2);
+  --warning: #ff9f0a;
+  --warning-soft: rgba(255, 159, 10, 0.2);
+  --danger: #ff453a;
+  --danger-soft: rgba(255, 69, 58, 0.2);
+  --info: #0a84ff;
+  --info-soft: rgba(10, 132, 255, 0.2);
 
-  --hero-from: #4c3fd6;
-  --hero-to: #6d28d9;
-  --hero-text: #ffffff;
-  --hero-text-2: rgba(255, 255, 255, 0.74);
-  --hero-line: rgba(255, 255, 255, 0.18);
+  --shadow-sm: none;
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --shadow-accent: 0 4px 14px rgba(94, 92, 230, 0.45);
+}
+
+/* ---------------- Cores dos locais ---------------- */
+/* As chaves batem com `LOCATION_COLORS` em db/types.ts. */
+:root {
+  --loc-blue: var(--blue);
+  --loc-teal: var(--teal);
+  --loc-green: var(--green);
+  --loc-orange: var(--orange);
+  --loc-red: var(--red);
+  --loc-purple: var(--purple);
+  --loc-pink: var(--pink);
+  --loc-indigo: var(--indigo);
 }

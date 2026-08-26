@@ -2,20 +2,20 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Button } from '@/components/ui/Button'
-import { Card, SectionHeader } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Icon } from '@/components/ui/Icon'
-import { KpiCard, Stat } from '@/components/ui/KpiCard'
 import { LoadingScreen } from '@/components/ui/Skeleton'
-import { ShiftGroupList } from '@/components/shifts/ShiftGroupList'
+import { MoneyRow, Stat } from '@/components/ui/KpiCard'
+import { DayAgendaList } from '@/components/shifts/DayAgendaList'
 import { useAppData } from '@/state/appDataContext'
 import { useShiftSheets } from '@/state/shiftSheetsContext'
 import {
+  addDays,
   formatCountdown,
+  formatCountdownShort,
   formatDuration,
   formatLongDate,
   formatTime,
-  isSameDay,
   monthPartOf,
   relativeDayLabel,
 } from '@/domain/datetime'
@@ -24,178 +24,123 @@ import {
   currentOrNextShift,
   filterByMonth,
   financeTotals,
-  upcomingShifts,
+  periodSummary,
   weekSummary,
 } from '@/domain/summary'
-import { backupStatus, shouldRemindBackup } from '@/domain/backupReminder'
 
 /**
  * Tela Início: em poucos segundos o usuário precisa saber se tem plantão hoje,
- * qual é o próximo, quanto vai trabalhar na semana e quanto tem a receber (§5).
+ * qual é o próximo, quanto vai trabalhar e quanto tem a receber.
  */
 export function Home() {
-  const { ready, views, now, today, settings } = useAppData()
+  const { ready, views, now, today } = useAppData()
   const sheets = useShiftSheets()
 
   const next = useMemo(() => currentOrNextShift(views, now), [views, now])
   const week = useMemo(() => weekSummary(views, today), [views, today])
-  const month = useMemo(() => financeTotals(filterByMonth(views, monthPartOf(today))), [views, today])
+  const month = useMemo(() => periodSummary(filterByMonth(views, monthPartOf(today))), [views, today])
+  const monthMoney = useMemo(
+    () => financeTotals(filterByMonth(views, monthPartOf(today))),
+    [views, today],
+  )
   const global = useMemo(() => financeTotals(views), [views])
-  // O plantão em destaque não se repete na lista logo abaixo.
-  const upcoming = useMemo(
-    () => upcomingShifts(views).filter((v) => v.shift.id !== next?.shift.id).slice(0, 6),
-    [views, next],
-  )
 
-  const greeting = getGreeting(now.getHours())
   const hasShifts = views.length > 0
-
-  const backup = useMemo(
-    () => backupStatus(settings.lastBackupAt, today),
-    [settings.lastBackupAt, today],
-  )
-  const remindBackup = shouldRemindBackup(backup, views.length)
+  const agendaEnd = addDays(today, 13)
 
   return (
     <>
-      <ScreenHeader
-        title={greeting}
-        subtitle={formatLongDate(today)}
-        action={
-          <Link to="/configuracoes" className="icon-link" aria-label="Configurações">
-            <Icon name="settings" size={20} />
-          </Link>
-        }
-      />
+      <ScreenHeader eyebrow={formatLongDate(today)} title={getGreeting(now.getHours())} />
 
       {!ready ? (
         <LoadingScreen />
+      ) : !hasShifts ? (
+        <div className="screen">
+          <section>
+            <EmptyState
+              icon="calendar"
+              title="Comece cadastrando um plantão"
+              description="Leva menos de 20 segundos: data, horário, local e valor."
+              action={
+                <Button variant="primary" size="lg" icon="plus" onClick={() => sheets.newShift()}>
+                  Adicionar plantão
+                </Button>
+              }
+            />
+          </section>
+        </div>
       ) : (
         <div className="screen">
-          <section aria-label="Próximo plantão">
-            {next ? (
-              <NextShiftCard viewId={next.shift.id} onOpen={sheets.openShift} />
-            ) : (
-              <EmptyState
-                icon="calendar"
-                title={hasShifts ? 'Nenhum plantão programado' : 'Comece cadastrando um plantão'}
-                description={
-                  hasShifts
-                    ? 'Seu próximo plantão aparecerá aqui assim que for cadastrado.'
-                    : 'Leva menos de 20 segundos: data, horário, local e valor.'
-                }
-                action={
-                  <Button variant="primary" size="lg" icon="plus" onClick={() => sheets.newShift()}>
-                    Adicionar plantão
-                  </Button>
-                }
-              />
-            )}
+          {next && (
+            <section aria-label="Próximo plantão">
+              <NextShiftCard viewId={next.shift.id} />
+            </section>
+          )}
+
+          <section aria-label="Esta semana">
+            <Link to="/agenda" className="card card--padded summary-card">
+              <span className="card-title" style={{ color: 'var(--green)' }}>
+                <Icon name="calendar" size={16} />
+                Esta semana
+                <Icon name="chevronRight" size={14} className="card-title__chevron" />
+              </span>
+              <span className="summary-card__stats">
+                <Stat value={String(week.shifts)} label={week.shifts === 1 ? 'plantão' : 'plantões'} />
+                <Stat value={`${formatNumber(week.hours)}h`} label="horas" />
+                <Stat value={formatMoneyCompact(week.expected)} label="previsto" />
+              </span>
+            </Link>
           </section>
 
-          {remindBackup && (
-            <section aria-label="Backup">
-              <Link to="/configuracoes" className="backup-nudge">
-                <span className="backup-nudge__icon" aria-hidden="true">
-                  <Icon name="download" size={17} />
-                </span>
-                <span className="backup-nudge__text">
-                  <strong>
-                    {backup.level === 'never'
-                      ? 'Faça um backup dos seus plantões'
-                      : `Faz ${backup.days} dias desde o último backup`}
-                  </strong>
-                  <span>Os dados existem só neste aparelho.</span>
-                </span>
-                <Icon name="chevronRight" size={16} />
+          <section aria-label="Este mês">
+            <Link to="/relatorios" className="card card--padded summary-card">
+              <span className="card-title" style={{ color: 'var(--purple)' }}>
+                <Icon name="calendar" size={16} />
+                Este mês
+                <Icon name="chevronRight" size={14} className="card-title__chevron" />
+              </span>
+              <span className="summary-card__stats">
+                <Stat
+                  value={String(month.shifts)}
+                  label={month.shifts === 1 ? 'plantão' : 'plantões'}
+                />
+                <Stat value={`${formatNumber(month.hours)}h`} label="horas" />
+                <Stat value={formatMoneyCompact(month.expected)} label="previsto" />
+              </span>
+            </Link>
+          </section>
+
+          <section aria-label="Financeiro">
+            <div className="section-header">
+              <h2 className="section-header__title">Financeiro</h2>
+              <Link to="/financeiro" className="text-link">
+                Ver tudo
               </Link>
-            </section>
-          )}
+            </div>
+            <div className="card rows">
+              <MoneyRow label="Previsto no mês" value={monthMoney.expected} strong />
+              <MoneyRow label="Recebido no mês" value={monthMoney.received} />
+              <MoneyRow label="A receber" value={global.pending} strong />
+              <MoneyRow label="Atrasado" value={global.overdue} tone="danger" />
+            </div>
+          </section>
 
-          {hasShifts && (
-            <section aria-label="Resumo da semana">
-              <SectionHeader title="Esta semana" />
-              <Card>
-                <div className="week-summary">
-                  <Stat
-                    value={week.shifts}
-                    label={week.shifts === 1 ? 'plantão' : 'plantões'}
-                  />
-                  <span className="week-summary__divider" aria-hidden="true" />
-                  <Stat value={formatNumber(week.hours)} label="horas" />
-                  <span className="week-summary__divider" aria-hidden="true" />
-                  <Stat value={formatMoneyCompact(week.expected)} label="previstos" />
-                </div>
-              </Card>
-            </section>
-          )}
-
-          {hasShifts && (
-            <section aria-label="Resumo financeiro">
-              <SectionHeader
-                title="Financeiro"
-                action={
-                  <Link to="/financeiro" className="text-link">
-                    Ver tudo <Icon name="chevronRight" size={14} />
-                  </Link>
-                }
-              />
-              <div className="kpi-grid">
-                <KpiCard label="Previsto no mês" value={formatMoneyCompact(month.expected)} />
-                <KpiCard
-                  label="Recebido no mês"
-                  value={formatMoneyCompact(month.received)}
-                  tone="success"
-                  muted={month.received === 0}
-                />
-                <KpiCard
-                  label="A receber"
-                  value={formatMoneyCompact(global.pending)}
-                  hint={global.pending > 0 ? 'no prazo' : undefined}
-                  muted={global.pending === 0}
-                />
-                <KpiCard
-                  label="Atrasado"
-                  value={formatMoneyCompact(global.overdue)}
-                  tone={global.overdue > 0 ? 'danger' : 'neutral'}
-                  muted={global.overdue === 0}
-                  hint={global.overdue === 0 ? 'nada atrasado' : 'cobrar'}
-                />
-              </div>
-            </section>
-          )}
-
-          {upcoming.length > 0 && (
-            <section aria-label="Próximos plantões">
-              <SectionHeader
-                title="Próximos plantões"
-                action={
-                  <Link to="/agenda" className="text-link">
-                    Agenda <Icon name="chevronRight" size={14} />
-                  </Link>
-                }
-              />
-              <ShiftGroupList views={upcoming} today={today} onSelect={sheets.openShift} />
-            </section>
-          )}
-
-          {hasShifts && upcoming.length === 0 && (
-            <section aria-label="Próximos plantões">
-              <SectionHeader title="Próximos plantões" />
-              <EmptyState
-                compact
-                icon="calendar"
-                title="Nenhum plantão à frente"
-                description="Cadastre o próximo para não perder o controle das horas e dos valores."
-                action={
-                  <Button variant="primary" icon="plus" onClick={() => sheets.newShift()}>
-                    Novo plantão
-                  </Button>
-                }
-              />
-            </section>
-          )}
-
+          <section aria-label="Próximos plantões">
+            <div className="section-header">
+              <h2 className="section-header__title">Próximos plantões</h2>
+              <Link to="/agenda" className="text-link">
+                Agenda
+              </Link>
+            </div>
+            <DayAgendaList
+              views={views}
+              from={today}
+              to={agendaEnd}
+              today={today}
+              onSelect={sheets.openShift}
+              onAddDay={sheets.newShift}
+            />
+          </section>
         </div>
       )}
     </>
@@ -208,57 +153,60 @@ function getGreeting(hour: number): string {
   return 'Boa noite'
 }
 
-/** Cartão principal da tela inicial — o destaque visual do app. */
-function NextShiftCard({ viewId, onOpen }: { viewId: string; onOpen: (id: string) => void }) {
+/** Cartão do próximo plantão: compacto, com data, local e contagem regressiva. */
+function NextShiftCard({ viewId }: { viewId: string }) {
   const { viewById, now, today } = useAppData()
+  const sheets = useShiftSheets()
   const view = viewById.get(viewId)
   if (!view) return null
 
   const { shift, location } = view
   const running = view.status === 'inProgress'
-  const overnight = !isSameDay(shift.startDateTime, shift.endDateTime)
+  const crossesDay = shift.endDateTime.slice(0, 10) !== shift.startDateTime.slice(0, 10)
 
   return (
-    <button type="button" className="hero" onClick={() => onOpen(shift.id)}>
-      <span className="hero__label">
-        {running ? (
-          <>
-            <span className="hero__live" aria-hidden="true" />
-            Plantão em andamento
-          </>
-        ) : (
-          'Próximo plantão'
-        )}
-      </span>
-
-      <span className="hero__location">{location?.name ?? 'Local removido'}</span>
-
-      <span className="hero__schedule num">
-        {relativeDayLabel(shift.startDateTime.slice(0, 10), today)}
-        <span className="hero__sep" aria-hidden="true">
-          •
+    <button type="button" className="card card--padded next" onClick={() => sheets.openShift(shift.id)}>
+      <span className="next__top">
+        <span className="card-title next__label">
+          {running ? (
+            <>
+              <span className="next__live" aria-hidden="true" />
+              Em andamento
+            </>
+          ) : (
+            <>
+              <Icon name="clock" size={16} />
+              Próximo plantão
+            </>
+          )}
         </span>
-        {formatTime(shift.startDateTime)} → {formatTime(shift.endDateTime)}
-        {overnight && <span className="hero__plus">+1</span>}
+        <span className="next__badge num">
+          {running
+            ? `Faltam ${formatCountdownShort(shift.endDateTime, now)}`
+            : formatCountdown(shift.startDateTime, now)}
+        </span>
       </span>
 
-      <span className="hero__facts">
-        <span className="hero__fact num">{formatDuration(view.durationHours)}</span>
-        <span className="hero__dot" aria-hidden="true" />
-        <span className="hero__fact num">{formatMoneyCompact(shift.expectedAmount)}</span>
-        {shift.shiftType && (
-          <>
-            <span className="hero__dot" aria-hidden="true" />
-            <span className="hero__fact">{shift.shiftType}</span>
-          </>
-        )}
+      <span className="next__place">
+        <span
+          className="loc-dot loc-dot--lg"
+          style={{ background: `var(--loc-${location?.color ?? 'blue'})` }}
+          aria-hidden="true"
+        />
+        <span className="next__name">{location?.name ?? 'Local removido'}</span>
       </span>
 
-      <span className="hero__countdown">
-        <Icon name="clock" size={16} />
-        {running
-          ? `Termina ${formatCountdown(shift.endDateTime, now).toLowerCase()}`
-          : formatCountdown(shift.startDateTime, now)}
+      <span className="next__when num">
+        {relativeDayLabel(shift.startDateTime.slice(0, 10), today)} · {formatTime(shift.startDateTime)}{' '}
+        → {formatTime(shift.endDateTime)}
+        {crossesDay && <span className="next__plus">+1</span>}
+      </span>
+
+      {shift.title && <span className="next__title">{shift.title}</span>}
+
+      <span className="next__stats">
+        <Stat value={formatDuration(view.durationHours)} label="duração" />
+        <Stat value={formatMoneyCompact(shift.expectedAmount)} label="valor previsto" />
       </span>
     </button>
   )
