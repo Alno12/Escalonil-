@@ -35,6 +35,11 @@ export type LocationColor = (typeof LOCATION_COLORS)[number]
 
 export interface Shift {
   id: string
+  /**
+   * Liga os plantões criados de uma vez pela mesma escala. Vazio = plantão
+   * avulso. Existe para excluir a série inteira sem caçar plantão por plantão.
+   */
+  seriesId: string
   /** Complemento livre do local ("Plantão da coordenação"). Vazio = sem título. */
   title: string
   startDateTime: LocalDateTime

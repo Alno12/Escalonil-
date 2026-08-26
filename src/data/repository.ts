@@ -105,11 +105,12 @@ function validate(input: ShiftInput): void {
   }
 }
 
-function buildShift(input: ShiftInput, stamp: string): Shift {
+function buildShift(input: ShiftInput, stamp: string, seriesId: string): Shift {
   validate(input)
   return {
     ...input,
     id: newId(),
+    seriesId,
     expectedAmount: computeExpectedAmount(input),
     cancelled: false,
     createdAt: stamp,
@@ -129,7 +130,9 @@ export async function createShift(input: ShiftInput): Promise<Shift> {
 export async function createShifts(inputs: ShiftInput[]): Promise<Shift[]> {
   if (inputs.length === 0) throw new Error('Nenhum plantão para salvar.')
   const stamp = nowStamp()
-  const shifts = inputs.map((input) => buildShift(input, stamp))
+  // Um plantão sozinho não é série. Só a partir de dois vale a pena amarrar.
+  const seriesId = inputs.length > 1 ? newId() : ''
+  const shifts = inputs.map((input) => buildShift(input, stamp, seriesId))
   await db.shifts.bulkAdd(shifts)
   return shifts
 }
@@ -160,6 +163,24 @@ export async function deleteShift(id: string): Promise<void> {
   await db.transaction('rw', db.shifts, db.payments, async () => {
     await db.payments.where('shiftId').equals(id).delete()
     await db.shifts.delete(id)
+  })
+}
+
+/**
+ * Apaga de uma vez todos os plantões de uma escala, com os recebimentos.
+ *
+ * Tudo numa transação só: uma série de um ano são dezenas de registros, e
+ * meio caminho andado deixaria recebimento órfão no banco.
+ */
+export async function deleteSeries(seriesId: string): Promise<number> {
+  if (!seriesId) return 0
+
+  return db.transaction('rw', db.shifts, db.payments, async () => {
+    const ids = await db.shifts.where('seriesId').equals(seriesId).primaryKeys()
+    if (ids.length === 0) return 0
+    await db.payments.where('shiftId').anyOf(ids).delete()
+    await db.shifts.bulkDelete(ids)
+    return ids.length
   })
 }
 

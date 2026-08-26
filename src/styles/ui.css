@@ -805,6 +805,12 @@ input[type='time'] {
   margin-top: var(--sp-5);
 }
 
+/* Com mais de um caminho, os botões empilham: lado a lado eles ficariam com
+   rótulos longos demais para caber. */
+.dialog__actions--stack {
+  flex-direction: column;
+}
+
 /* ---------------- Toasts ---------------- */
 .toast-stack {
   position: fixed;

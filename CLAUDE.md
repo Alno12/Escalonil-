@@ -108,6 +108,14 @@ em rodízio. Escolher uma escala de HORAS também define a duração do plantão
 (`recurrenceShiftHours`) — um 12×36 é feito de plantões de 12h. Escalas de dias
 não mexem na duração.
 
+**14. `seriesId` amarra os plantões criados pela mesma escala.**
+`createShifts` só gera o identificador a partir de DOIS plantões — um plantão
+sozinho não é série. Editar ou duplicar nunca mexe nele, então um plantão
+continua na série depois de ajustado. Excluir um plantão de uma série pergunta
+"só este" ou "a série inteira"; sem isso, desfazer uma escala de um ano seria
+apagar plantão por plantão. `deleteSeries` roda numa transação só, senão meio
+caminho andado deixaria recebimento órfão.
+
 **13. Só existe UMA regra de "mesmo local", e ela mora em `domain/location.ts`.**
 `sameLocationName` ignora maiúsculas e espaço sobrando; `ensureLocation`, o
 formulário e o seletor usam todos ela. Já quebrou uma vez por ter duas contas
@@ -182,6 +190,11 @@ vez por isso.
   juntos, não mexa em um sem os outros.
 - `useMountTransition` mantém folhas e diálogos montados durante a animação de
   saída.
+- `useBodyScrollLock` conta as travas num contador COMPARTILHADO. Cada
+  instância guardando e repondo o `overflow` por conta própria travava o app
+  inteiro: a folha do plantão trava (guardando ""), o diálogo de excluir trava
+  por cima (guardando "hidden"), os dois fecham juntos e o último a soltar
+  repõe o "hidden". Só recarregando a página destravava.
 - Toda cor, espaçamento e sombra vem de `styles/tokens.css`. Não escreva valores
   literais nos componentes, e defina qualquer token novo nos **dois** temas.
 - Campos de texto usam `font-size: 1rem` (16px) — abaixo disso o Safari dá zoom
@@ -204,6 +217,10 @@ vez por isso.
 ```bash
 npm run lint && npm test && npm run build
 ```
+
+Migração de banco não tem teste automático — o vitest roda em Node, sem
+IndexedDB. Ao subir a versão do Dexie, monte o esquema anterior no navegador,
+abra o app em cima e confira que os registros antigos sobreviveram.
 
 Os testes cobrem as regras críticas: virada de meia-noite, duração, valor
 esperado, situação do pagamento, conflitos, escalas e recorrências, somas
