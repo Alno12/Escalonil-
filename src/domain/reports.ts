@@ -3,7 +3,7 @@
  * Tudo é calculado localmente, sem nenhum serviço externo.
  */
 import type { LocalDate, LocationColor, ShiftView } from '@/db/types'
-import { addMonths, daysBetween, monthPartOf } from './datetime'
+import { addMonths, datePartOf, daysBetween, daysInMonth, monthPartOf, toDate } from './datetime'
 import { formatDuration } from './datetime'
 import { formatMoney, formatNumber, roundMoney } from './money'
 import { periodSummary, type PeriodSummary } from './summary'
@@ -231,4 +231,120 @@ export function buildInsights(
   }
 
   return insights
+}
+
+// ---------------- Ritmo, mapa do mês e recordes ----------------
+
+export interface WeekdayBucket {
+  /** 0 = domingo (invariante 7). */
+  weekday: number
+  shifts: number
+  hours: number
+}
+
+/**
+ * Horas por dia da semana — responde "posso pegar uma quinta?".
+ *
+ * O plantão conta no dia em que COMEÇA, como em todo o resto do app: um 24h
+ * que vira a noite pertence ao dia em que o médico entrou, e não vale metade
+ * para cada lado.
+ */
+export function buildWeekdayHours(views: ShiftView[]): WeekdayBucket[] {
+  const week: WeekdayBucket[] = Array.from({ length: 7 }, (_, weekday) => ({
+    weekday,
+    shifts: 0,
+    hours: 0,
+  }))
+  for (const v of views) {
+    if (v.shift.cancelled) continue
+    const bucket = week[toDate(datePartOf(v.shift.startDateTime)).getDay()]
+    bucket.shifts += 1
+    bucket.hours += v.durationHours
+  }
+  return week.map((b) => ({ ...b, hours: Math.round(b.hours * 100) / 100 }))
+}
+
+export interface DayCell {
+  date: LocalDate
+  /** Dia do mês, 1 a 31. */
+  day: number
+  shifts: number
+  hours: number
+}
+
+/** Todos os dias de `month` ("YYYY-MM"), inclusive os vazios — é um calendário. */
+export function buildDayMap(views: ShiftView[], month: string): DayCell[] {
+  const byDay = new Map<string, { shifts: number; hours: number }>()
+  for (const v of views) {
+    if (v.shift.cancelled) continue
+    const day = datePartOf(v.shift.startDateTime)
+    if (!day.startsWith(month)) continue
+    const cell = byDay.get(day) ?? { shifts: 0, hours: 0 }
+    cell.shifts += 1
+    cell.hours += v.durationHours
+    byDay.set(day, cell)
+  }
+
+  const total = daysInMonth(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1)
+  return Array.from({ length: total }, (_, i) => {
+    const day = i + 1
+    const date = `${month}-${String(day).padStart(2, '0')}`
+    const cell = byDay.get(date)
+    return {
+      date,
+      day,
+      shifts: cell?.shifts ?? 0,
+      hours: Math.round((cell?.hours ?? 0) * 100) / 100,
+    }
+  })
+}
+
+export interface Records {
+  longest: { hours: number; date: LocalDate; location: string } | null
+  bestMonth: { month: string; expected: number } | null
+  /** Dias de plantão em sequência, sem folga no meio. */
+  streak: { days: number; from: LocalDate; to: LocalDate } | null
+}
+
+/**
+ * Três marcas do histórico INTEIRO, não do período — um recorde de um mês só
+ * não é recorde. A sequência conta dias em que um plantão COMEÇOU: um 24h que
+ * atravessa a meia-noite é um dia, não dois, senão qualquer escala de 24h
+ * viraria uma sequência infinita.
+ */
+export function buildRecords(views: ShiftView[]): Records {
+  const active = views.filter((v) => !v.shift.cancelled)
+  if (active.length === 0) return { longest: null, bestMonth: null, streak: null }
+
+  const longestView = active.reduce((best, v) => (v.durationHours > best.durationHours ? v : best))
+  const months = new Map<string, number>()
+  for (const v of active) {
+    const month = monthPartOf(v.shift.startDateTime)
+    months.set(month, (months.get(month) ?? 0) + v.shift.expectedAmount)
+  }
+  const [bestMonth, bestAmount] = [...months.entries()].reduce((best, entry) =>
+    entry[1] > best[1] ? entry : best,
+  )
+
+  return {
+    longest: {
+      hours: longestView.durationHours,
+      date: datePartOf(longestView.shift.startDateTime),
+      location: longestView.location?.name ?? '',
+    },
+    bestMonth: { month: bestMonth, expected: roundMoney(bestAmount) },
+    streak: longestStreak(active),
+  }
+}
+
+function longestStreak(active: ShiftView[]): Records['streak'] {
+  const days = [...new Set(active.map((v) => datePartOf(v.shift.startDateTime)))].sort()
+  let best = { days: 1, from: days[0], to: days[0] }
+  let runStart = days[0]
+  for (let i = 1; i < days.length; i++) {
+    if (daysBetween(days[i - 1], days[i]) !== 1) runStart = days[i]
+    const length = daysBetween(runStart, days[i]) + 1
+    if (length > best.days) best = { days: length, from: runStart, to: days[i] }
+  }
+  return best
 }

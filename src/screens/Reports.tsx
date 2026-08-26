@@ -12,15 +12,27 @@ import {
   endOfMonth,
   formatDate,
   formatDuration,
+  formatMonthYear,
   monthPartOf,
   startOfMonth,
 } from '@/domain/datetime'
 import { formatMoney, formatNumber } from '@/domain/money'
 import { buildPeriod, PERIOD_OPTIONS, type PeriodKey } from '@/domain/periods'
-import { buildIndicators, buildInsights, buildLocationReport, buildMonthlySeries } from '@/domain/reports'
+import {
+  buildDayMap,
+  buildIndicators,
+  buildInsights,
+  buildLocationReport,
+  buildMonthlySeries,
+  buildRecords,
+  buildWeekdayHours,
+} from '@/domain/reports'
 import { filterByRange } from '@/domain/summary'
 import { MonthlyChart } from './reports/MonthlyChart'
 import { LocationReport } from './reports/LocationReport'
+import { WeekdayChart } from './reports/WeekdayChart'
+import { MonthMap } from './reports/MonthMap'
+import { RecordsCard } from './reports/RecordsCard'
 
 /** Relatórios (§27–§30): indicadores, gráfico, insights e desempenho por local. */
 export function Reports() {
@@ -64,6 +76,10 @@ export function Reports() {
   const endMonth = monthPartOf(period.to)
   const series = useMemo(() => buildMonthlySeries(views, endMonth), [views, endMonth])
   const hasHistory = series.some((b) => b.shifts > 0)
+  const weekdays = useMemo(() => buildWeekdayHours(current), [current])
+  const dayMap = useMemo(() => buildDayMap(current, endMonth), [current, endMonth])
+  // Recorde é do acervo inteiro: um recorde de um mês só não é recorde.
+  const records = useMemo(() => buildRecords(views), [views])
 
   return (
     <>
@@ -207,6 +223,23 @@ export function Reports() {
                       </Card>
                     </section>
                   )}
+                  <section aria-label="Ritmo da semana">
+                    <SectionHeader title="Ritmo da semana" hint="Horas por dia da semana" />
+                    <Card>
+                      <WeekdayChart data={weekdays} periodLabel={period.label} />
+                    </Card>
+                  </section>
+
+                  <section aria-label="Mapa do mês">
+                    <SectionHeader
+                      title="Mapa do mês"
+                      hint={`${formatMonthYear(period.to)} · intensidade por dia`}
+                    />
+                    <Card>
+                      <MonthMap days={dayMap} />
+                    </Card>
+                  </section>
+
                   {insights.length > 0 && (
                     <section aria-label="Insights">
                       <SectionHeader title="Insights" />
@@ -226,6 +259,14 @@ export function Reports() {
                     </section>
                   )}
 
+                  {records.longest && (
+                    <section aria-label="Recordes">
+                      <SectionHeader title="Recordes" hint="Do histórico inteiro" />
+                      <Card padded={false}>
+                        <RecordsCard records={records} />
+                      </Card>
+                    </section>
+                  )}
                 </>
               )}
             </>

@@ -24,7 +24,7 @@ src/
 │   ├── recurrence.ts escalas (12×36, 5×2) e recorrências de uma série
 │   ├── backupReminder.ts  quando cobrar um backup novo
 │   ├── summary.ts    somas financeiras e recortes de agenda
-│   ├── reports.ts    indicadores, relatório por local e insights
+│   ├── reports.ts    indicadores, por local, insights, ritmo e recordes
 │   └── periods.ts    períodos dos relatórios e o período anterior equivalente
 ├── state/        providers de dados, tema, toasts e folhas de plantão
 ├── components/   ui/ (primitivos) e shifts/ (formulário, detalhe, listas)
@@ -201,6 +201,18 @@ O app segue a linguagem do Apple Saúde:
 - A barra do relatório por local usa a cor do LOCAL, não o roxo do tema
   (invariante 10). A estrela marca o melhor valor por hora, que nem sempre é
   quem rendeu mais no total.
+- No Ritmo da semana, no Mapa do mês e na sequência dos Recordes, o plantão
+  conta no dia em que COMEÇA. Um 24h que vira a noite pertence ao dia em que o
+  médico entrou e não vale metade para cada lado — e, na sequência, é um dia
+  só, senão qualquer escala de 24h viraria uma sequência infinita.
+- A escala de cor do Mapa do mês é FIXA em horas (6h, 12h, 18h, mais que
+  isso), nunca relativa ao mês. Relativa, um mês leve ficaria tão escuro quanto
+  um mês puxado e a comparação entre meses — a razão de o cartão existir —
+  desapareceria. O número dentro da célula escurece junto com a faixa: cinza
+  claro sobre roxo médio some.
+- Recordes leem o acervo INTEIRO, não o período: um recorde de um mês só não é
+  recorde. Empate não tem campeão — a frase do dia mais pesado e a estrela do
+  melhor R$/h só aparecem quando há um vencedor único.
 - `metric-grid` só vira três colunas a partir de **34rem**. Em 30rem o
   "R$ 21.400,00" não cabia e era cortado no meio.
 - Os resumos "Esta semana" e "Este mês" do Início são recortes da AGENDA, não

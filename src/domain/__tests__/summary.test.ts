@@ -11,7 +11,15 @@ import {
   upcomingShifts,
   weekSummary,
 } from '../summary'
-import { buildIndicators, buildInsights, buildLocationReport, buildMonthlySeries } from '../reports'
+import {
+  buildDayMap,
+  buildIndicators,
+  buildInsights,
+  buildLocationReport,
+  buildMonthlySeries,
+  buildRecords,
+  buildWeekdayHours,
+} from '../reports'
 import { roundMoney } from '../money'
 
 const LOCATIONS: Location[] = [
@@ -211,6 +219,51 @@ describe('relatórios', () => {
     expect(ids).toContain('top-location')
     expect(ids).toContain('outstanding')
     expect(ids).toContain('divergence')
+  })
+
+  it('conta as horas no dia da semana em que o plantão COMEÇA', () => {
+    // Agosto de 2026 começa num sábado; o plantão de 12/08 vira a noite e
+    // continua pertencendo à quarta.
+    const week = buildWeekdayHours(agosto)
+    expect(week.map((d) => d.hours)).toEqual([0, 12, 6, 24, 0, 12, 0])
+    // Domingo primeiro (invariante 7) e o cancelado de quinta fora da conta.
+    expect(week[0].weekday).toBe(0)
+    expect(week[4].shifts).toBe(0)
+    expect(week.reduce((sum, d) => sum + d.hours, 0)).toBe(54)
+  })
+
+  it('monta o mês inteiro no mapa, com os dias de folga zerados', () => {
+    const map = buildDayMap(agosto, '2026-08')
+    expect(map).toHaveLength(31)
+    expect(map[0]).toMatchObject({ date: '2026-08-01', day: 1, shifts: 0, hours: 0 })
+    expect(map[9]).toMatchObject({ date: '2026-08-10', shifts: 1, hours: 12 })
+    // 27/08 só tem plantão cancelado.
+    expect(map[26].shifts).toBe(0)
+  })
+
+  it('o mapa respeita o tamanho do mês, inclusive em ano bissexto', () => {
+    expect(buildDayMap(views, '2026-02')).toHaveLength(28)
+    expect(buildDayMap(views, '2028-02')).toHaveLength(29)
+    expect(buildDayMap(views, '2026-04')).toHaveLength(30)
+  })
+
+  it('acha os recordes do acervo inteiro', () => {
+    const records = buildRecords(views)
+    expect(records.longest?.hours).toBe(12)
+    expect(records.bestMonth).toEqual({ month: '2026-08', expected: 4750 })
+    // Dias com plantão: 10, 12, 14, 25 e 26 — a sequência é 25 e 26.
+    expect(records.streak).toEqual({ days: 2, from: '2026-08-25', to: '2026-08-26' })
+  })
+
+  it('não inventa recorde sem histórico, nem conta cancelado', () => {
+    expect(buildRecords([])).toEqual({ longest: null, bestMonth: null, streak: null })
+    const soCancelado = buildShiftViews(
+      [shift('x', '2026-08-05T07:00', '2026-08-05T19:00', 700, { cancelled: true })],
+      LOCATIONS,
+      [],
+      NOW,
+    )
+    expect(buildRecords(soCancelado).longest).toBeNull()
   })
 
   it('não gera insights sem plantões no período', () => {
