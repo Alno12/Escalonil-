@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom'
 import { useMountTransition } from '@/hooks/useMountTransition'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
+import { useSheetHistory } from '@/hooks/useSheetHistory'
 import { Button } from './Button'
 
 export interface DialogChoice {
@@ -39,6 +40,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const { mounted, visible } = useMountTransition(open, 200)
   useBodyScrollLock(mounted)
+  useSheetHistory(open, onCancel)
 
   if (!mounted) return null
 
