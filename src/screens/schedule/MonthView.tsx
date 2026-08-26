@@ -86,10 +86,13 @@ export function MonthView({ selected, onSelect }: MonthViewProps) {
                 type="button"
                 role="gridcell"
                 aria-selected={day === selected}
-                aria-label={`${formatLongDate(day)}${count ? ` · ${count} plantão(ões)` : ''}`}
+                aria-label={`${formatLongDate(day)}${
+                  count ? ` · ${count} ${count === 1 ? 'plantão' : 'plantões'}` : ''
+                }`}
                 className={[
                   'calendar__day',
                   inMonth ? '' : 'is-outside',
+                  count > 0 ? 'has-shifts' : '',
                   day === today ? 'is-today' : '',
                   day === selected ? 'is-selected' : '',
                 ]
@@ -97,13 +100,9 @@ export function MonthView({ selected, onSelect }: MonthViewProps) {
                   .join(' ')}
                 onClick={() => onSelect(day)}
               >
-                <span className="num">{toDate(day).getDate()}</span>
-                {/* Sempre presente (mesmo vazio) para todos os dias ficarem alinhados. */}
-                <span className="calendar__dots" aria-hidden="true">
-                  {Array.from({ length: Math.min(count, 3) }, (_, i) => (
-                    <span key={i} className="calendar__dot" />
-                  ))}
-                </span>
+                {/* O número mora no próprio círculo: é ele que recebe o anel do
+                    dia com plantão e o preenchimento do dia selecionado. */}
+                <span className="calendar__num num">{toDate(day).getDate()}</span>
               </button>
             )
           })}

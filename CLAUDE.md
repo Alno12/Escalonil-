@@ -213,6 +213,11 @@ O app segue a linguagem do Apple Saúde:
 - O cartão do próximo plantão é tingido com a COR DO LOCAL, em degradê que some
   para baixo. Chapado, as cores quentes embarram o tema escuro e o texto
   secundário perde contraste — foi por isso que virou degradê.
+- No calendário do mês, o dia com plantão ganha um ANEL discreto em volta do
+  número — não um ponto embaixo dele. O círculo é do NÚMERO, não da célula:
+  com o número e os pontos empilhados, o par ficava centralizado mas o número
+  subia metade da altura dos pontos e aparecia torto dentro do círculo do dia
+  selecionado, que ocupava a célula inteira.
 - Números usam `.num` (tabular) para alinhar em colunas.
 
 Cuidado com a cascata: modificadores com a MESMA especificidade da regra base
@@ -241,6 +246,12 @@ vez por isso.
   ordem em que foram abertos. O ouvinte de `popstate` entra na primeira folha
   e nunca sai: removê-lo antes do `history.back()` fazia o próprio `popstate`
   do app não ser contado, e o gesto seguinte do usuário era engolido.
+  Desfazer a entrada espera o fim do commit do React (`queueMicrotask`).
+  Trocar de folha — abrir o recebimento FECHA o detalhe, editar um plantão
+  também — zera e enche a pilha no mesmo commit, e o `history.back()`, que é
+  assíncrono, comia a entrada que a folha nova tinha acabado de empurrar. A
+  folha seguinte ficava sem entrada e, ao fechar, saía da ROTA: quem desfizesse
+  um recebimento no Financeiro era jogado na tela visitada antes.
 - `useBodyScrollLock` conta as travas num contador COMPARTILHADO. Cada
   instância guardando e repondo o `overflow` por conta própria travava o app
   inteiro: a folha do plantão trava (guardando ""), o diálogo de excluir trava
