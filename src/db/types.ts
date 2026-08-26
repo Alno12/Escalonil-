@@ -52,7 +52,6 @@ export interface Shift {
    * e relatórios rápidos. Recalculado sempre em `computeExpectedAmount`.
    */
   expectedAmount: number
-  expectedPaymentDate: LocalDate | null
   notes: string
   cancelled: boolean
   createdAt: string
@@ -78,7 +77,6 @@ export interface Payment {
   shiftId: string
   expectedAmount: number
   receivedAmount: number
-  expectedDate: LocalDate | null
   receivedDate: LocalDate
   notes: string
   createdAt: string
@@ -94,8 +92,6 @@ export interface Settings {
   defaultPaymentMode: PaymentMode
   defaultHourlyRate: number
   defaultFixedAmount: number
-  /** Dias somados ao fim do plantão para sugerir a data prevista de pagamento. */
-  paymentTermDays: number
   shiftTypes: string[]
   /** Quando o último backup foi exportado (ISO UTC). null = nunca. */
   lastBackupAt: string | null
@@ -105,8 +101,13 @@ export interface Settings {
 /** Situação temporal do plantão — sempre calculada, nunca armazenada. */
 export type ShiftStatus = 'scheduled' | 'inProgress' | 'done' | 'cancelled'
 
-/** Situação financeira — sempre calculada, nunca armazenada. */
-export type PaymentStatus = 'notEligible' | 'pending' | 'received' | 'overdue' | 'cancelled'
+/**
+ * Situação financeira — sempre calculada, nunca armazenada.
+ *
+ * Não existe "atrasado": o app não tenta adivinhar prazos. Plantão realizado e
+ * ainda não pago fica "a receber" até o usuário registrar o recebimento.
+ */
+export type PaymentStatus = 'notEligible' | 'pending' | 'received' | 'cancelled'
 
 /** Plantão com o que a interface precisa junto: local, pagamento e status. */
 export interface ShiftView {

@@ -17,9 +17,18 @@ import {
   formatTime,
   joinDateTime,
   timePartOf,
+  toDate,
 } from '@/domain/datetime'
 import { formatMoney, parseMoneyInput } from '@/domain/money'
 import type { LocationColor } from '@/db/types'
+import {
+  normalizeWeekdays,
+  recurrenceLabel,
+  recurrenceShiftHours,
+  WEEKDAY_OPTIONS,
+  type Recurrence,
+} from '@/domain/recurrence'
+import { RecurrenceSheet } from './RecurrenceSheet'
 import {
   activeDurationShortcut,
   applyDuration,
@@ -27,10 +36,8 @@ import {
   formDuration,
   formExpectedAmount,
   formRange,
-  repeatDates,
-  REPEAT_LABELS,
+  repeatStarts,
   syncMoney,
-  type RepeatMode,
   type ShiftFormValues,
 } from './shiftFormValues'
 
@@ -51,8 +58,6 @@ const TITLES: Record<ShiftFormMode, string> = {
   duplicate: 'Duplicar plantão',
 }
 
-const REPEAT_ORDER: RepeatMode[] = ['none', 'daily', 'weekly', 'biweekly', 'monthly']
-
 export function ShiftFormSheet({
   open,
   mode,
@@ -67,7 +72,7 @@ export function ShiftFormSheet({
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [confirmConflict, setConfirmConflict] = useState(false)
-  const [showRepeat, setShowRepeat] = useState(initialValues.repeat !== 'none')
+  const [pickingRecurrence, setPickingRecurrence] = useState(false)
 
   const patch = (next: Partial<ShiftFormValues>) => {
     setValues((prev) => ({ ...prev, ...next }))
@@ -96,19 +101,48 @@ export function ShiftFormSheet({
   const activeShortcut = activeDurationShortcut(values)
   const crossesDay = values.endDate !== values.startDate
 
+  const weekdayStart = toDate(values.startDate).getDay()
+  const weekdays =
+    values.recurrence.kind === 'weekdays'
+      ? normalizeWeekdays(values.recurrence.weekdays, weekdayStart)
+      : []
+
+  /** Desmarcar o último dia não é permitido: a série ficaria sem nenhuma data. */
+  const toggleWeekday = (day: number) =>
+    setValues((prev) => {
+      if (prev.recurrence.kind !== 'weekdays') return prev
+      const current = normalizeWeekdays(prev.recurrence.weekdays, weekdayStart)
+      const next = current.includes(day) ? current.filter((d) => d !== day) : [...current, day]
+      return {
+        ...prev,
+        recurrence: { ...prev.recurrence, weekdays: next.length > 0 ? next : current },
+      }
+    })
+
+  /**
+   * Escolher uma escala de horas define a duração do plantão: um 12×36 é
+   * feito de plantões de 12 horas.
+   */
+  const chooseRecurrence = (recurrence: Recurrence) =>
+    setValues((prev) => {
+      const hours = recurrenceShiftHours(recurrence)
+      return { ...applyDuration(prev, hours ?? formDuration(prev)), recurrence }
+    })
+
   const canRepeat = mode !== 'edit'
+  const repeats = canRepeat && values.recurrence.kind !== 'none'
   const occurrences = useMemo(
-    () => (canRepeat ? repeatDates(values) : [values.startDate]),
+    () => (canRepeat ? repeatStarts(values) : [joinDateTime(values.startDate, values.startTime)]),
     [canRepeat, values],
   )
 
   const ranges = useMemo(
     () =>
-      occurrences.map((date) => {
-        const start = joinDateTime(date, values.startTime)
-        return { startDateTime: start, endDateTime: addHours(start, duration) }
-      }),
-    [occurrences, values.startTime, duration],
+      occurrences.map((start) => ({
+        startDateTime: start,
+        endDateTime: addHours(start, duration),
+      })),
+    [occurrences, duration],
   )
 
   // Conflito é verificado em TODAS as datas geradas, não só na primeira.
@@ -139,7 +173,6 @@ export function ShiftFormSheet({
         paymentMode: values.paymentMode,
         fixedAmount: parseMoneyInput(values.amountText),
         hourlyRate: parseMoneyInput(values.hourlyText),
-        expectedPaymentDate: values.expectedPaymentDate || null,
         notes: values.notes.trim(),
       }
 
@@ -326,26 +359,41 @@ export function ShiftFormSheet({
             <h2 className="section-header__title">Repetir</h2>
           </div>
           <div className="card rows">
-            <label className="row">
+            <button
+              type="button"
+              className="row"
+              onClick={() => setPickingRecurrence(true)}
+            >
               <span className="row__label">Frequência</span>
-              <select
-                className="input row__select"
-                value={values.repeat}
-                onChange={(e) => {
-                  const repeat = e.target.value as RepeatMode
-                  setShowRepeat(repeat !== 'none')
-                  patch({ repeat })
-                }}
-              >
-                {REPEAT_ORDER.map((key) => (
-                  <option key={key} value={key}>
-                    {REPEAT_LABELS[key]}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <span className="row__value">
+                {recurrenceLabel(values.recurrence, values.startDate)}
+              </span>
+              <Icon name="chevronRight" size={17} className="row__chevron" />
+            </button>
 
-            {showRepeat && values.repeat !== 'none' && (
+            {values.recurrence.kind === 'weekdays' && (
+              <div className="row row--stack">
+                <span className="row__label">Dias da semana</span>
+                <div className="weekday-group" role="group" aria-label="Dias da semana">
+                  {WEEKDAY_OPTIONS.map((day) => {
+                    const active = weekdays.includes(day.value)
+                    return (
+                      <button
+                        key={day.value}
+                        type="button"
+                        aria-pressed={active}
+                        className={`weekday ${active ? 'is-active' : ''}`}
+                        onClick={() => toggleWeekday(day.value)}
+                      >
+                        {day.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {values.recurrence.kind !== 'none' && (
               <label className="row">
                 <span className="row__label">Repetir até</span>
                 <input
@@ -358,7 +406,7 @@ export function ShiftFormSheet({
               </label>
             )}
           </div>
-          {values.repeat !== 'none' && (
+          {repeats && (
             <p className="form-note">
               {occurrences.length} {occurrences.length === 1 ? 'plantão' : 'plantões'}, de{' '}
               {formatDayMonth(occurrences[0])} a {formatDayMonth(occurrences[occurrences.length - 1])}.
@@ -430,15 +478,6 @@ export function ShiftFormSheet({
                 </span>
               </label>
 
-              <label className="row">
-                <span className="row__label">Previsto para</span>
-                <input
-                  className="input"
-                  type="date"
-                  value={values.expectedPaymentDate}
-                  onChange={(e) => patch({ expectedPaymentDate: e.target.value })}
-                />
-              </label>
             </div>
           </div>
           <p className="form-note num">
@@ -479,6 +518,14 @@ export function ShiftFormSheet({
           </Button>
         </div>
       </Sheet>
+
+      <RecurrenceSheet
+        open={pickingRecurrence}
+        value={values.recurrence}
+        startDate={values.startDate}
+        onChange={chooseRecurrence}
+        onClose={() => setPickingRecurrence(false)}
+      />
 
       <ConfirmDialog
         open={confirmConflict}

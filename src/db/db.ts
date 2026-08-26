@@ -16,11 +16,11 @@ export const DEFAULT_SHIFT_TYPES = [
 
 export const DEFAULT_SETTINGS: Settings = {
   id: 'app',
-  theme: 'system',
+  // O app abre no claro por padrão; o usuário troca em Ajustes.
+  theme: 'light',
   defaultPaymentMode: 'fixed',
   defaultHourlyRate: 0,
   defaultFixedAmount: 0,
-  paymentTermDays: 30,
   shiftTypes: DEFAULT_SHIFT_TYPES,
   lastBackupAt: null,
   updatedAt: new Date(0).toISOString(),
@@ -61,6 +61,16 @@ class EscalonilDB extends Dexie {
         )
         await tx.table('shifts').toCollection().modify({ title: '' })
       })
+
+    // v3: a lógica de "atrasado" saiu, então o índice da data prevista some.
+    // Os valores já gravados nos registros são preservados de propósito — se o
+    // controle de prazo voltar um dia, o histórico ainda está lá.
+    this.version(3).stores({
+      shifts: 'id, startDateTime, endDateTime, locationId',
+      locations: 'id, name',
+      payments: 'id, &shiftId, receivedDate',
+      settings: 'id',
+    })
   }
 }
 

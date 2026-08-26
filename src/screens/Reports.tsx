@@ -121,12 +121,7 @@ export function Reports() {
                     <Metric label="Horas" value={formatDuration(indicators.hours)} />
                     <Metric label="Previsto" value={formatMoney(indicators.expected)} />
                     <Metric label="Recebido" value={formatMoney(indicators.received)} tone="success" />
-                    <Metric label="Pendente" value={formatMoney(indicators.pending)} />
-                    <Metric
-                      label="Atrasado"
-                      value={formatMoney(indicators.overdue)}
-                      tone={indicators.overdue > 0 ? 'danger' : undefined}
-                    />
+                    <Metric label="A receber" value={formatMoney(indicators.pending)} />
                     <Metric label="Média por plantão" value={formatMoney(indicators.avgPerShift)} />
                     <Metric label="Média por hora" value={formatMoney(indicators.avgPerHour)} />
                     <Metric

@@ -20,6 +20,7 @@ src/
 │   ├── money.ts      formatação e leitura de valores em BRL
 │   ├── shift.ts      duração, valor esperado, situação do plantão/pagamento
 │   ├── conflicts.ts  sobreposição de horários
+│   ├── recurrence.ts escalas (12×36, 5×2) e recorrências de uma série
 │   ├── backupReminder.ts  quando cobrar um backup novo
 │   ├── summary.ts    somas financeiras e recortes de agenda
 │   ├── reports.ts    indicadores, relatório por local e insights
@@ -40,9 +41,9 @@ src/
 direto, que interpreta a string como UTC.
 
 **2. Situação é sempre calculada, nunca armazenada.**
-`getShiftStatus()` e `getPaymentStatus()` recebem o `now`. "Atrasado" depende da
-data de hoje, então gravar esse estado no banco o deixaria velho no dia
-seguinte.
+`getShiftStatus()` e `getPaymentStatus()` recebem o `now`. "Em andamento"
+depende da hora atual, então gravar esse estado no banco o deixaria velho no
+minuto seguinte.
 
 **3. `expectedAmount` é derivado, mas persistido.**
 Fica no banco para listas e relatórios não recalcularem tudo. É sempre
@@ -51,9 +52,16 @@ alterar `paymentMode`, `fixedAmount`, `hourlyRate` ou os horários em qualquer
 outro lugar, o valor sai de sincronia.
 
 **4. Um `Payment` existe apenas para plantões pagos.**
-Sem registro = "ainda não recebido". `expectedAmount`/`expectedDate` no Payment
-são uma fotografia do momento do recebimento, para a divergência (§26)
-sobreviver a edições posteriores do plantão.
+Sem registro = "ainda não recebido". `expectedAmount` no Payment é uma
+fotografia do previsto no momento do recebimento, para a divergência sobreviver
+a edições posteriores do plantão.
+
+**4b. Não existe "atrasado". O app não controla prazos.**
+Plantão realizado e não pago fica "a receber" por tempo indeterminado, e só sai
+dessa lista quando o usuário registra o recebimento. Foi uma decisão explícita
+de simplificação: nada de data prevista, prazo padrão ou cobrança automática.
+Se isso voltar um dia, os valores antigos de `expectedPaymentDate` continuam
+gravados nos registros — a v3 do banco só removeu o índice, não os dados.
 
 **5. Conflito avisa, não bloqueia.**
 `findConflicts()` alimenta um aviso no formulário e um diálogo
@@ -82,7 +90,24 @@ que faz a agenda ficar legível de relance.
 `Shift.title` aparece depois do nome do local nas listas. Um plantão sem título
 continua mostrando o local normalmente.
 
-**9. Recebimento em lote nunca rateia valores.**
+**9. A série SEMPRE começa no dia marcado, mesmo que ele já tenha passado.**
+`recurrenceStarts` recebe o instante do primeiro plantão e devolve
+`LocalDateTime[]` — datetimes, não datas, porque as escalas de horas caem fora
+da meia-noite (um 12×24 às 07:00 volta às 19:00 do dia seguinte). Nas escalas
+por dias da semana a varredura começa no **domingo da semana de início**, sem
+nenhum filtro pela data digitada: marcar segunda com início na quarta gera a
+segunda daquela mesma semana. Foi um pedido explícito do dono do app — não
+"conserte" isso. `normalizeWeekdays` garante que a lista nunca fica vazia e
+`MAX_OCCURRENCES` é o teto de segurança de qualquer escala.
+
+**9b. Toda escala é `{work, off}`, em horas ou em dias.**
+`12×36` é `{kind:'hours', segments:[{work:12, off:36}]}`; `5×2` é o mesmo em
+dias. Escalas com dois trechos (`12×24, 12×72`) são dois segmentos percorridos
+em rodízio. Escolher uma escala de HORAS também define a duração do plantão
+(`recurrenceShiftHours`) — um 12×36 é feito de plantões de 12h. Escalas de dias
+não mexem na duração.
+
+**12. Recebimento em lote nunca rateia valores.**
 `registerPayments` grava cada plantão pelo próprio `expectedAmount`. Se o
 depósito veio diferente, o ajuste é plantão a plantão — inventar um rateio
 criaria divergências que o usuário nunca escolheu.
@@ -101,14 +126,13 @@ imediatamente quando o app volta ao primeiro plano.
 ## Escopos financeiros (não misture)
 
 - `expected` — soma dos plantões não cancelados do recorte.
-- `pending` — realizados, não pagos, dentro do prazo.
-- `overdue` — realizados, não pagos, prazo vencido.
-- `outstanding` — `pending + overdue`.
+- `pending` — realizados e ainda não pagos.
+- `outstanding` — tudo que falta entrar; hoje é igual a `pending`.
 - `received` — soma do que entrou de fato (não do previsto).
 
-`pending` e `overdue` são **disjuntos**. Na tela Financeiro, os cartões do topo
-olham o mês selecionado e as listas abaixo mostram todos os períodos — de
-propósito, para nenhuma pendência antiga sumir por causa de um filtro.
+Na tela Financeiro, os valores do topo olham o mês selecionado e as listas
+abaixo mostram todos os períodos — de propósito, para nenhuma pendência antiga
+sumir por causa de um filtro.
 
 ## Interface — linguagem visual do iOS
 
@@ -137,10 +161,12 @@ vez por isso.
   ao focar.
 - Respeite `env(safe-area-inset-*)` em qualquer elemento fixo.
 
-## PWA e GitHub Pages
+## PWA, GitHub Pages e Netlify
 
 - `base` no `vite.config.ts` é `/Escalonil-/` e pode ser trocado por
-  `BASE_PATH`. O workflow deriva do nome do repositório.
+  `BASE_PATH`. O workflow do Pages deriva do nome do repositório; o
+  `netlify.toml` fixa `BASE_PATH = "/"` porque o Netlify serve na raiz. Os dois
+  destinos publicam do mesmo commit sem conflito.
 - Rotas em **hash** (`#/agenda`) — funcionam em subrota do GitHub Pages sem
   configuração de servidor.
 - Service worker em modo `prompt`: o usuário decide quando atualizar.
@@ -153,8 +179,9 @@ npm run lint && npm test && npm run build
 ```
 
 Os testes cobrem as regras críticas: virada de meia-noite, duração, valor
-esperado, situação do pagamento, conflitos, somas financeiras, insights,
-validação de backup e CSV. Se você mexer nessas regras, ajuste os testes junto.
+esperado, situação do pagamento, conflitos, escalas e recorrências, somas
+financeiras, insights, validação de backup e CSV. Se você mexer nessas regras,
+ajuste os testes junto.
 
 ## Fluxo de contribuição
 

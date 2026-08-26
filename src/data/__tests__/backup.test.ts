@@ -14,7 +14,6 @@ const shift: Shift = {
   fixedAmount: 1200,
   hourlyRate: 0,
   expectedAmount: 1200,
-  expectedPaymentDate: '2026-09-05',
   notes: 'Extra; solicitado pela coordenação',
   cancelled: false,
   createdAt: '2026-08-01T00:00:00.000Z',
@@ -33,7 +32,6 @@ const validBackup = {
       shiftId: 's1',
       expectedAmount: 1200,
       receivedAmount: 1100,
-      expectedDate: '2026-09-05',
       receivedDate: '2026-09-06',
       notes: '',
       createdAt: '2026-09-06T00:00:00.000Z',
@@ -97,7 +95,7 @@ describe('parseBackup', () => {
     const parsed = parseBackup(JSON.stringify(minimal))
     expect(parsed.shifts[0].paymentMode).toBe('fixed')
     expect(parsed.shifts[0].cancelled).toBe(false)
-    expect(parsed.shifts[0].expectedPaymentDate).toBeNull()
+    expect(parsed.shifts[0].title).toBe('')
     expect(parsed.settings.shiftTypes.length).toBeGreaterThan(0)
   })
 })

@@ -46,7 +46,9 @@ export function Home() {
   const global = useMemo(() => financeTotals(views), [views])
 
   const hasShifts = views.length > 0
-  const agendaEnd = addDays(today, 13)
+  // Dois meses à frente: o plantonista costuma fechar a escala com semanas de
+  // antecedência, e a lista precisa alcançar isso.
+  const agendaEnd = addDays(today, 60)
 
   return (
     <>
@@ -121,7 +123,6 @@ export function Home() {
               <MoneyRow label="Previsto no mês" value={monthMoney.expected} strong />
               <MoneyRow label="Recebido no mês" value={monthMoney.received} />
               <MoneyRow label="A receber" value={global.pending} strong />
-              <MoneyRow label="Atrasado" value={global.overdue} tone="danger" />
             </div>
           </section>
 

@@ -222,6 +222,70 @@ button.row:active {
   color: #fff;
 }
 
+/* ---------------- Lista de escolha (tela de frequência) ---------------- */
+.option {
+  gap: var(--sp-3);
+}
+
+/* Rótulos longos quebram aqui — 3 classes vencem `.row > .row__label`
+   independentemente da ordem dos arquivos. */
+.row.option > .row__label {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+}
+
+.option__check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--accent-text);
+}
+
+/* ---------------- Contador − valor + ---------------- */
+.stepper {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--fill);
+}
+
+.stepper__btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.stepper__btn:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.stepper__btn:disabled {
+  opacity: 0.3;
+}
+
+.stepper__value {
+  min-width: 72px;
+  padding: 0 var(--sp-1);
+  text-align: center;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
 /* ---------------- Bolinha de cor do local ---------------- */
 .loc-dot {
   width: 10px;

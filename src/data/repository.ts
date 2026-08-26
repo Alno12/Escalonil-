@@ -92,7 +92,6 @@ export type ShiftInput = Pick<
   | 'paymentMode'
   | 'fixedAmount'
   | 'hourlyRate'
-  | 'expectedPaymentDate'
   | 'notes'
 >
 
@@ -187,7 +186,6 @@ export async function registerPayment(shiftId: string, input: PaymentInput): Pro
     shiftId,
     expectedAmount: existing?.expectedAmount ?? shift.expectedAmount,
     receivedAmount: input.receivedAmount,
-    expectedDate: existing?.expectedDate ?? shift.expectedPaymentDate,
     receivedDate: input.receivedDate,
     notes: input.notes,
     createdAt: existing?.createdAt ?? stamp,
@@ -224,7 +222,6 @@ export async function registerPayments(
         shiftId,
         expectedAmount: shift.expectedAmount,
         receivedAmount: shift.expectedAmount,
-        expectedDate: shift.expectedPaymentDate,
         receivedDate,
         notes: '',
         createdAt: stamp,
@@ -240,4 +237,20 @@ export async function registerPayments(
 /** Desfaz o recebimento: o plantão volta a ficar "a receber". */
 export async function removePayment(shiftId: string): Promise<void> {
   await db.payments.where('shiftId').equals(shiftId).delete()
+}
+
+// ---------------- Zerar o aplicativo ----------------
+
+/**
+ * Apaga plantões, locais e recebimentos deste aparelho.
+ *
+ * As preferências (tema, valores padrão, tipos de plantão) ficam — são
+ * escolhas, não dados lançados. O aviso de backup volta ao início porque não
+ * há mais nada para salvar.
+ */
+export async function clearAllData(): Promise<void> {
+  await db.transaction('rw', db.shifts, db.locations, db.payments, async () => {
+    await Promise.all([db.shifts.clear(), db.locations.clear(), db.payments.clear()])
+  })
+  await saveSettings({ lastBackupAt: null })
 }

@@ -7,7 +7,6 @@ import {
   getShiftStatus,
   paymentDifference,
   shiftDuration,
-  suggestPaymentDate,
 } from '../shift'
 
 function makeShift(overrides: Partial<Shift> = {}): Shift {
@@ -22,7 +21,6 @@ function makeShift(overrides: Partial<Shift> = {}): Shift {
     fixedAmount: 1200,
     hourlyRate: 0,
     expectedAmount: 1200,
-    expectedPaymentDate: '2026-09-05',
     notes: '',
     cancelled: false,
     createdAt: '2026-08-01T00:00:00.000Z',
@@ -37,7 +35,6 @@ function makePayment(overrides: Partial<Payment> = {}): Payment {
     shiftId: 's1',
     expectedAmount: 1200,
     receivedAmount: 1200,
-    expectedDate: '2026-09-05',
     receivedDate: '2026-09-05',
     notes: '',
     createdAt: '2026-09-05T00:00:00.000Z',
@@ -98,21 +95,12 @@ describe('getPaymentStatus', () => {
     expect(getPaymentStatus(shift, undefined, toDate('2026-08-25T10:00'))).toBe('notEligible')
   })
 
-  it('fica a receber depois de realizado e dentro do prazo', () => {
+  it('fica a receber assim que o plantão é realizado', () => {
     expect(getPaymentStatus(shift, undefined, toDate('2026-08-30T10:00'))).toBe('pending')
   })
 
-  it('ainda está a receber no próprio dia previsto', () => {
-    expect(getPaymentStatus(shift, undefined, toDate('2026-09-05T23:00'))).toBe('pending')
-  })
-
-  it('fica atrasado no dia seguinte à data prevista', () => {
-    expect(getPaymentStatus(shift, undefined, toDate('2026-09-06T00:01'))).toBe('overdue')
-  })
-
-  it('nunca atrasa quando não há data prevista', () => {
-    const semData = makeShift({ expectedPaymentDate: null })
-    expect(getPaymentStatus(semData, undefined, toDate('2027-01-01T10:00'))).toBe('pending')
+  it('continua a receber por tempo indeterminado — o app não controla prazo', () => {
+    expect(getPaymentStatus(shift, undefined, toDate('2027-06-01T10:00'))).toBe('pending')
   })
 
   it('fica recebido quando existe pagamento registrado', () => {
@@ -131,12 +119,5 @@ describe('divergência de pagamento', () => {
     expect(paymentDifference(makePayment({ receivedAmount: 1100 }))).toBe(-100)
     expect(paymentDifference(makePayment({ receivedAmount: 1250.5 }))).toBe(50.5)
     expect(paymentDifference(makePayment())).toBe(0)
-  })
-})
-
-describe('suggestPaymentDate', () => {
-  it('soma o prazo ao dia do término do plantão', () => {
-    expect(suggestPaymentDate('2026-08-26T07:00', 30)).toBe('2026-09-25')
-    expect(suggestPaymentDate('2026-08-26T07:00', 0)).toBe('2026-08-26')
   })
 })

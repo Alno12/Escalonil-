@@ -1,7 +1,6 @@
 /** Estado do formulário de plantão e conversões de/para o banco. */
 import type { LocalDate, LocalDateTime, LocationColor, PaymentMode, Settings, Shift } from '@/db/types'
 import {
-  addDays,
   addHours,
   addMonths,
   datePartOf,
@@ -10,22 +9,13 @@ import {
   timePartOf,
   todayISO,
 } from '@/domain/datetime'
-import { computeExpectedAmount, suggestPaymentDate } from '@/domain/shift'
+import {
+  NO_RECURRENCE,
+  recurrenceStarts,
+  type Recurrence,
+} from '@/domain/recurrence'
+import { computeExpectedAmount } from '@/domain/shift'
 import { parseMoneyInput, roundMoney } from '@/domain/money'
-
-/** Frequências oferecidas na recorrência. */
-export type RepeatMode = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly'
-
-export const REPEAT_LABELS: Record<RepeatMode, string> = {
-  none: 'Nunca',
-  daily: 'Todo dia',
-  weekly: 'Toda semana',
-  biweekly: 'A cada 2 semanas',
-  monthly: 'Todo mês',
-}
-
-/** Teto de segurança para uma série — evita gerar milhares de plantões. */
-export const MAX_OCCURRENCES = 120
 
 /** Atalhos de duração do formulário, em horas. */
 export const DURATION_SHORTCUTS = [6, 12, 24, 36, 48]
@@ -40,7 +30,8 @@ export interface ShiftFormValues {
   startTime: string
   endDate: LocalDate
   endTime: string
-  repeat: RepeatMode
+  /** Escala ou recorrência escolhida na tela de frequência. */
+  recurrence: Recurrence
   repeatUntil: LocalDate
   /** Valor total do plantão, como texto enquanto o usuário digita. */
   amountText: string
@@ -48,7 +39,6 @@ export interface ShiftFormValues {
   hourlyText: string
   /** Qual dos dois campos o usuário editou por último. */
   paymentMode: PaymentMode
-  expectedPaymentDate: string
   notes: string
 }
 
@@ -68,12 +58,11 @@ export function emptyForm(settings: Settings, date?: LocalDate): ShiftFormValues
     startTime: '19:00',
     endDate: datePartOf(end),
     endTime: timePartOf(end),
-    repeat: 'none',
+    recurrence: NO_RECURRENCE,
     repeatUntil: addMonths(startDate, 3),
     amountText: moneyToText(settings.defaultFixedAmount),
     hourlyText: moneyToText(settings.defaultHourlyRate),
     paymentMode: settings.defaultPaymentMode,
-    expectedPaymentDate: suggestPaymentDate(end, settings.paymentTermDays),
     notes: '',
   }
 }
@@ -94,14 +83,13 @@ export function formFromShift(
     endDate: datePartOf(shift.endDateTime),
     endTime: timePartOf(shift.endDateTime),
     // Repetição é sempre uma escolha nova: editar ou duplicar não recria a série.
-    repeat: 'none',
+    recurrence: NO_RECURRENCE,
     repeatUntil: addMonths(datePartOf(shift.startDateTime), 3),
     amountText: moneyToText(shift.expectedAmount),
     hourlyText: moneyToText(
       shift.hourlyRate > 0 ? shift.hourlyRate : hours > 0 ? roundMoney(shift.expectedAmount / hours) : 0,
     ),
     paymentMode: shift.paymentMode,
-    expectedPaymentDate: shift.expectedPaymentDate ?? '',
     notes: shift.notes,
   }
 }
@@ -111,7 +99,6 @@ export function formFromDuplicate(
   shift: Shift,
   locationName: string,
   color: LocationColor,
-  settings: Settings,
 ): ShiftFormValues {
   const base = formFromShift(shift, locationName, color)
   const today = todayISO()
@@ -125,7 +112,6 @@ export function formFromDuplicate(
     endDate: datePartOf(end),
     endTime: timePartOf(end),
     repeatUntil: addMonths(today, 3),
-    expectedPaymentDate: suggestPaymentDate(end, settings.paymentTermDays),
   }
 }
 
@@ -194,21 +180,18 @@ export function syncMoney(values: ShiftFormValues, edited: PaymentMode): ShiftFo
   }
 }
 
-/** Datas de início de cada ocorrência da série, respeitando a data limite. */
-export function repeatDates(values: ShiftFormValues): LocalDate[] {
-  if (values.repeat === 'none') return [values.startDate]
-
-  const dates: LocalDate[] = []
-  let current = values.startDate
-
-  while (current <= values.repeatUntil && dates.length < MAX_OCCURRENCES) {
-    dates.push(current)
-    current =
-      values.repeat === 'monthly'
-        ? addMonths(current, 1)
-        : addDays(current, values.repeat === 'daily' ? 1 : values.repeat === 'weekly' ? 7 : 14)
-  }
-
-  // A primeira ocorrência sempre entra, mesmo se o limite for anterior a ela.
-  return dates.length > 0 ? dates : [values.startDate]
+/**
+ * Instantes de início de cada plantão da série, respeitando a data limite.
+ *
+ * A conta mora em `domain/recurrence.ts`; aqui só se junta a data e a hora do
+ * formulário. A primeira ocorrência pode ser ANTES da data digitada quando a
+ * escala marca dias da semana — é o comportamento pedido: a série começa no
+ * dia marcado, mesmo que esse dia já tenha passado.
+ */
+export function repeatStarts(values: ShiftFormValues): LocalDateTime[] {
+  return recurrenceStarts(
+    joinDateTime(values.startDate, values.startTime),
+    values.recurrence,
+    values.repeatUntil,
+  )
 }

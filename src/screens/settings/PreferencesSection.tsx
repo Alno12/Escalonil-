@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Card, SectionHeader } from '@/components/ui/Card'
-import { ChipGroup, Field, FieldRow, MoneyInput, TextInput } from '@/components/ui/Field'
+import { ChipGroup, Field, FieldRow, MoneyInput } from '@/components/ui/Field'
 import { useAppData } from '@/state/appDataContext'
-import { useToast } from '@/state/toastContext'
 import { saveSettings } from '@/data/repository'
 import type { Settings } from '@/db/types'
 import { parseMoneyInput } from '@/domain/money'
@@ -15,7 +14,7 @@ export function PreferencesSection() {
 
   // A chave remonta o formulário quando as preferências mudam por fora
   // (por exemplo, ao restaurar um backup), sem efeito de sincronização.
-  const signature = `${settings.defaultFixedAmount}|${settings.defaultHourlyRate}|${settings.paymentTermDays}`
+  const signature = `${settings.defaultFixedAmount}|${settings.defaultHourlyRate}`
 
   return (
     <section aria-label="Preferências financeiras">
@@ -28,10 +27,8 @@ export function PreferencesSection() {
 }
 
 function PreferencesForm({ settings }: { settings: Settings }) {
-  const toast = useToast()
   const [fixed, setFixed] = useState(moneyToText(settings.defaultFixedAmount))
   const [hourly, setHourly] = useState(moneyToText(settings.defaultHourlyRate))
-  const [term, setTerm] = useState(String(settings.paymentTermDays))
 
   return (
     <div className="form">
@@ -71,28 +68,6 @@ function PreferencesForm({ settings }: { settings: Settings }) {
         </Field>
       </FieldRow>
 
-      <Field
-        label="Prazo de pagamento"
-        htmlFor="pref-term"
-        hint="Dias após o plantão para sugerir a data prevista de pagamento."
-      >
-        <TextInput
-          id="pref-term"
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={365}
-          value={term}
-          onChange={(e) => setTerm(e.target.value)}
-          onBlur={() => {
-            const days = Math.min(365, Math.max(0, Number(term) || 0))
-            setTerm(String(days))
-            if (days !== settings.paymentTermDays) {
-              void saveSettings({ paymentTermDays: days }).then(() => toast.show('Preferências salvas'))
-            }
-          }}
-        />
-      </Field>
     </div>
   )
 }

@@ -13,6 +13,8 @@ interface SheetProps {
   footer?: ReactNode
   /** Ação no canto superior direito (ex.: "Salvar"). */
   action?: ReactNode
+  /** Texto do botão de fechar. "Voltar" quando a folha veio de outra. */
+  closeLabel?: string
   /** 'full' ocupa quase a tela toda; 'auto' cresce com o conteúdo. */
   size?: 'full' | 'auto'
 }
@@ -29,6 +31,7 @@ export function Sheet({
   children,
   footer,
   action,
+  closeLabel = 'Cancelar',
   size = 'full',
 }: SheetProps) {
   const { mounted, visible } = useMountTransition(open, 240)
@@ -57,7 +60,7 @@ export function Sheet({
         <div className="sheet__grip" aria-hidden="true" />
         <header className="sheet__header">
           <button className="sheet__close" onClick={onClose}>
-            Cancelar
+            {closeLabel}
           </button>
           <div className="sheet__titles">
             <h2 className="sheet__title">{title}</h2>

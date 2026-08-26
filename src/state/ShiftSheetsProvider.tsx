@@ -82,7 +82,6 @@ export function ShiftSheetsProvider({ children }: { children: ReactNode }) {
             view.shift,
             view.location?.name ?? '',
             view.location?.color ?? 'blue',
-            settings,
           ),
         })
       },

@@ -12,12 +12,13 @@ vai trabalhar, quanto vai trabalhar e quanto tem para receber**.
   do mês e lista dos próximos plantões.
 - **Agenda** — visualização por semana, calendário mensal e lista cronológica
   com busca e filtros.
-- **Financeiro** — previsto, a receber, recebido e atrasado; registro de
-  recebimento com indicação de divergência entre o previsto e o recebido.
+- **Financeiro** — previsto, a receber e recebido; registro de recebimento com
+  indicação de divergência entre o previsto e o recebido. O app não controla
+  prazos: plantão realizado fica "a receber" até você marcar como pago.
 - **Relatórios** — indicadores do período, evolução mensal, insights gerados
   localmente e desempenho por local.
-- **Configurações** — tema, preferências de cadastro, locais, tipos de plantão,
-  backup em JSON e exportação para CSV.
+- **Ajustes** — tema (o app abre no claro), preferências de cadastro, locais e
+  suas cores, tipos de plantão, backup em JSON e exportação para CSV.
 
 Detecção de conflitos de horário, plantões que atravessam a meia-noite e
 histórico completo estão incluídos.
@@ -76,6 +77,27 @@ execução.
 O `BASE_PATH` é derivado do nome do repositório automaticamente no workflow,
 então a publicação funciona em `https://<usuário>.github.io/<repositório>/`.
 
+## Publicando no Netlify
+
+O `netlify.toml` na raiz já traz tudo: comando de build, pasta publicada,
+versão do Node, o redirect de rota e os cabeçalhos de cache. Uma vez só, no
+painel do Netlify:
+
+**Add new site → Import an existing project → GitHub → `Escalonil-`**
+
+Não é preciso preencher comando nem diretório: o Netlify lê o `netlify.toml`.
+Depois disso, todo push na `main` republica o site e todo pull request ganha um
+preview com endereço próprio.
+
+A diferença para o GitHub Pages é só o endereço: o Pages serve em
+`/Escalonil-/` e o Netlify serve na raiz. Quem cuida disso é o `BASE_PATH`, e
+os dois destinos convivem sem conflito — o mesmo commit publica nos dois.
+
+> Os dados ficam no IndexedDB do navegador, que é separado por domínio. Abrir o
+> app no endereço do Netlify começa do zero, sem os plantões que estão no
+> endereço do GitHub Pages. Para levar o histórico, exporte o backup em um e
+> importe no outro.
+
 ## Instalando no iPhone
 
 1. Abra o endereço publicado no **Safari** (o Chrome no iOS não instala PWA).
@@ -91,9 +113,13 @@ Atualizar"** em vez de deixar o usuário preso na versão antiga.
 Não existe servidor nem sincronização. Se o usuário apagar os dados do site,
 trocar de aparelho ou desinstalar o app, os plantões vão junto.
 
-**Configurações → Backup → Exportar backup** gera um `plantoes-backup-AAAA-MM-DD.json`
+**Ajustes → Backup → Exportar backup** gera um `plantoes-backup-AAAA-MM-DD.json`
 com plantões, locais, recebimentos e preferências. A importação substitui todos
 os dados atuais (não mescla) e pede confirmação antes.
+
+Logo abaixo, **Apagar dados → Apagar todos os dados** recomeça do zero: apaga
+plantões, locais e recebimentos deste aparelho e mantém as preferências. Pede
+confirmação e não tem volta.
 
 ## Arquitetura
 

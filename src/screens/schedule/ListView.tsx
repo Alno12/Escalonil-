@@ -17,13 +17,14 @@ import {
 } from '@/domain/datetime'
 import { filterByRange, sortByStart } from '@/domain/summary'
 
-type RangeFilter = 'upcoming' | 'done' | 'thisMonth' | 'lastMonth' | 'custom'
-type StatusFilter = 'all' | 'pending' | 'overdue' | 'received'
+type RangeFilter = 'upcoming' | 'done' | 'thisMonth' | 'nextMonth' | 'lastMonth' | 'custom'
+type StatusFilter = 'all' | 'pending' | 'received'
 
 const RANGE_OPTIONS: { value: RangeFilter; label: string }[] = [
   { value: 'upcoming', label: 'Próximos' },
   { value: 'done', label: 'Realizados' },
   { value: 'thisMonth', label: 'Mês atual' },
+  { value: 'nextMonth', label: 'Próximo mês' },
   { value: 'lastMonth', label: 'Mês anterior' },
   { value: 'custom', label: 'Personalizado' },
 ]
@@ -31,7 +32,6 @@ const RANGE_OPTIONS: { value: RangeFilter; label: string }[] = [
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'Todos' },
   { value: 'pending', label: 'A receber' },
-  { value: 'overdue', label: 'Atrasados' },
   { value: 'received', label: 'Recebidos' },
 ]
 
@@ -64,6 +64,13 @@ export function ListView() {
         result = sortByStart(
           result.filter((v) => monthPartOf(v.shift.startDateTime) === monthPartOf(today)),
           'desc',
+        )
+        break
+      case 'nextMonth':
+        result = sortByStart(
+          result.filter(
+            (v) => monthPartOf(v.shift.startDateTime) === monthPartOf(addMonths(today, 1)),
+          ),
         )
         break
       case 'lastMonth':
