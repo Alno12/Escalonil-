@@ -3,71 +3,84 @@ import { Card, SectionHeader } from '@/components/ui/Card'
 import { ChipGroup, Field, FieldRow, MoneyInput } from '@/components/ui/Field'
 import { useAppData } from '@/state/appDataContext'
 import { saveSettings } from '@/data/repository'
-import type { Settings } from '@/db/types'
-import { parseMoneyInput } from '@/domain/money'
-
-const moneyToText = (value: number) => (value > 0 ? String(value).replace('.', ',') : '')
+import { moneyToInput, parseMoneyInput } from '@/domain/money'
 
 /** Valores que já vêm preenchidos ao cadastrar um plantão novo. */
 export function PreferencesSection() {
   const { settings } = useAppData()
 
-  // A chave remonta o formulário quando as preferências mudam por fora
-  // (por exemplo, ao restaurar um backup), sem efeito de sincronização.
-  const signature = `${settings.defaultFixedAmount}|${settings.defaultHourlyRate}`
-
   return (
     <section aria-label="Preferências financeiras">
       <SectionHeader title="Preferências" hint="Usadas para preencher novos plantões" />
       <Card>
-        <PreferencesForm key={signature} settings={settings} />
+        <div className="form">
+          <Field label="Forma de pagamento padrão">
+            <ChipGroup
+              ariaLabel="Forma de pagamento padrão"
+              options={[
+                { value: 'fixed', label: 'Valor fixo' },
+                { value: 'hourly', label: 'Valor por hora' },
+              ]}
+              value={settings.defaultPaymentMode}
+              onChange={(value) => {
+                void saveSettings({ defaultPaymentMode: value as 'fixed' | 'hourly' })
+              }}
+            />
+          </Field>
+
+          <FieldRow>
+            <MoneyPref
+              key={`fixed-${settings.defaultFixedAmount}`}
+              id="pref-fixed"
+              label="Valor fixo padrão"
+              amount={settings.defaultFixedAmount}
+              onSave={(defaultFixedAmount) => void saveSettings({ defaultFixedAmount })}
+            />
+            <MoneyPref
+              key={`hourly-${settings.defaultHourlyRate}`}
+              id="pref-hourly"
+              label="Valor/hora padrão"
+              suffix="/h"
+              amount={settings.defaultHourlyRate}
+              onSave={(defaultHourlyRate) => void saveSettings({ defaultHourlyRate })}
+            />
+          </FieldRow>
+        </div>
       </Card>
     </section>
   )
 }
 
-function PreferencesForm({ settings }: { settings: Settings }) {
-  const [fixed, setFixed] = useState(moneyToText(settings.defaultFixedAmount))
-  const [hourly, setHourly] = useState(moneyToText(settings.defaultHourlyRate))
+interface MoneyPrefProps {
+  id: string
+  label: string
+  amount: number
+  suffix?: string
+  onSave: (value: number) => void
+}
+
+/**
+ * Um valor padrão, com o texto digitado em estado local e a gravação no blur.
+ *
+ * Cada campo é remontado pela SUA chave, e não por uma chave do formulário
+ * inteiro: gravar um valor remontava os dois, e o campo que o usuário tinha
+ * acabado de tocar perdia o foco — no iPhone, o teclado abria e fechava. Como
+ * a remontagem agora só atinge o campo que já está desfocado, ela não
+ * atrapalha nada e continua servindo para o que existe: trazer os valores
+ * novos depois de restaurar um backup.
+ */
+function MoneyPref({ id, label, amount, suffix, onSave }: MoneyPrefProps) {
+  const [text, setText] = useState(() => moneyToInput(amount))
 
   return (
-    <div className="form">
-      <Field label="Forma de pagamento padrão">
-        <ChipGroup
-          ariaLabel="Forma de pagamento padrão"
-          options={[
-            { value: 'fixed', label: 'Valor fixo' },
-            { value: 'hourly', label: 'Valor por hora' },
-          ]}
-          value={settings.defaultPaymentMode}
-          onChange={(value) => {
-            void saveSettings({ defaultPaymentMode: value as 'fixed' | 'hourly' })
-          }}
-        />
-      </Field>
-
-      <FieldRow>
-        <Field label="Valor fixo padrão" htmlFor="pref-fixed">
-          <MoneyInput
-            id="pref-fixed"
-            value={fixed}
-            placeholder="0"
-            onChange={(e) => setFixed(e.target.value)}
-            onBlur={() => void saveSettings({ defaultFixedAmount: parseMoneyInput(fixed) })}
-          />
-        </Field>
-        <Field label="Valor/hora padrão" htmlFor="pref-hourly">
-          <MoneyInput
-            id="pref-hourly"
-            value={hourly}
-            placeholder="0"
-            suffix="/h"
-            onChange={(e) => setHourly(e.target.value)}
-            onBlur={() => void saveSettings({ defaultHourlyRate: parseMoneyInput(hourly) })}
-          />
-        </Field>
-      </FieldRow>
-
-    </div>
+    <Field label={label} htmlFor={id}>
+      <MoneyInput
+        id={id}
+        value={text}
+        suffix={suffix}
+        onValueChange={setText}
+        onBlur={() => onSave(parseMoneyInput(text))}
+      />
+    </Field>
   )
 }

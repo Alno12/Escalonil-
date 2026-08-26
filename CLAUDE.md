@@ -171,7 +171,15 @@ dependem da ordem no arquivo. Prefira regras descendentes
 vez por isso.
 
 - Estado local de formulário é reiniciado por **remontagem via `key`**
-  (`ShiftSheetsProvider`), nunca por `useEffect` de sincronização.
+  (`ShiftSheetsProvider`), nunca por `useEffect` de sincronização. A chave tem
+  que cercar só o campo que precisa remontar: em `PreferencesSection` ela
+  envolvia o formulário inteiro, então gravar um valor no blur derrubava o foco
+  do campo vizinho e fechava o teclado no iPhone.
+- **Todo campo de dinheiro usa `useMoneyMask`.** O valor se preenche da direita
+  para a esquerda (1 → 0,01 → 0,12 → 1,20 → 12,00 → 1.200,00) e o cursor mora
+  no fim, como numa calculadora. `moneyToInput` produz exatamente o texto que a
+  máscara geraria, e `parseMoneyInput` lê esse texto de volta — os três andam
+  juntos, não mexa em um sem os outros.
 - `useMountTransition` mantém folhas e diálogos montados durante a animação de
   saída.
 - Toda cor, espaçamento e sombra vem de `styles/tokens.css`. Não escreva valores

@@ -235,22 +235,22 @@ describe('repeatStarts', () => {
 
 describe('syncMoney', () => {
   it('deriva o valor por hora quando o total é digitado', () => {
-    const values = syncMoney(base({ amountText: '1200' }), 'fixed')
+    const values = syncMoney(base({ amountText: '1.200,00' }), 'fixed')
     expect(values.paymentMode).toBe('fixed')
-    expect(values.hourlyText).toBe('100')
+    expect(values.hourlyText).toBe('100,00')
     expect(formExpectedAmount(values)).toBe(1200)
   })
 
   it('deriva o total quando o valor por hora é digitado', () => {
-    const values = syncMoney(base({ hourlyText: '100' }), 'hourly')
+    const values = syncMoney(base({ hourlyText: '100,00' }), 'hourly')
     expect(values.paymentMode).toBe('hourly')
-    expect(values.amountText).toBe('1200')
+    expect(values.amountText).toBe('1.200,00')
     expect(formExpectedAmount(values)).toBe(1200)
   })
 
   it('acompanha a duração: 36h a R$ 100/h dão R$ 3.600', () => {
     const values = syncMoney(applyDuration(base(), 36), 'hourly')
-    expect(formExpectedAmount({ ...values, hourlyText: '100' })).toBe(3600)
+    expect(formExpectedAmount({ ...values, hourlyText: '100,00' })).toBe(3600)
   })
 
   it('limpa o outro campo quando o valor é zerado', () => {

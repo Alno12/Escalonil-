@@ -51,6 +51,37 @@ export function formatPercent(value: number): string {
   return `${decimal.format(value)}%`
 }
 
+/**
+ * Máscara de digitação: o valor se preenche da direita para a esquerda.
+ *
+ * Digitar 1, 2, 0, 0, 0, 0 mostra 0,01 → 0,12 → 1,20 → 12,00 → 120,00 →
+ * 1.200,00, e apagar desfaz na mesma ordem. É como funciona qualquer app de
+ * banco: o plantonista nunca digita vírgula nem ponto, só os números.
+ *
+ * Campo vazio devolve string vazia (e não "0,00") para o placeholder aparecer.
+ */
+const MAX_MONEY_DIGITS = 11 // até R$ 999.999.999,99
+
+const moneyInput = new Intl.NumberFormat('pt-BR', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+export function maskMoneyInput(raw: string): string {
+  const digits = raw
+    .replace(/\D/g, '')
+    .replace(/^0+(?=\d)/, '')
+    .slice(0, MAX_MONEY_DIGITS)
+  if (!digits) return ''
+  return moneyInput.format(Number(digits) / 100)
+}
+
+/** Valor guardado no banco no formato do campo — "1.200,00". Zero vira vazio. */
+export function moneyToInput(value: number): string {
+  const rounded = roundMoney(value)
+  return rounded > 0 ? moneyInput.format(rounded) : ''
+}
+
 /** "1.200", "12.345.678" — pontos usados como separador de milhar. */
 const THOUSANDS_ONLY = /^-?\d{1,3}(\.\d{3})+$/
 

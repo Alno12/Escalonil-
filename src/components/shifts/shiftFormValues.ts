@@ -15,7 +15,7 @@ import {
   type Recurrence,
 } from '@/domain/recurrence'
 import { computeExpectedAmount } from '@/domain/shift'
-import { parseMoneyInput, roundMoney } from '@/domain/money'
+import { moneyToInput, parseMoneyInput, roundMoney } from '@/domain/money'
 
 /** Atalhos de duração do formulário, em horas. */
 export const DURATION_SHORTCUTS = [6, 12, 24, 36, 48]
@@ -42,9 +42,6 @@ export interface ShiftFormValues {
   notes: string
 }
 
-const moneyToText = (value: number) =>
-  value > 0 ? value.toFixed(2).replace('.', ',').replace(/,00$/, '') : ''
-
 export function emptyForm(settings: Settings, date?: LocalDate): ShiftFormValues {
   const startDate = date ?? todayISO()
   const start = joinDateTime(startDate, '19:00')
@@ -60,8 +57,8 @@ export function emptyForm(settings: Settings, date?: LocalDate): ShiftFormValues
     endTime: timePartOf(end),
     recurrence: NO_RECURRENCE,
     repeatUntil: addMonths(startDate, 3),
-    amountText: moneyToText(settings.defaultFixedAmount),
-    hourlyText: moneyToText(settings.defaultHourlyRate),
+    amountText: moneyToInput(settings.defaultFixedAmount),
+    hourlyText: moneyToInput(settings.defaultHourlyRate),
     paymentMode: settings.defaultPaymentMode,
     notes: '',
   }
@@ -85,8 +82,8 @@ export function formFromShift(
     // Repetição é sempre uma escolha nova: editar ou duplicar não recria a série.
     recurrence: NO_RECURRENCE,
     repeatUntil: addMonths(datePartOf(shift.startDateTime), 3),
-    amountText: moneyToText(shift.expectedAmount),
-    hourlyText: moneyToText(
+    amountText: moneyToInput(shift.expectedAmount),
+    hourlyText: moneyToInput(
       shift.hourlyRate > 0 ? shift.hourlyRate : hours > 0 ? roundMoney(shift.expectedAmount / hours) : 0,
     ),
     paymentMode: shift.paymentMode,
@@ -168,7 +165,7 @@ export function syncMoney(values: ShiftFormValues, edited: PaymentMode): ShiftFo
     return {
       ...values,
       paymentMode: 'fixed',
-      hourlyText: total > 0 ? moneyToText(roundMoney(total / hours)) : '',
+      hourlyText: total > 0 ? moneyToInput(roundMoney(total / hours)) : '',
     }
   }
 
@@ -176,7 +173,7 @@ export function syncMoney(values: ShiftFormValues, edited: PaymentMode): ShiftFo
   return {
     ...values,
     paymentMode: 'hourly',
-    amountText: hourly > 0 ? moneyToText(roundMoney(hourly * hours)) : '',
+    amountText: hourly > 0 ? moneyToInput(roundMoney(hourly * hours)) : '',
   }
 }
 
