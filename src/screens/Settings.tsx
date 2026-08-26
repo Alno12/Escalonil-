@@ -47,9 +47,15 @@ export function Settings() {
           <Card>
             <div className="about">
               <div className="about__head">
-                <span className="about__mark" aria-hidden="true">
-                  <Icon name="chart" size={20} />
-                </span>
+                {/* O ícone oficial do app, o mesmo da Tela de Início.
+                    `BASE_URL` porque o Pages serve numa subrota. */}
+                <img
+                  className="about__mark"
+                  src={`${import.meta.env.BASE_URL}icons/icon-192.png`}
+                  alt=""
+                  width={42}
+                  height={42}
+                />
                 <div>
                   <strong>Escalonil</strong>
                   <p>Organizador de plantões · versão {APP_VERSION}</p>

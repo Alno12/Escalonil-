@@ -93,6 +93,7 @@ export function MonthView({ selected, onSelect }: MonthViewProps) {
                   'calendar__day',
                   inMonth ? '' : 'is-outside',
                   count > 0 ? 'has-shifts' : '',
+                  count > 1 ? 'has-many' : '',
                   day === today ? 'is-today' : '',
                   day === selected ? 'is-selected' : '',
                 ]
