@@ -5,6 +5,7 @@
  */
 import { db, newId, nowStamp, nextLocationColor, DEFAULT_SETTINGS } from '@/db/db'
 import type { Location, LocationColor, Payment, Settings, Shift } from '@/db/types'
+import { findLocationByName, normalizeLocationName } from '@/domain/location'
 import { computeExpectedAmount } from '@/domain/shift'
 
 // ---------------- Configurações ----------------
@@ -23,19 +24,17 @@ export async function saveSettings(patch: Partial<Omit<Settings, 'id'>>): Promis
 
 // ---------------- Locais ----------------
 
-const normalizeName = (name: string) => name.trim().replace(/\s+/g, ' ')
-
 /**
  * Busca por nome (sem diferenciar maiúsculas) ou cria um local novo.
  * `color` só é aplicada quando informada — assim salvar um plantão sem mexer
  * na cor nunca sobrescreve a que o local já tinha.
  */
 export async function ensureLocation(name: string, color?: LocationColor): Promise<Location> {
-  const clean = normalizeName(name)
+  const clean = normalizeLocationName(name)
   if (!clean) throw new Error('O local não pode ficar em branco.')
 
   const all = await db.locations.toArray()
-  const found = all.find((l) => l.name.toLowerCase() === clean.toLowerCase())
+  const found = findLocationByName(all, clean)
   if (found) {
     if (color && color !== found.color) {
       await db.locations.update(found.id, { color })
@@ -60,10 +59,13 @@ export async function setLocationColor(id: string, color: LocationColor): Promis
 }
 
 export async function renameLocation(id: string, name: string): Promise<void> {
-  const clean = normalizeName(name)
+  const clean = normalizeLocationName(name)
   if (!clean) throw new Error('O local não pode ficar em branco.')
   const all = await db.locations.toArray()
-  const clash = all.find((l) => l.id !== id && l.name.toLowerCase() === clean.toLowerCase())
+  const clash = findLocationByName(
+    all.filter((l) => l.id !== id),
+    clean,
+  )
   if (clash) throw new Error('Já existe um local com esse nome.')
   await db.locations.update(id, { name: clean })
 }

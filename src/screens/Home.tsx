@@ -80,7 +80,7 @@ export function Home() {
           )}
 
           <section aria-label="Esta semana">
-            <Link to="/agenda" className="card card--padded summary-card">
+            <Link to="/agenda?v=semana" className="card card--padded summary-card">
               <span className="card-title" style={{ color: 'var(--green)' }}>
                 <Icon name="calendar" size={16} />
                 Esta semana
@@ -95,7 +95,9 @@ export function Home() {
           </section>
 
           <section aria-label="Este mês">
-            <Link to="/relatorios" className="card card--padded summary-card">
+            {/* Os dois cards são recortes da agenda: cada um cai na sua
+                visualização, não em Relatórios. */}
+            <Link to="/agenda?v=mes" className="card card--padded summary-card">
               <span className="card-title" style={{ color: 'var(--purple)' }}>
                 <Icon name="calendar" size={16} />
                 Este mês

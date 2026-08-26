@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { LoadingScreen } from '@/components/ui/Skeleton'
@@ -15,9 +16,17 @@ const TABS = [
   { value: 'list' as const, label: 'Lista' },
 ]
 
+/**
+ * Visualização pedida na URL (`#/agenda?v=mes`), para que os cards do Início
+ * caiam direto no recorte certo. Lida uma vez, na montagem: trocar de aba
+ * depois é escolha do usuário e não mexe no endereço.
+ */
+const TAB_BY_PARAM: Record<string, Tab> = { semana: 'week', mes: 'month', lista: 'list' }
+
 export function Schedule() {
   const { ready, today, views } = useAppData()
-  const [tab, setTab] = useState<Tab>('week')
+  const [params] = useSearchParams()
+  const [tab, setTab] = useState<Tab>(() => TAB_BY_PARAM[params.get('v') ?? ''] ?? 'week')
   const [reference, setReference] = useState(today)
 
   return (

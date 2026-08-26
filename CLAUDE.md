@@ -20,6 +20,7 @@ src/
 │   ├── money.ts      formatação e leitura de valores em BRL
 │   ├── shift.ts      duração, valor esperado, situação do plantão/pagamento
 │   ├── conflicts.ts  sobreposição de horários
+│   ├── location.ts   o que conta como "o mesmo lugar"
 │   ├── recurrence.ts escalas (12×36, 5×2) e recorrências de uma série
 │   ├── backupReminder.ts  quando cobrar um backup novo
 │   ├── summary.ts    somas financeiras e recortes de agenda
@@ -107,6 +108,14 @@ em rodízio. Escolher uma escala de HORAS também define a duração do plantão
 (`recurrenceShiftHours`) — um 12×36 é feito de plantões de 12h. Escalas de dias
 não mexem na duração.
 
+**13. Só existe UMA regra de "mesmo local", e ela mora em `domain/location.ts`.**
+`sameLocationName` ignora maiúsculas e espaço sobrando; `ensureLocation`, o
+formulário e o seletor usam todos ela. Já quebrou uma vez por ter duas contas
+diferentes: a tela achava que "upa  centro" era um local novo, o banco achava
+que era o antigo, e a cor do local existente era sobrescrita sem ninguém pedir.
+Se precisar comparar nome de local em qualquer lugar novo, importe daqui — não
+escreva `.toLowerCase()` no componente.
+
 **12. Recebimento em lote nunca rateia valores.**
 `registerPayments` grava cada plantão pelo próprio `expectedAmount`. Se o
 depósito veio diferente, o ajuste é plantão a plantão — inventar um rateio
@@ -144,6 +153,9 @@ O app segue a linguagem do Apple Saúde:
   (`left: var(--row-pad)`), nunca por bordas completas.
 - Cinco abas no rodapé, sem botão de ação no meio. **Novo plantão** vive no
   canto superior direito de cada tela (`ScreenHeader`).
+- Os cards "Esta semana" e "Este mês" do Início são recortes da AGENDA, não dos
+  relatórios: cada um abre `#/agenda?v=semana` ou `?v=mes` e cai na
+  visualização certa. `Schedule` lê esse parâmetro uma vez, na montagem.
 - Números usam `.num` (tabular) para alinhar em colunas.
 
 Cuidado com a cascata: modificadores com a MESMA especificidade da regra base

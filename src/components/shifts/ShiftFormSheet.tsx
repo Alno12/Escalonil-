@@ -8,6 +8,7 @@ import { useAppData } from '@/state/appDataContext'
 import { useToast } from '@/state/toastContext'
 import { createShifts, ensureLocation, updateShift, type ShiftInput } from '@/data/repository'
 import { findConflicts } from '@/domain/conflicts'
+import { findLocationByName } from '@/domain/location'
 import {
   addHours,
   datePartOf,
@@ -28,6 +29,7 @@ import {
   WEEKDAY_OPTIONS,
   type Recurrence,
 } from '@/domain/recurrence'
+import { LocationSheet } from './LocationSheet'
 import { RecurrenceSheet } from './RecurrenceSheet'
 import {
   activeDurationShortcut,
@@ -73,6 +75,7 @@ export function ShiftFormSheet({
   const [saving, setSaving] = useState(false)
   const [confirmConflict, setConfirmConflict] = useState(false)
   const [pickingRecurrence, setPickingRecurrence] = useState(false)
+  const [pickingLocation, setPickingLocation] = useState(false)
 
   const patch = (next: Partial<ShiftFormValues>) => {
     setValues((prev) => ({ ...prev, ...next }))
@@ -120,6 +123,17 @@ export function ShiftFormSheet({
     })
 
   /**
+   * O local manda na cor (invariante 10): escolher um lugar já usado traz a
+   * cor dele. Para um nome novo vale a cor oferecida pelo seletor — a próxima
+   * livre da paleta —, senão dois locais novos nasceriam com a mesma cor.
+   */
+  const chooseLocation = (locationName: string, color?: LocationColor) =>
+    setValues((prev) => {
+      const known = findLocationByName(locations, locationName)
+      return { ...prev, locationName, color: known?.color ?? color ?? prev.color }
+    })
+
+  /**
    * Escolher uma escala de horas define a duração do plantão: um 12×36 é
    * feito de plantões de 12 horas.
    */
@@ -157,9 +171,7 @@ export function ShiftFormSheet({
     )
   }, [ranges, shifts, shiftId])
 
-  const knownLocation = locations.find(
-    (l) => l.name.toLowerCase() === values.locationName.trim().toLowerCase(),
-  )
+  const knownLocation = findLocationByName(locations, values.locationName)
 
   async function persist() {
     setSaving(true)
@@ -238,29 +250,31 @@ export function ShiftFormSheet({
               />
             </label>
 
-            <label className="row">
-              <span className="row__label">Local</span>
-              <input
-                className="input"
-                type="text"
-                list="locais"
-                value={values.locationName}
-                placeholder="UPA Centro"
-                autoComplete="off"
-                onChange={(e) => {
-                  const name = e.target.value
-                  const known = locations.find(
-                    (l) => l.name.toLowerCase() === name.trim().toLowerCase(),
-                  )
-                  patch(known ? { locationName: name, color: known.color } : { locationName: name })
-                }}
-              />
-            </label>
-            <datalist id="locais">
-              {locations.map((l) => (
-                <option key={l.id} value={l.name} />
-              ))}
-            </datalist>
+            {/* Sem nenhum local salvo não há o que escolher: o campo de texto
+                evita uma tela intermediária vazia no primeiro plantão. */}
+            {locations.length === 0 ? (
+              <label className="row">
+                <span className="row__label">Local</span>
+                <input
+                  className="input"
+                  type="text"
+                  value={values.locationName}
+                  placeholder="UPA Centro"
+                  autoComplete="off"
+                  onChange={(e) => chooseLocation(e.target.value)}
+                />
+              </label>
+            ) : (
+              <button type="button" className="row" onClick={() => setPickingLocation(true)}>
+                <span className="row__label">Local</span>
+                <span
+                  className={`row__value ${values.locationName.trim() ? '' : 'row__value--muted'}`}
+                >
+                  {values.locationName.trim() || 'Escolher'}
+                </span>
+                <Icon name="chevronRight" size={17} className="row__chevron" />
+              </button>
+            )}
 
             <div className="row">
               <span className="row__label">Cor</span>
@@ -518,6 +532,14 @@ export function ShiftFormSheet({
           </Button>
         </div>
       </Sheet>
+
+      <LocationSheet
+        open={pickingLocation}
+        value={values.locationName}
+        locations={locations}
+        onChange={chooseLocation}
+        onClose={() => setPickingLocation(false)}
+      />
 
       <RecurrenceSheet
         open={pickingRecurrence}
