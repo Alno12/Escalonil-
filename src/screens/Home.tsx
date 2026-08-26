@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Button } from '@/components/ui/Button'
@@ -79,37 +79,28 @@ export function Home() {
             </section>
           )}
 
-          <section aria-label="Esta semana">
-            <Link to="/agenda" className="card card--padded summary-card">
-              <span className="card-title" style={{ color: 'var(--green)' }}>
-                <Icon name="calendar" size={16} />
-                Esta semana
-                <Icon name="chevronRight" size={14} className="card-title__chevron" />
-              </span>
-              <span className="summary-card__stats">
-                <Stat value={String(week.shifts)} label={week.shifts === 1 ? 'plantão' : 'plantões'} />
-                <Stat value={`${formatNumber(week.hours)}h`} label="horas" />
-                <Stat value={formatMoneyCompact(week.expected)} label="previsto" />
-              </span>
-            </Link>
-          </section>
-
-          <section aria-label="Este mês">
-            <Link to="/relatorios" className="card card--padded summary-card">
-              <span className="card-title" style={{ color: 'var(--purple)' }}>
-                <Icon name="calendar" size={16} />
-                Este mês
-                <Icon name="chevronRight" size={14} className="card-title__chevron" />
-              </span>
-              <span className="summary-card__stats">
-                <Stat
-                  value={String(month.shifts)}
-                  label={month.shifts === 1 ? 'plantão' : 'plantões'}
-                />
-                <Stat value={`${formatNumber(month.hours)}h`} label="horas" />
-                <Stat value={formatMoneyCompact(month.expected)} label="previsto" />
-              </span>
-            </Link>
+          {/* Semana e mês são o mesmo resumo em dois recortes: duas linhas de
+              um cartão só, para o começo de "Próximos plantões" caber na
+              primeira tela. */}
+          <section aria-label="Resumo">
+            <div className="card rows">
+              <SummaryRow
+                to="/agenda?v=semana"
+                title="Esta semana"
+                tone="--green"
+                shifts={week.shifts}
+                hours={week.hours}
+                expected={week.expected}
+              />
+              <SummaryRow
+                to="/agenda?v=mes"
+                title="Este mês"
+                tone="--purple"
+                shifts={month.shifts}
+                hours={month.hours}
+                expected={month.expected}
+              />
+            </div>
           </section>
 
           <section aria-label="Financeiro">
@@ -119,9 +110,10 @@ export function Home() {
                 Ver tudo
               </Link>
             </div>
+            {/* O previsto do mês não entra aqui: já está na linha "Este mês"
+                logo acima, e o mesmo número duas vezes só ocupa espaço. */}
             <div className="card rows">
-              <MoneyRow label="Previsto no mês" value={monthMoney.expected} strong />
-              <MoneyRow label="Recebido no mês" value={monthMoney.received} />
+              <MoneyRow label="Recebido no mês" value={monthMoney.received} strong />
               <MoneyRow label="A receber" value={global.pending} strong />
             </div>
           </section>
@@ -148,6 +140,42 @@ export function Home() {
   )
 }
 
+interface SummaryRowProps {
+  to: string
+  title: string
+  /** Token da cor do título (ex.: "--green"). */
+  tone: string
+  shifts: number
+  hours: number
+  expected: number
+}
+
+/** Linha de resumo de um recorte da agenda: contagem, horas e previsto. */
+function SummaryRow({ to, title, tone, shifts, hours, expected }: SummaryRowProps) {
+  return (
+    <Link to={to} className="row summary-row">
+      <span className="summary-row__body">
+        <span className="summary-row__title" style={{ color: `var(${tone})` }}>
+          <Icon name="calendar" size={14} />
+          {title}
+        </span>
+        <span className="summary-row__values num">
+          <strong>{shifts}</strong> {shifts === 1 ? 'plantão' : 'plantões'}
+          <span className="summary-row__sep" aria-hidden="true">
+            ·
+          </span>
+          <strong>{formatNumber(hours)}h</strong>
+          <span className="summary-row__sep" aria-hidden="true">
+            ·
+          </span>
+          <strong>{formatMoneyCompact(expected)}</strong> previsto
+        </span>
+      </span>
+      <Icon name="chevronRight" size={17} className="row__chevron" />
+    </Link>
+  )
+}
+
 function getGreeting(hour: number): string {
   if (hour < 12) return 'Bom dia'
   if (hour < 18) return 'Boa tarde'
@@ -166,7 +194,14 @@ function NextShiftCard({ viewId }: { viewId: string }) {
   const crossesDay = shift.endDateTime.slice(0, 10) !== shift.startDateTime.slice(0, 10)
 
   return (
-    <button type="button" className="card card--padded next" onClick={() => sheets.openShift(shift.id)}>
+    <button
+      type="button"
+      className="card card--padded next"
+      // A cor do local tinge o cartão inteiro: antes de ler o nome já dá para
+      // saber para onde é o plantão.
+      style={{ '--loc': `var(--loc-${location?.color ?? 'blue'})` } as CSSProperties}
+      onClick={() => sheets.openShift(shift.id)}
+    >
       <span className="next__top">
         <span className="card-title next__label">
           {running ? (

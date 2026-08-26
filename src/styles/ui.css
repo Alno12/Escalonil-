@@ -207,6 +207,11 @@ button.row:active {
   font-weight: 600;
 }
 
+/* Valor ainda não preenchido — o mesmo tom de um placeholder. */
+.row__value--muted {
+  color: var(--text-3);
+}
+
 .row__chevron {
   color: var(--text-3);
   flex: none;

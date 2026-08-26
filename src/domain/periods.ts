@@ -2,7 +2,14 @@
 import type { LocalDate } from '@/db/types'
 import { addDays, addMonths, daysBetween, endOfMonth, formatMonthYear, startOfMonth } from './datetime'
 
-export type PeriodKey = 'thisMonth' | 'lastMonth' | 'last3' | 'last6' | 'year' | 'custom'
+export type PeriodKey =
+  | 'thisMonth'
+  | 'nextMonth'
+  | 'lastMonth'
+  | 'last3'
+  | 'last6'
+  | 'year'
+  | 'custom'
 
 export interface Period {
   key: PeriodKey
@@ -20,6 +27,8 @@ export interface Period {
 
 export const PERIOD_OPTIONS: { value: PeriodKey; label: string }[] = [
   { value: 'thisMonth', label: 'Mês atual' },
+  // Olhar para frente: quanto já está escalado e quanto isso vai render.
+  { value: 'nextMonth', label: 'Próximo mês' },
   { value: 'lastMonth', label: 'Mês anterior' },
   { value: 'last3', label: '3 meses' },
   { value: 'last6', label: '6 meses' },
@@ -33,6 +42,21 @@ export function buildPeriod(
   custom?: { from: LocalDate; to: LocalDate },
 ): Period {
   switch (key) {
+    case 'nextMonth': {
+      const ref = addMonths(today, 1)
+      return {
+        key,
+        from: startOfMonth(ref),
+        to: endOfMonth(ref),
+        title: formatMonthYear(ref),
+        label: 'no mês que vem',
+        // O comparativo é o mês corrente: é com ele que se quer comparar o
+        // que já está escalado à frente.
+        previousLabel: 'neste mês',
+        previousFrom: startOfMonth(today),
+        previousTo: endOfMonth(today),
+      }
+    }
     case 'lastMonth': {
       const ref = addMonths(today, -1)
       return {
