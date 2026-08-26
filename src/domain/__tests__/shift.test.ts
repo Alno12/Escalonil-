@@ -12,7 +12,7 @@ import {
 function makeShift(overrides: Partial<Shift> = {}): Shift {
   return {
     id: 's1',
-  seriesId: '',
+    seriesId: '',
     title: '',
     startDateTime: '2026-08-25T19:00',
     endDateTime: '2026-08-26T07:00',
@@ -120,5 +120,28 @@ describe('divergência de pagamento', () => {
     expect(paymentDifference(makePayment({ receivedAmount: 1100 }))).toBe(-100)
     expect(paymentDifference(makePayment({ receivedAmount: 1250.5 }))).toBe(50.5)
     expect(paymentDifference(makePayment())).toBe(0)
+  })
+})
+
+describe('plantão cancelado que já tinha recebimento', () => {
+  const pago = (): Payment => ({
+    id: 'p', shiftId: 's1', expectedAmount: 1000, receivedAmount: 1400,
+    receivedDate: '2026-08-20', notes: '', createdAt: '', updatedAt: '',
+  })
+
+  it('sai dos cálculos pela situação, não por apagar o registro', () => {
+    const cancelado = makeShift({ cancelled: true })
+    expect(getPaymentStatus(cancelado, pago(), toDate('2026-08-26T12:00'))).toBe('cancelled')
+  })
+
+  it('reativar devolve a situação de recebido', () => {
+    const reativado = makeShift({ cancelled: false })
+    expect(getPaymentStatus(reativado, pago(), toDate('2026-08-26T12:00'))).toBe('received')
+  })
+
+  it('a divergência sobrevive ao cancelamento', () => {
+    // A fotografia do previsto continua no Payment (invariante 4), então o
+    // valor da divergência é o mesmo antes e depois de cancelar.
+    expect(paymentDifference(pago())).toBe(400)
   })
 })

@@ -113,7 +113,11 @@ export function ShiftDetailSheet({
                 icon="check"
                 label="Recebido"
                 value={formatMoney(payment.receivedAmount)}
-                hint={`em ${formatDate(payment.receivedDate)}`}
+                hint={
+                  shift.cancelled
+                    ? `guardado · ${formatDate(payment.receivedDate)}`
+                    : `em ${formatDate(payment.receivedDate)}`
+                }
               />
             )}
           </dl>
@@ -182,7 +186,13 @@ export function ShiftDetailSheet({
       <ConfirmDialog
         open={confirmCancel}
         title="Cancelar este plantão?"
-        message="Ele continua no histórico marcado como cancelado e sai dos cálculos de horas e valores."
+        message={
+          payment
+            ? `Ele continua no histórico marcado como cancelado e sai dos cálculos de horas e valores. O recebimento de ${formatMoney(
+                payment.receivedAmount,
+              )} fica guardado e volta se você reativar o plantão.`
+            : 'Ele continua no histórico marcado como cancelado e sai dos cálculos de horas e valores.'
+        }
         confirmLabel="Cancelar plantão"
         cancelLabel="Voltar"
         onConfirm={() => void toggleCancelled()}
