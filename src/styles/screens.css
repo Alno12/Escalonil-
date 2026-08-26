@@ -1408,51 +1408,237 @@
   color: var(--success);
 }
 
+/* ---------------- Passo de período ---------------- */
+/* Anda o período inteiro sem depender dos chips — é como se olha mês a mês. */
+.period-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 11px var(--sp-2);
+}
+
+.period-step::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: var(--row-pad);
+  right: 0;
+  height: 1px;
+  background: var(--separator);
+}
+
+.period-step__btn {
+  display: grid;
+  place-items: center;
+  width: var(--tap-min);
+  height: 38px;
+  flex: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--accent-text);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+.period-step__btn:active {
+  background: var(--fill);
+}
+
+.period-step__mid {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.period-step__title {
+  font-size: var(--text-headline);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.period-step__range {
+  margin-top: 1px;
+  font-size: var(--text-caption);
+  color: var(--text-2);
+}
+
+.metric-grid--inset {
+  padding: var(--sp-4);
+}
+
+/* ---------------- Seletor segmentado ---------------- */
+.seg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--fill);
+  border-radius: 9px;
+}
+
+.seg__item {
+  flex: 1;
+  min-height: 28px;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+.seg__item.is-active {
+  background: var(--seg-active);
+  box-shadow: var(--seg-shadow);
+}
+
+/* ---------------- Variação em pílula ---------------- */
+.trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  padding: 4px var(--sp-2) 4px 6px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+}
+
+/* Verde só onde subir é bom: em horas trabalhadas, não é. */
+.trend--up {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.trend--down,
+.trend--flat {
+  background: var(--fill);
+  color: var(--text-2);
+}
+
+/* ---------------- Gráfico de evolução ---------------- */
 .chart {
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
 }
 
-.chart__bars {
+/* Leitura do mês tocado: doze rótulos completos não cabem no eixo. */
+.chart__read {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: var(--sp-2);
-  height: 160px;
-  overflow-x: auto;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
 }
 
-.chart__col {
+.chart__read-month {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.chart__read-value {
+  margin-top: 1px;
+  font-size: var(--text-title);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.chart__read-sub {
+  margin-top: 2px;
+  font-size: var(--text-caption);
+  color: var(--text-2);
+}
+
+/* Plot e eixo andam juntos: o gap do .chart afastaria os dois. */
+.chart__figure {
+  --chart-axis: 38px;
+}
+
+.chart__plot {
+  position: relative;
+  height: 150px;
+  padding-right: var(--chart-axis);
+}
+
+.chart__grid {
+  position: absolute;
+  inset: 0 var(--chart-axis) 0 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--sp-1);
-  flex: 1 0 42px;
+  justify-content: space-between;
+}
+
+.chart__grid-line {
+  position: relative;
+  height: 1px;
+  background: var(--separator);
+  opacity: 0.55;
+}
+
+.chart__grid-tag {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--chart-axis) * -1);
+  width: calc(var(--chart-axis) - 4px);
+  transform: translateY(-50%);
+  text-align: right;
+  font-size: var(--text-micro);
+  color: var(--text-3);
+}
+
+.chart__bars {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
   height: 100%;
 }
 
-.chart__value {
-  font-size: var(--text-micro);
-  font-weight: 600;
-  color: var(--text-2);
-  white-space: nowrap;
-}
-
-.chart__track {
+.chart__col {
+  position: relative;
   display: flex;
   align-items: flex-end;
   flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  background: transparent;
+}
+
+.chart__col.is-selected::before {
+  content: '';
+  position: absolute;
+  inset: -6px -2px -4px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  opacity: 0.55;
+}
+
+.chart__track {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
   width: 100%;
-  min-height: 0;
+  height: 100%;
 }
 
 .chart__bar {
   position: relative;
   width: 100%;
-  border-radius: var(--radius-sm);
-  background: var(--accent-soft);
+  border-radius: 5px;
+  background: var(--chart-bar);
   overflow: hidden;
   animation: rise-in var(--dur-slow) var(--ease) backwards;
+}
+
+.chart__col.is-selected .chart__bar {
+  background: var(--chart-bar-strong);
 }
 
 .chart__bar-fill {
@@ -1460,14 +1646,28 @@
   left: 0;
   right: 0;
   bottom: 0;
+  border-radius: 5px;
   background: var(--accent);
-  border-radius: var(--radius-sm);
 }
 
-.chart__label {
+.chart__axis {
+  display: flex;
+  gap: 3px;
+  margin-top: 7px;
+  padding-right: var(--chart-axis);
+}
+
+.chart__axis span {
+  flex: 1;
+  text-align: center;
   font-size: var(--text-micro);
   font-weight: 500;
-  color: var(--text-2);
+  color: var(--text-3);
+}
+
+.chart__axis span.is-selected {
+  color: var(--accent-text);
+  font-weight: 700;
 }
 
 .chart__legend {
@@ -1492,7 +1692,7 @@
 }
 
 .chart__swatch--expected {
-  background: var(--accent-soft);
+  background: var(--chart-bar);
 }
 .chart__swatch--received {
   background: var(--accent);
@@ -1506,12 +1706,20 @@
 
 .location-row__head {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-3);
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.location-row__dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
 }
 
 .location-row__name {
+  flex: 1;
+  min-width: 0;
   font-size: var(--text-subhead);
   font-weight: 600;
   white-space: nowrap;
@@ -1537,7 +1745,13 @@
   display: block;
   height: 100%;
   border-radius: var(--radius-pill);
+  /* A cor vem do LOCAL, escrita no style — é dado, não decoração. */
   background: var(--accent);
+}
+
+.location-row__best {
+  color: var(--success);
+  font-weight: 600;
 }
 
 .location-row__meta {
@@ -1796,11 +2010,13 @@
 }
 
 /* ---------------- Telas maiores ---------------- */
-@media (min-width: 30rem) {
+@media (min-width: 34rem) {
   .metric-grid {
     grid-template-columns: repeat(3, 1fr);
   }
+}
 
+@media (min-width: 30rem) {
   .detail__actions {
     grid-template-columns: repeat(4, 1fr);
   }

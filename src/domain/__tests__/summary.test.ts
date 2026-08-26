@@ -154,10 +154,49 @@ describe('relatórios', () => {
     expect(rows[0].share + rows[1].share).toBeCloseTo(100, 1)
   })
 
-  it('monta a série mensal ordenada', () => {
-    const series = buildMonthlySeries(views)
-    expect(series.map((b) => b.month)).toEqual(['2026-08'])
-    expect(series[0].received).toBe(850)
+  it('leva a cor do local para a barra do relatório', () => {
+    const rows = buildLocationReport(agosto)
+    expect(rows.find((r) => r.locationId === 'upa')?.color).toBe('blue')
+    expect(rows.find((r) => r.locationId === 'hosp')?.color).toBe('teal')
+  })
+
+  it('usa uma cor padrão quando o local sumiu', () => {
+    const orfao = buildShiftViews(
+      [shift('sem-local', '2026-08-05T07:00', '2026-08-05T19:00', 700, { locationId: 'foi' })],
+      [],
+      [],
+      NOW,
+    )
+    expect(buildLocationReport(orfao)[0].color).toBe('blue')
+  })
+
+  it('monta doze meses terminando no mês pedido, mesmo os vazios', () => {
+    const series = buildMonthlySeries(views, '2026-08')
+    expect(series).toHaveLength(12)
+    expect(series[0].month).toBe('2025-09')
+    expect(series.at(-1)?.month).toBe('2026-08')
+    expect(series.at(-1)?.received).toBe(850)
+    // Mês sem plantão entra zerado para o eixo não encolher.
+    expect(series[0]).toMatchObject({ shifts: 0, hours: 0, expected: 0, received: 0 })
+  })
+
+  it('a série ignora o recorte do período e atravessa a virada do ano', () => {
+    const series = buildMonthlySeries(views, '2027-01', 6)
+    expect(series.map((b) => b.month)).toEqual([
+      '2026-08',
+      '2026-09',
+      '2026-10',
+      '2026-11',
+      '2026-12',
+      '2027-01',
+    ])
+    expect(series[0].shifts).toBe(5)
+  })
+
+  it('não conta cancelado na série mensal', () => {
+    const series = buildMonthlySeries(views, '2026-08', 1)
+    expect(series[0].shifts).toBe(5)
+    expect(series[0].expected).toBe(4750)
   })
 
   it('gera insights comparando com o período anterior', () => {

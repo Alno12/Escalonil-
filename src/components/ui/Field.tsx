@@ -116,15 +116,22 @@ export function ChipGroup({
   onChange,
   ariaLabel,
   allowClear = false,
+  scroll = false,
 }: {
   options: ChipOption[]
   value: string
   onChange: (value: string) => void
   ariaLabel: string
   allowClear?: boolean
+  /** Uma linha só, rolando de lado — para listas longas no cabeçalho. */
+  scroll?: boolean
 }) {
   return (
-    <div className="chip-group" role="group" aria-label={ariaLabel}>
+    <div
+      className={`chip-group ${scroll ? 'chip-group--scroll' : ''}`.trim()}
+      role="group"
+      aria-label={ariaLabel}
+    >
       {options.map((option) => {
         const active = option.value === value
         return (
