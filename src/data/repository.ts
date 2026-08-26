@@ -6,6 +6,7 @@
 import { db, newId, nowStamp, nextLocationColor, DEFAULT_SETTINGS } from '@/db/db'
 import type { Location, LocationColor, Payment, Settings, Shift } from '@/db/types'
 import { findLocationByName, normalizeLocationName } from '@/domain/location'
+import { addHours, datePartOf, durationInHours, joinDateTime, timePartOf } from '@/domain/datetime'
 import { computeExpectedAmount } from '@/domain/shift'
 
 // ---------------- Configurações ----------------
@@ -169,6 +170,63 @@ export async function deleteShift(id: string): Promise<void> {
   await db.transaction('rw', db.shifts, db.payments, async () => {
     await db.payments.where('shiftId').equals(id).delete()
     await db.shifts.delete(id)
+  })
+}
+
+/**
+ * Aplica uma edição ao plantão e a todos os SEGUINTES da mesma escala.
+ *
+ * O que se propaga e o que não se propaga:
+ *
+ * - **Propaga** tudo que descreve o plantão: local, tipo, título, forma de
+ *   pagamento, valores e anotações.
+ * - **Propaga** a hora de início e a duração, aplicadas sobre a data que cada
+ *   plantão já tem. Mudar 19:00 para 18:00 adianta a escala inteira em uma
+ *   hora sem mexer nas datas.
+ * - **NÃO propaga a data.** A data de cada plantão vem do ritmo da escala;
+ *   reescrever isso a partir de uma edição solta é a única mudança capaz de
+ *   destruir um ano de agenda de uma vez. Mudar a data move só o plantão
+ *   editado — e o formulário avisa isso antes de salvar.
+ *
+ * Plantão cancelado continua cancelado: a edição não o reativa.
+ * `expectedAmount` é recalculado por plantão (invariante 3).
+ */
+export async function updateSeriesFrom(id: string, input: ShiftInput): Promise<number> {
+  validate(input)
+
+  return db.transaction('rw', db.shifts, async () => {
+    const current = await db.shifts.get(id)
+    if (!current) throw new Error('Plantão não encontrado.')
+
+    const stamp = nowStamp()
+    const startTime = timePartOf(input.startDateTime)
+    const hours = durationInHours(input.startDateTime, input.endDateTime)
+
+    // "Os próximos" são os da mesma escala que começam DEPOIS deste, contados
+    // a partir de onde ele estava antes da edição.
+    const seguintes = current.seriesId
+      ? (await db.shifts.where('seriesId').equals(current.seriesId).toArray()).filter(
+          (s) => s.id !== id && s.startDateTime > current.startDateTime,
+        )
+      : []
+
+    const alterados: Shift[] = [
+      { ...current, ...input, expectedAmount: computeExpectedAmount(input), updatedAt: stamp },
+      ...seguintes.map((shift) => {
+        const startDateTime = joinDateTime(datePartOf(shift.startDateTime), startTime)
+        const range = { startDateTime, endDateTime: addHours(startDateTime, hours) }
+        return {
+          ...shift,
+          ...input,
+          ...range,
+          expectedAmount: computeExpectedAmount({ ...input, ...range }),
+          updatedAt: stamp,
+        }
+      }),
+    ]
+
+    await db.shifts.bulkPut(alterados)
+    return alterados.length
   })
 }
 
