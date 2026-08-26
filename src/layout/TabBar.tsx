@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
-import { Icon, type IconName } from '@/components/ui/Icon'
+import { TabIcon, type TabIconName } from './tabIcons'
 
-const TABS: { to: string; label: string; icon: IconName }[] = [
+const TABS: { to: string; label: string; icon: TabIconName }[] = [
   { to: '/', label: 'Início', icon: 'home' },
   { to: '/agenda', label: 'Agenda', icon: 'calendar' },
   { to: '/financeiro', label: 'Financeiro', icon: 'wallet' },
@@ -24,8 +24,12 @@ export function TabBar() {
             end={tab.to === '/'}
             className={({ isActive }) => `tabbar__item ${isActive ? 'is-active' : ''}`}
           >
-            <Icon name={tab.icon} size={25} strokeWidth={1.7} />
-            <span>{tab.label}</span>
+            {({ isActive }) => (
+              <>
+                <TabIcon name={tab.icon} active={isActive} />
+                <span>{tab.label}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </div>
