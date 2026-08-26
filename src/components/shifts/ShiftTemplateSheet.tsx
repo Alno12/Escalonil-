@@ -1,0 +1,103 @@
+import { Sheet } from '@/components/ui/Sheet'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { addHours, formatDuration, formatTime, joinDateTime } from '@/domain/datetime'
+import { formatMoneyCompact } from '@/domain/money'
+import type { ShiftTemplate } from '@/domain/templates'
+
+interface ShiftTemplateSheetProps {
+  open: boolean
+  templates: ShiftTemplate[]
+  /** Data escolhida no formulário — só para mostrar o horário que vai sair. */
+  startDate: string
+  onPick: (template: ShiftTemplate) => void
+  onClose: () => void
+}
+
+/**
+ * Os plantões que já viraram rotina, prontos para preencher o formulário.
+ *
+ * A anatomia é a mesma linha de plantão da agenda de propósito: o médico
+ * reconhece o plantão pelo formato que já conhece, não por um cartão novo.
+ */
+export function ShiftTemplateSheet({
+  open,
+  templates,
+  startDate,
+  onPick,
+  onClose,
+}: ShiftTemplateSheetProps) {
+  const pick = (template: ShiftTemplate) => {
+    onPick(template)
+    onClose()
+  }
+
+  return (
+    <Sheet open={open} title="Modelos" onClose={onClose} closeLabel="Voltar">
+      <div className="form">
+        {templates.length === 0 ? (
+          <EmptyState
+            icon="copy"
+            title="Ainda sem modelos"
+            description="Quando um plantão se repetir, ele aparece aqui para você preencher em um toque."
+          />
+        ) : (
+          <>
+            <div className="section-header">
+              <div>
+                <h2 className="section-header__title">Mais usados</h2>
+                <p className="section-header__hint">Toque para preencher o plantão</p>
+              </div>
+            </div>
+
+            <ul className="shift-list">
+              {templates.map((template) => {
+                const end = addHours(
+                  joinDateTime(startDate, template.startTime),
+                  template.durationHours,
+                )
+                const overnight = end.slice(0, 10) !== startDate
+                return (
+                  <li key={template.id}>
+                    <button type="button" className="shift-row" onClick={() => pick(template)}>
+                      <span
+                        className="loc-dot"
+                        style={{ background: `var(--loc-${template.color})` }}
+                        aria-hidden="true"
+                      />
+
+                      <span className="shift-row__body">
+                        <span className="shift-row__top">
+                          <span className="shift-row__location">{template.locationName}</span>
+                          <span className="shift-row__amount num">
+                            {formatMoneyCompact(template.expectedAmount)}
+                          </span>
+                        </span>
+
+                        <span className="shift-row__meta num">
+                          {template.startTime} → {formatTime(end)}
+                          {overnight && <span className="shift-row__plus">+1</span>}
+                          <span aria-hidden="true"> · </span>
+                          {formatDuration(template.durationHours)}
+                          {template.title && (
+                            <span className="shift-row__title"> · {template.title}</span>
+                          )}
+                          {template.shiftType && (
+                            <span className="shift-row__title"> · {template.shiftType}</span>
+                          )}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+
+            <p className="form-note">
+              O modelo traz local, horário e valor. A data continua sendo a que você escolheu.
+            </p>
+          </>
+        )}
+      </div>
+    </Sheet>
+  )
+}

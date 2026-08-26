@@ -20,7 +20,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const shifts = useLiveQuery(() => db.shifts.orderBy('startDateTime').toArray(), [])
   const locations = useLiveQuery(() => db.locations.orderBy('name').toArray(), [])
   const payments = useLiveQuery(() => db.payments.toArray(), [])
-  const storedSettings = useLiveQuery(() => db.settings.get('app'), [])
+  // `null` em vez de `undefined` quando a linha não existe: sem essa
+  // distinção não dava para saber se a consulta terminou, e quem lesse
+  // `settings` na montagem via os padrões antes do que está gravado.
+  const storedSettings = useLiveQuery(() => db.settings.get('app').then((s) => s ?? null), [])
 
   const value = useMemo<AppData>(() => {
     const shiftList = shifts ?? []
@@ -28,7 +31,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const paymentList = payments ?? []
     const views = buildShiftViews(shiftList, locationList, paymentList, now)
     return {
-      ready: shifts !== undefined && locations !== undefined && payments !== undefined,
+      ready:
+        shifts !== undefined &&
+        locations !== undefined &&
+        payments !== undefined &&
+        storedSettings !== undefined,
       now,
       today: todayISO(now),
       shifts: shiftList,

@@ -5,8 +5,8 @@
  *
  * Convenção de período: um plantão pertence ao período da sua DATA DE INÍCIO.
  */
-import type { LocalDate, ShiftView } from '@/db/types'
-import { datePartOf, startOfWeek, endOfWeek, toDate } from './datetime'
+import type { LocalDate, Shift, ShiftView } from '@/db/types'
+import { addDays, datePartOf, startOfWeek, endOfWeek, timePartOf, toDate } from './datetime'
 import { roundMoney } from './money'
 
 export interface FinanceTotals {
@@ -118,13 +118,53 @@ export function upcomingShifts(views: ShiftView[], limit?: number): ShiftView[] 
   return limit ? upcoming.slice(0, limit) : upcoming
 }
 
-/** Plantões de um dia específico — inclui os que começaram na véspera e atravessaram. */
+/**
+ * Hora a partir da qual um plantão que atravessou a meia-noite ainda OCUPA o
+ * dia seguinte.
+ *
+ * O critério é a hora de término, não a duração: 12h (19:00 → 07:00), 18h
+ * (13:00 → 07:00) e 24h (07:00 → 07:00) terminam todos às 07:00 e tomam
+ * exatamente o mesmo pedaço do dia seguinte — de manhã o médico vai para casa.
+ * Já um 24h que começa às 19:00 termina às 19:00 e come o dia inteiro.
+ */
+export const NEXT_DAY_CUTOFF = '12:00'
+
+type Span = Pick<Shift, 'startDateTime' | 'endDateTime'>
+
+/**
+ * Se o plantão ocupa o dia informado.
+ *
+ * Vale sempre no dia em que COMEÇA — a mesma regra do resto do app
+ * (`filterByRange`, Ritmo da semana, Mapa do mês, Recordes). Nos dias
+ * seguintes, ocupa quando atravessa o dia inteiro ou quando termina depois do
+ * meio-dia; sair às 07:00 deixa o dia livre.
+ */
+export function occupiesDay(shift: Span, day: LocalDate): boolean {
+  const start = datePartOf(shift.startDateTime)
+  if (start === day) return true
+  if (start > day) return false
+  const end = datePartOf(shift.endDateTime)
+  if (end > day) return true
+  return end === day && timePartOf(shift.endDateTime) > NEXT_DAY_CUTOFF
+}
+
+/**
+ * Todos os dias que o plantão ocupa, do primeiro ao último.
+ *
+ * É o que o calendário usa para marcar os dias: assim o anel e as bolinhas
+ * dizem exatamente o que a lista do dia vai mostrar embaixo.
+ */
+export function occupiedDays(shift: Span): LocalDate[] {
+  const start = datePartOf(shift.startDateTime)
+  const end = datePartOf(shift.endDateTime)
+  const days = [start]
+  for (let day = addDays(start, 1); day <= end; day = addDays(day, 1)) {
+    if (day < end || timePartOf(shift.endDateTime) > NEXT_DAY_CUTOFF) days.push(day)
+  }
+  return days
+}
+
+/** Plantões de um dia específico, na ordem em que começam. */
 export function shiftsOnDay(views: ShiftView[], day: LocalDate): ShiftView[] {
-  return sortByStart(
-    views.filter((v) => {
-      const start = datePartOf(v.shift.startDateTime)
-      const end = datePartOf(v.shift.endDateTime)
-      return start === day || (start < day && end >= day)
-    }),
-  )
+  return sortByStart(views.filter((v) => occupiesDay(v.shift, day)))
 }

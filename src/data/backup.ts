@@ -224,6 +224,10 @@ export function parseBackup(text: string): BackupFile {
     // que já devolve `null` para o que não existe no calendário.
     vacationDate: DATE.test(str(rawSettings.vacationDate)) ? str(rawSettings.vacationDate) : null,
     vacationEnabled: bool(rawSettings.vacationEnabled, true),
+    // Vem do arquivo para restaurar um backup da versão atual não reabrir o
+    // aviso de novidades que o usuário já leu.
+    lastSeenVersion:
+      typeof rawSettings.lastSeenVersion === 'string' ? rawSettings.lastSeenVersion : null,
     id: 'app',
     updatedAt: str(rawSettings.updatedAt, new Date().toISOString()),
   }

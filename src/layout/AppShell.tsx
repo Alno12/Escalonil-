@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { TabBar } from './TabBar'
 import { UpdatePrompt } from '@/components/UpdatePrompt'
+import { WhatsNew } from '@/components/WhatsNew'
 
 export function AppShell() {
   const { pathname } = useLocation()
@@ -19,6 +20,7 @@ export function AppShell() {
       </main>
       <TabBar />
       <UpdatePrompt />
+      <WhatsNew />
     </div>
   )
 }

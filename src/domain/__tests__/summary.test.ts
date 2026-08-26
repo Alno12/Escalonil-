@@ -6,6 +6,7 @@ import {
   currentOrNextShift,
   filterByMonth,
   financeTotals,
+  occupiedDays,
   periodSummary,
   shiftsOnDay,
   upcomingShifts,
@@ -133,11 +134,47 @@ describe('agenda', () => {
     expect(upcomingShifts(views).map((v) => v.shift.id)).toEqual(['agora', 'proximo'])
   })
 
-  it('inclui no dia o plantão que começou na véspera', () => {
-    expect(shiftsOnDay(views, '2026-08-27').map((v) => v.shift.id)).toEqual([
-      'proximo',
-      'cancelado',
+  it('o plantão da noite não ocupa o dia seguinte', () => {
+    // 26/08 19:00 → 27/08 07:00: de manhã o médico vai para casa, então o dia
+    // 27 fica livre e só mostra o plantão que começa nele.
+    expect(shiftsOnDay(views, '2026-08-26').map((v) => v.shift.id)).toEqual(['proximo'])
+    expect(shiftsOnDay(views, '2026-08-27').map((v) => v.shift.id)).toEqual(['cancelado'])
+  })
+
+  it('ocupa o dia seguinte quando termina depois do meio-dia', () => {
+    const longos = buildShiftViews(
+      [
+        // Mesma duração, hora de término diferente — é a hora que manda.
+        shift('sai-cedo', '2026-09-10T07:00', '2026-09-11T07:00', 2000),
+        shift('sai-tarde', '2026-09-14T19:00', '2026-09-15T19:00', 2000),
+        // Atravessa 21 e 22 por inteiro e termina de manhã no dia 23.
+        shift('dois-dias', '2026-09-20T19:00', '2026-09-23T07:00', 4000),
+      ],
+      LOCATIONS,
+      [],
+      NOW,
+    )
+
+    expect(shiftsOnDay(longos, '2026-09-11').map((v) => v.shift.id)).toEqual([])
+    expect(shiftsOnDay(longos, '2026-09-15').map((v) => v.shift.id)).toEqual(['sai-tarde'])
+    expect(shiftsOnDay(longos, '2026-09-21').map((v) => v.shift.id)).toEqual(['dois-dias'])
+    expect(shiftsOnDay(longos, '2026-09-22').map((v) => v.shift.id)).toEqual(['dois-dias'])
+    expect(shiftsOnDay(longos, '2026-09-23').map((v) => v.shift.id)).toEqual([])
+  })
+
+  it('occupiedDays marca no calendário os mesmos dias que a lista mostra', () => {
+    const dias = (start: string, end: string) =>
+      occupiedDays({ startDateTime: start, endDateTime: end })
+
+    expect(dias('2026-09-10T19:00', '2026-09-11T07:00')).toEqual(['2026-09-10'])
+    expect(dias('2026-09-10T19:00', '2026-09-11T19:00')).toEqual(['2026-09-10', '2026-09-11'])
+    expect(dias('2026-09-20T19:00', '2026-09-23T07:00')).toEqual([
+      '2026-09-20',
+      '2026-09-21',
+      '2026-09-22',
     ])
+    // Terminar exatamente ao meio-dia ainda deixa o dia livre.
+    expect(dias('2026-09-10T19:00', '2026-09-11T12:00')).toEqual(['2026-09-10'])
   })
 })
 

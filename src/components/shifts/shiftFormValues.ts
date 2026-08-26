@@ -15,6 +15,7 @@ import {
   type Recurrence,
 } from '@/domain/recurrence'
 import { computeExpectedAmount } from '@/domain/shift'
+import type { ShiftTemplate } from '@/domain/templates'
 import { moneyToInput, parseMoneyInput, roundMoney } from '@/domain/money'
 
 /** Atalhos de duração do formulário, em horas. */
@@ -109,6 +110,36 @@ export function formFromDuplicate(
     endDate: datePartOf(end),
     endTime: timePartOf(end),
     repeatUntil: addMonths(today, 3),
+  }
+}
+
+/**
+ * Preenche o formulário a partir de um modelo.
+ *
+ * A DATA fica como está: o modelo diz que plantão é, o usuário diz quando.
+ * Escrever a data aqui apagaria o dia que ele acabou de escolher na agenda.
+ * A recorrência também não vem do modelo — repetir é sempre uma escolha nova.
+ */
+export function applyTemplate(values: ShiftFormValues, template: ShiftTemplate): ShiftFormValues {
+  const end = addHours(joinDateTime(values.startDate, template.startTime), template.durationHours)
+  return {
+    ...values,
+    title: template.title,
+    locationName: template.locationName,
+    color: template.color,
+    shiftType: template.shiftType,
+    startTime: template.startTime,
+    endDate: datePartOf(end),
+    endTime: timePartOf(end),
+    amountText: moneyToInput(template.expectedAmount),
+    hourlyText: moneyToInput(
+      template.hourlyRate > 0
+        ? template.hourlyRate
+        : template.durationHours > 0
+          ? roundMoney(template.expectedAmount / template.durationHours)
+          : 0,
+    ),
+    paymentMode: template.paymentMode,
   }
 }
 

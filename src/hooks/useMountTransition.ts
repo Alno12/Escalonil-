@@ -22,7 +22,11 @@ export function useMountTransition(open: boolean, duration = 220) {
 
   useEffect(() => {
     if (phase === 'opening') {
-      const raf = requestAnimationFrame(() => setPhase('open'))
+      // O `raf` pode chegar DEPOIS de `open` já ter virado false — um diálogo
+      // que abre e fecha no mesmo quadro. Sem conferir a fase aqui, ele
+      // devolvia 'open' por cima de 'closing' e o elemento ficava na tela
+      // para sempre: nada mais mexe na fase 'open'.
+      const raf = requestAnimationFrame(() => setPhase((p) => (p === 'opening' ? 'open' : p)))
       return () => cancelAnimationFrame(raf)
     }
     if (phase === 'closing') {

@@ -1180,13 +1180,23 @@
 .calendar__grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  column-gap: 2px;
+  /* Mais ar ENTRE as semanas: com 2px, a bolinha ficava quase equidistante do
+     próprio número e do número da linha de baixo. */
+  row-gap: 8px;
 }
 
+/*
+ * Coluna: número em cima, bolinhas embaixo. A altura vem do conteúdo (sem
+ * `aspect-ratio`), senão a linha ficaria com uma sobra de ar embaixo das
+ * bolinhas.
+ */
 .calendar__day {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding-top: 2px;
   background: transparent;
   font-size: var(--text-subhead);
   font-weight: 500;
@@ -1211,6 +1221,22 @@
 }
 
 /*
+ * Altura fixa mesmo vazio: sem ela, os dias sem plantão teriam uma linha a
+ * menos e os números da mesma semana não ficariam alinhados.
+ */
+.calendar__dots {
+  display: flex;
+  gap: 3px;
+  height: 5px;
+}
+
+.calendar__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+/*
  * Anéis do dia. As quatro regras têm a MESMA especificidade dentro de cada
  * par, então a ordem é que manda: fino, grosso, fino cinza, grosso cinza.
  */
@@ -1226,6 +1252,12 @@
 
 .calendar__day.is-outside {
   color: var(--text-3);
+}
+
+/* Fora do mês tudo recua junto — inclusive as bolinhas, que em cor cheia
+   puxavam o olho para a semana errada. */
+.calendar__day.is-outside .calendar__dots {
+  opacity: 0.4;
 }
 
 /* Fora do mês o anel é cinza: não compete com o mês que está sendo olhado. */

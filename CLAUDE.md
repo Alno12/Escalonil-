@@ -21,6 +21,7 @@ src/
 │   ├── shift.ts      duração, valor esperado, situação do plantão/pagamento
 │   ├── conflicts.ts  sobreposição de horários
 │   ├── location.ts   o que conta como "o mesmo lugar"
+│   ├── templates.ts  os plantões que já viraram rotina
 │   ├── recurrence.ts escalas (12×36, 5×2) e recorrências de uma série
 │   ├── backupReminder.ts  quando cobrar um backup novo
 │   ├── vacation.ts   a contagem das férias (easter egg)
@@ -151,6 +152,29 @@ própria — "não foi possível restaurar" sozinho não diz se o arquivo está
 corrompido ou se o problema é passageiro. Restaurar continua sendo tudo ou
 nada, dentro de uma transação: falhou, os dados atuais ficam intactos.
 
+**16. Na agenda, quem decide o dia seguinte é a HORA DE TÉRMINO.**
+O plantão sempre pertence ao dia em que COMEÇA. Ele só aparece TAMBÉM no dia
+seguinte quando de fato toma esse dia: atravessa ele inteiro, ou termina depois
+do meio-dia (`NEXT_DAY_CUTOFF`, em `domain/summary.ts`). Um 19:00 → 07:00 sai
+da agenda do dia seguinte — de manhã o médico vai para casa; um 19:00 → 19:00
+fica. O critério NÃO é a duração: 12h (19:00 → 07:00), 18h (13:00 → 07:00) e
+24h (07:00 → 07:00) terminam todos às 07:00 e tomam o mesmo pedaço do dia
+seguinte, enquanto dois plantões de 24h podem ocupar dias seguintes
+completamente diferentes. `occupiesDay` responde por um dia; `occupiedDays`
+lista todos, e é o que o calendário usa para o anel e as bolinhas não
+discordarem da lista que aparece embaixo dele.
+
+**17. Modelo de plantão é deduzido, nunca cadastrado.**
+`buildShiftTemplates` agrupa o histórico por local + título + tipo + hora de
+início + duração + valor, e só devolve o que se repetiu pelo menos
+`MIN_TEMPLATE_USES` vezes — com 1, "modelo" seria o histórico de novo, que já
+está na agenda. Não existe tela de gerenciar modelos, e não deve existir: o
+modelo se forma sozinho conforme o médico trabalha. As ANOTAÇÕES ficam fora da
+chave e fora do modelo, porque são o pedaço realmente avulso do plantão. A
+DATA nunca vem do modelo — é a única coisa que muda de verdade entre um
+plantão e o outro. A linha "Usar um modelo" só existe ao CRIAR: duplicar já
+traz tudo do plantão de origem, e editar não recomeça do zero.
+
 **12. Recebimento em lote nunca rateia valores.**
 `registerPayments` grava cada plantão pelo próprio `expectedAmount`. Se o
 depósito veio diferente, o ajuste é plantão a plantão — inventar um rateio
@@ -163,6 +187,12 @@ monta os `ShiftView` (plantão + local + pagamento + situação). Isso é
 intencional: o app é pessoal, alguns milhares de plantões ocupam poucos
 megabytes, e todo cálculo vira síncrono e instantâneo. Não introduza consultas
 paginadas sem uma razão medida.
+
+`ready` espera as QUATRO consultas, configurações inclusive. Como
+`db.settings.get('app')` devolve `undefined` tanto enquanto carrega quanto
+quando a linha não existe, a consulta converte a ausência em `null` — sem essa
+distinção, quem lesse `settings` na montagem via os padrões antes do que está
+gravado, e o aviso de novidades piscava para todo mundo.
 
 Um relógio compartilhado (`useNow`) atualiza no máximo uma vez por minuto e
 imediatamente quando o app volta ao primeiro plano.
@@ -245,8 +275,14 @@ O app segue a linguagem do Apple Saúde:
 - O cartão do próximo plantão é tingido com a COR DO LOCAL, em degradê que some
   para baixo. Chapado, as cores quentes embarram o tema escuro e o texto
   secundário perde contraste — foi por isso que virou degradê.
-- No calendário do mês, o dia com plantão ganha um ANEL discreto em volta do
-  número — não um ponto embaixo dele. O círculo é do NÚMERO, não da célula:
+- No calendário do mês, o dia com plantão ganha um ANEL em volta do número E
+  bolinhas embaixo dele. Os dois dizem coisas diferentes: o anel diz que TEM
+  plantão e engrossa a partir de dois; as bolinhas dizem QUANTOS e de QUAL
+  local, na cor do local (invariante 10), até três. O contêiner das bolinhas
+  existe mesmo vazio, senão os dias livres subiriam meia bolinha e os números
+  da semana sairiam do alinhamento. As bolinhas ficam FORA do círculo, então
+  mantêm a cor do local também no dia selecionado, que é preenchido de roxo.
+  O círculo é do NÚMERO, não da célula:
   com o número e os pontos empilhados, o par ficava centralizado mas o número
   subia metade da altura dos pontos e aparecia torto dentro do círculo do dia
   selecionado, que ocupava a célula inteira. Dois ou mais plantões no mesmo dia
@@ -256,6 +292,20 @@ O app segue a linguagem do Apple Saúde:
 - O cartão "Sobre", nos Ajustes, mostra o ícone oficial do app (`icons/icon-192.png`,
   a cara do dono), não um ícone de traço. O caminho passa por
   `import.meta.env.BASE_URL` porque o GitHub Pages serve numa subrota.
+- São DOIS avisos de versão, e eles não são intercambiáveis. O de "tem uma
+  versão nova" é dado pelo app que está rodando, que ainda é o ANTIGO e por
+  isso não pode listar o que mudou — só oferece Depois/Atualizar. A lista mora
+  no aviso de "Novidades da versão", mostrado uma vez DEPOIS de atualizar, por
+  quem já é a versão nova (`APP_CHANGES`, em `appInfo.ts`). Os dois usam o
+  `NoticeDialog`, que é separado do `ConfirmDialog` de propósito: lá quem
+  pergunta é o app sobre uma ação destrutiva que o usuário pediu; aqui quem
+  começou a conversa foi o app.
+- Quem acaba de INSTALAR não vê novidade nenhuma — não mudou nada para ele.
+  Como `lastSeenVersion` é `null` tanto para quem instalou agora quanto para
+  quem já usava o app antes do campo existir, o desempate é o banco: com
+  plantões gravados a lista aparece; vazio, a versão é anotada em silêncio.
+  `lastSeenVersion` é mais um campo de `Settings` e, como `vacationDate`, NÃO
+  exigiu versão nova do Dexie.
 - Números usam `.num` (tabular) para alinhar em colunas.
 
 Cuidado com a cascata: modificadores com a MESMA especificidade da regra base
@@ -274,7 +324,11 @@ vez por isso.
   máscara geraria, e `parseMoneyInput` lê esse texto de volta — os três andam
   juntos, não mexa em um sem os outros.
 - `useMountTransition` mantém folhas e diálogos montados durante a animação de
-  saída.
+  saída. O `requestAnimationFrame` que promove `opening` → `open` confere a
+  fase antes de gravar: um diálogo que abre e fecha no MESMO quadro (o aviso de
+  novidades, enquanto as configurações ainda carregavam) recebia `open` por
+  cima de `closing` e ficava na tela para sempre, porque nada mais mexe na fase
+  `open`.
 - `useSheetHistory` faz o gesto de voltar fechar a folha do topo em vez de
   navegar por baixo dela. Existe **UMA** entrada de histórico enquanto houver
   qualquer folha aberta: criada quando a primeira abre, recriada quando o
@@ -341,7 +395,8 @@ pelo Excel. As colunas numéricas não passam por lá — nelas o `-` é sinal.
 
 Os testes cobrem as regras críticas: virada de meia-noite, duração, valor
 esperado, situação do pagamento, conflitos, escalas e recorrências, somas
-financeiras, insights, validação de backup e CSV. Se você mexer nessas regras,
+financeiras, o dia seguinte na agenda, modelos de plantão, insights, validação
+de backup e CSV. Se você mexer nessas regras,
 ajuste os testes junto.
 
 ## Fluxo de contribuição
