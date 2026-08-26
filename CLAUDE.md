@@ -69,8 +69,14 @@ gravados nos registros — a v3 do banco só removeu o índice, não os dados.
 "Revisar / Salvar mesmo assim". Plantões sobrepostos são raros mas legítimos.
 
 **6. Toda escrita passa por `data/repository.ts`.**
-Telas não falam com o Dexie. Excluir um plantão apaga o pagamento junto;
-cancelar um plantão remove o recebimento — essas regras moram lá.
+Telas não falam com o Dexie. Excluir um plantão apaga o pagamento junto —
+essa regra mora lá.
+
+**6b. Cancelar NÃO apaga o recebimento.**
+`getPaymentStatus` já devolve `cancelled` para plantão cancelado, então ele sai
+de todas as somas sozinho. Apagar o `Payment` junto não mudava número nenhum e
+destruía o histórico de um dinheiro que entrou de verdade — sem aviso e sem
+desfazer. Cancelar é reversível: reativar traz o recebimento de volta.
 
 **7. Semana começa no domingo.** Convenção brasileira, usada no calendário e
 nos resumos.

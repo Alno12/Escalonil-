@@ -151,12 +151,18 @@ export async function updateShift(id: string, input: ShiftInput): Promise<Shift>
   return next
 }
 
+/**
+ * Cancela ou reativa um plantão.
+ *
+ * O recebimento NÃO é apagado. Um plantão cancelado já sai de todos os
+ * cálculos por `getPaymentStatus`, então apagar o registro não mudava número
+ * nenhum — só destruía o histórico de um dinheiro que entrou de verdade, sem
+ * aviso e sem desfazer. Cancelar por engano deixava de ser reversível.
+ *
+ * Excluir continua apagando os dois: aí o plantão deixa de existir.
+ */
 export async function setShiftCancelled(id: string, cancelled: boolean): Promise<void> {
-  await db.transaction('rw', db.shifts, db.payments, async () => {
-    await db.shifts.update(id, { cancelled, updatedAt: nowStamp() })
-    // Um plantão cancelado não tem recebimento a controlar.
-    if (cancelled) await db.payments.where('shiftId').equals(id).delete()
-  })
+  await db.shifts.update(id, { cancelled, updatedAt: nowStamp() })
 }
 
 export async function deleteShift(id: string): Promise<void> {
