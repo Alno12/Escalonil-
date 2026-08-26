@@ -1178,22 +1178,44 @@
 }
 
 .calendar__day {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
+  display: grid;
+  place-items: center;
   aspect-ratio: 1;
-  border-radius: 50%;
+  background: transparent;
   font-size: var(--text-subhead);
   font-weight: 500;
   color: var(--text);
-  transition: background-color var(--dur-fast) var(--ease);
+}
+
+/*
+ * O círculo é do NÚMERO, não da célula. Antes o dia era uma coluna com o
+ * número em cima e os pontinhos embaixo: o par ficava centralizado na célula,
+ * mas o número subia metade da altura dos pontos e aparecia torto dentro do
+ * círculo de seleção, que ocupava a célula inteira.
+ */
+.calendar__num {
+  display: grid;
+  place-items: center;
+  width: 82%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+
+/* Dia com plantão: um anel discreto em volta do número. */
+.calendar__day.has-shifts .calendar__num {
+  box-shadow: inset 0 0 0 1.5px var(--accent);
 }
 
 .calendar__day.is-outside {
   color: var(--text-3);
+}
+
+/* Fora do mês o anel é cinza: não compete com o mês que está sendo olhado. */
+.calendar__day.is-outside.has-shifts .calendar__num {
+  box-shadow: inset 0 0 0 1.5px var(--fill-2);
 }
 
 .calendar__day.is-today {
@@ -1202,30 +1224,18 @@
 }
 
 .calendar__day.is-selected {
-  background: var(--accent);
   color: var(--text-on-accent);
   font-weight: 600;
 }
 
+/* Selecionado ganha o círculo cheio e dispensa o anel. */
+.calendar__day.is-selected .calendar__num {
+  background: var(--accent);
+  box-shadow: none;
+}
+
 .calendar__day.is-selected.is-today {
   color: var(--text-on-accent);
-}
-
-.calendar__dots {
-  display: flex;
-  gap: 2px;
-  height: 4px;
-}
-
-.calendar__dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
-.calendar__day.is-selected .calendar__dot {
-  background: var(--text-on-accent);
 }
 
 .day-title {

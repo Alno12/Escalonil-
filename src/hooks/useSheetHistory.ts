@@ -26,6 +26,8 @@ const stack: Entry[] = []
 /** Quantas voltas o próprio app pediu — essas não fecham nada. */
 let selfPop = 0
 let listening = false
+/** Há uma volta agendada para o fim do commit atual do React. */
+let pendingBack = false
 
 const MARK = { escalonilSheet: true }
 
@@ -59,7 +61,9 @@ function listen() {
 function open(entry: Entry) {
   listen()
   stack.push(entry)
-  if (stack.length === 1) window.history.pushState(MARK, '')
+  // Com uma volta agendada, a entrada que ela ia desfazer serve para esta
+  // folha: empurrar outra deixaria duas para uma folha só.
+  if (stack.length === 1 && !pendingBack) window.history.pushState(MARK, '')
 }
 
 function close(entry: Entry) {
@@ -68,10 +72,32 @@ function close(entry: Entry) {
   if (index === -1) return
 
   stack.splice(index, 1)
-  if (stack.length === 0) {
+  if (stack.length === 0) scheduleBack()
+}
+
+/**
+ * Uma folha pode fechar e outra abrir no MESMO commit do React: abrir o
+ * recebimento fecha o detalhe, editar um plantão também. Nesse instante a
+ * pilha zera e volta a encher.
+ *
+ * Desfazer a entrada ali na hora era um bug feio: o `history.back()` é
+ * assíncrono, então a folha nova empurrava a entrada dela ANTES da volta
+ * acontecer, e a volta comia essa entrada nova. A folha seguinte ficava sem
+ * entrada nenhuma e, ao fechar, o `back()` saía da ROTA — quem desfizesse um
+ * recebimento no Financeiro era jogado na tela que tinha visitado antes.
+ *
+ * Esperar o fim do commit resolve: se a pilha voltou a ter folha, a entrada
+ * continua servindo e não há volta nenhuma a dar.
+ */
+function scheduleBack() {
+  if (pendingBack) return
+  pendingBack = true
+  queueMicrotask(() => {
+    pendingBack = false
+    if (stack.length > 0) return
     selfPop += 1
     window.history.back()
-  }
+  })
 }
 
 export function useSheetHistory(isOpen: boolean, onDismiss: () => void) {
