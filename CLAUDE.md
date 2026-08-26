@@ -29,7 +29,7 @@ src/
 ├── state/        providers de dados, tema, toasts e folhas de plantão
 ├── components/   ui/ (primitivos) e shifts/ (formulário, detalhe, listas)
 ├── screens/      Home, Schedule, Finance, Reports, Settings
-├── layout/       AppShell e TabBar
+├── layout/       AppShell, TabBar e os ícones da própria barra
 └── styles/       tokens → base → ui → layout → screens (nesta ordem)
 ```
 
@@ -187,6 +187,16 @@ O app segue a linguagem do Apple Saúde:
   (`left: var(--row-pad)`), nunca por bordas completas.
 - Cinco abas no rodapé, sem botão de ação no meio. **Novo plantão** vive no
   canto superior direito de cada tela (`ScreenHeader`).
+- A barra de abas tem o PRÓPRIO conjunto de ícones (`layout/tabIcons.tsx`):
+  traço de 2px e cantos bem mais redondos. O conjunto geral de
+  `components/ui/Icon` continua fino porque `calendar`, `wallet` e `chart`
+  também aparecem a 14–16px dentro de linhas de texto, onde 2px fica pesado.
+  Os dois conjuntos nunca se encontram no mesmo tamanho.
+- A aba ATIVA usa o ícone PREENCHIDO, não só a cor — sem isso, num relance a
+  aba atual sumia no meio das outras quatro. Relatórios é o caso difícil: três
+  barras cheias ou vazias ficam quase iguais, então a versão ativa é mais
+  grossa (3,2px contra 2,6px) e a barra mais baixa subiu, senão preenchida
+  virava uma bolinha em vez de uma barra.
 - Nos Relatórios, as setas do cartão de Indicadores andam o período INTEIRO:
   um mês em "Mês atual", um trimestre em "3 meses". `buildPeriod` recebe um
   `offset` e, fora do zero, reescreve os rótulos das frases — "neste mês" seria
