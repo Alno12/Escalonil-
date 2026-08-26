@@ -1,18 +1,38 @@
 /**
- * Gera os ícones PNG da PWA sem dependências externas.
+ * Gera os ícones da PWA a partir de `assets/icon-source.png`, sem dependências.
  * Rode com: node scripts/generate-icons.mjs
  *
- * Desenho: fundo com gradiente índigo + traçado de ECG branco.
- * A rasterização usa campo de distância (anti-aliasing analítico).
+ * O PNG é lido, redimensionado e reescrito só com o que vem no Node: `zlib`
+ * para inflar e deflacionar, e o resto na mão. É umas cem linhas a mais do que
+ * usar uma biblioteca, e em troca o projeto continua com zero dependências
+ * para uma tarefa que roda uma vez a cada troca de ícone.
  */
-import { deflateSync } from 'node:zlib'
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { deflateSync, inflateSync } from 'node:zlib'
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const SOURCE = resolve(root, 'assets/icon-source.png')
 
-// ---------- PNG ----------
+/**
+ * Quanto do quadrado o desenho ocupa num ícone "maskable".
+ *
+ * O Android recorta o ícone num círculo, num squircle ou numa gota, conforme o
+ * aparelho, e só garante o círculo central de 80% do lado. Encolher para 80% e
+ * completar com o fundo é o que impede o topo da cabeça de ser cortado.
+ */
+const MASKABLE_SCALE = 0.8
+
+const paeth = (a, b, c) => {
+  const p = a + b - c
+  const pa = Math.abs(p - a)
+  const pb = Math.abs(p - b)
+  const pc = Math.abs(p - c)
+  return pa <= pb && pa <= pc ? a : pb <= pc ? b : c
+}
+
+// ---------- PNG: escrita ----------
 const CRC_TABLE = (() => {
   const t = new Int32Array(256)
   for (let n = 0; n < 256; n++) {
@@ -38,17 +58,84 @@ function chunk(type, data) {
   return Buffer.concat([len, body, crc])
 }
 
-function encodePng(width, height, rgba) {
-  const raw = Buffer.alloc((width * 4 + 1) * height)
-  for (let y = 0; y < height; y++) {
-    raw[y * (width * 4 + 1)] = 0 // filtro "None"
-    rgba.copy(raw, y * (width * 4 + 1) + 1, y * width * 4, (y + 1) * width * 4)
+function applyFilter(type, line, previous, bpp, out) {
+  for (let i = 0; i < line.length; i++) {
+    const a = i >= bpp ? line[i - bpp] : 0
+    const b = previous[i]
+    const c = i >= bpp ? previous[i - bpp] : 0
+    const value =
+      type === 0
+        ? line[i]
+        : type === 1
+          ? line[i] - a
+          : type === 2
+            ? line[i] - b
+            : type === 3
+              ? line[i] - ((a + b) >> 1)
+              : line[i] - paeth(a, b, c)
+    out[i] = value & 0xff
   }
+}
+
+/** Soma dos resíduos como inteiros com sinal — a heurística da própria spec. */
+function residual(buf) {
+  let sum = 0
+  for (let i = 0; i < buf.length; i++) sum += buf[i] < 128 ? buf[i] : 256 - buf[i]
+  return sum
+}
+
+/**
+ * Escreve o PNG escolhendo o melhor filtro linha a linha, e sem canal alfa
+ * quando a imagem é opaca.
+ *
+ * Sem isso o ícone de 512 saía com 496 KB — mais pesado que a própria imagem
+ * de origem — e os seis arquivos juntos dobravam o tamanho do precache da
+ * PWA, que é o que o aparelho baixa antes de funcionar offline.
+ */
+function encodePng(width, height, rgba) {
+  let opaque = true
+  for (let i = 3; i < rgba.length && opaque; i += 4) if (rgba[i] !== 255) opaque = false
+
+  const bpp = opaque ? 3 : 4
+  const stride = width * bpp
+  const raw = Buffer.alloc((stride + 1) * height)
+  const line = Buffer.alloc(stride)
+  const candidate = Buffer.alloc(stride)
+  let previous = Buffer.alloc(stride)
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const from = (y * width + x) * 4
+      const to = x * bpp
+      line[to] = rgba[from]
+      line[to + 1] = rgba[from + 1]
+      line[to + 2] = rgba[from + 2]
+      if (!opaque) line[to + 3] = rgba[from + 3]
+    }
+
+    let bestType = 0
+    let bestScore = Infinity
+    const chosen = Buffer.alloc(stride)
+    for (const type of [0, 1, 2, 3, 4]) {
+      applyFilter(type, line, previous, bpp, candidate)
+      const score = residual(candidate)
+      if (score < bestScore) {
+        bestScore = score
+        bestType = type
+        candidate.copy(chosen)
+      }
+    }
+
+    raw[y * (stride + 1)] = bestType
+    chosen.copy(raw, y * (stride + 1) + 1)
+    previous = Buffer.from(line)
+  }
+
   const ihdr = Buffer.alloc(13)
   ihdr.writeUInt32BE(width, 0)
   ihdr.writeUInt32BE(height, 4)
-  ihdr[8] = 8 // bit depth
-  ihdr[9] = 6 // RGBA
+  ihdr[8] = 8 // bits por canal
+  ihdr[9] = opaque ? 2 : 6 // RGB ou RGBA
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     chunk('IHDR', ihdr),
@@ -57,119 +144,192 @@ function encodePng(width, height, rgba) {
   ])
 }
 
-// ---------- geometria ----------
-const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v)
-const mix = (a, b, t) => a + (b - a) * t
+// ---------- PNG: leitura ----------
+/** Devolve sempre RGBA, seja a origem RGB ou RGBA. */
+function decodePng(buf) {
+  if (buf.readUInt32BE(0) !== 0x89504e47) throw new Error('Não é um PNG.')
 
-function sdRoundedBox(px, py, halfW, halfH, r) {
-  const qx = Math.abs(px) - halfW + r
-  const qy = Math.abs(py) - halfH + r
-  const outside = Math.hypot(Math.max(qx, 0), Math.max(qy, 0))
-  return outside + Math.min(Math.max(qx, qy), 0) - r
-}
+  let width = 0
+  let height = 0
+  let channels = 0
+  const idat = []
 
-function sdSegment(px, py, ax, ay, bx, by) {
-  const pax = px - ax
-  const pay = py - ay
-  const bax = bx - ax
-  const bay = by - ay
-  const h = clamp01((pax * bax + pay * bay) / (bax * bax + bay * bay))
-  return Math.hypot(pax - bax * h, pay - bay * h)
-}
+  for (let off = 8; off < buf.length; ) {
+    const len = buf.readUInt32BE(off)
+    const type = buf.slice(off + 4, off + 8).toString('latin1')
+    const data = buf.slice(off + 8, off + 8 + len)
 
-function sdPolyline(px, py, pts) {
-  let d = Infinity
-  for (let i = 0; i < pts.length - 1; i++) {
-    d = Math.min(d, sdSegment(px, py, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]))
+    if (type === 'IHDR') {
+      width = data.readUInt32BE(0)
+      height = data.readUInt32BE(4)
+      const depth = data[8]
+      const colorType = data[9]
+      const interlace = data[12]
+      if (depth !== 8) throw new Error('Só sei ler PNG de 8 bits por canal.')
+      if (interlace !== 0) throw new Error('Só sei ler PNG sem entrelaçamento.')
+      if (colorType !== 2 && colorType !== 6) {
+        throw new Error('Só sei ler PNG RGB ou RGBA (tipo de cor 2 ou 6).')
+      }
+      channels = colorType === 2 ? 3 : 4
+    } else if (type === 'IDAT') {
+      idat.push(data)
+    } else if (type === 'IEND') {
+      break
+    }
+    off += 12 + len
   }
-  return d
+
+  const raw = inflateSync(Buffer.concat(idat))
+  const stride = width * channels
+  const out = Buffer.alloc(width * height * 4)
+  let previous = Buffer.alloc(stride)
+
+  for (let y = 0; y < height; y++) {
+    const filter = raw[y * (stride + 1)]
+    const line = Buffer.from(raw.slice(y * (stride + 1) + 1, (y + 1) * (stride + 1)))
+
+    for (let i = 0; i < stride; i++) {
+      const a = i >= channels ? line[i - channels] : 0
+      const b = previous[i]
+      const c = i >= channels ? previous[i - channels] : 0
+      if (filter === 1) line[i] = (line[i] + a) & 0xff
+      else if (filter === 2) line[i] = (line[i] + b) & 0xff
+      else if (filter === 3) line[i] = (line[i] + ((a + b) >> 1)) & 0xff
+      else if (filter === 4) line[i] = (line[i] + paeth(a, b, c)) & 0xff
+      else if (filter !== 0) throw new Error(`Filtro PNG desconhecido: ${filter}`)
+    }
+
+    for (let x = 0; x < width; x++) {
+      const from = x * channels
+      const to = (y * width + x) * 4
+      out[to] = line[from]
+      out[to + 1] = line[from + 1]
+      out[to + 2] = line[from + 2]
+      out[to + 3] = channels === 4 ? line[from + 3] : 255
+    }
+    previous = line
+  }
+
+  return { width, height, rgba: out }
 }
 
-// Traçado de ECG em coordenadas normalizadas (0..1, y para baixo).
-const ECG = [
-  [0.06, 0.53],
-  [0.26, 0.53],
-  [0.345, 0.70],
-  [0.47, 0.22],
-  [0.585, 0.63],
-  [0.65, 0.53],
-  [0.94, 0.53],
-]
-
-const INK = [11, 15, 20]
-const GRAD_A = [124, 108, 255] // #7C6CFF
-const GRAD_B = [59, 43, 201] //  #3B2BC9
-
+// ---------- redimensionamento ----------
 /**
- * @param {number} size lado do PNG em px
- * @param {'rounded'|'square'} shape recorte externo
- * @param {number} glyphScale fração do lado ocupada pelo traçado
+ * Média por área: cada pixel de destino é a média exata do retângulo de origem
+ * que ele cobre. Para reduzir 512 → 192 isso é bem melhor que pegar o pixel
+ * mais próximo, que serrilharia a barba e o crachá.
  */
-function drawIcon(size, shape, glyphScale) {
-  const buf = Buffer.alloc(size * size * 4)
-  const half = size / 2
-  const radius = size * 0.2237 // squircle aproximado do iOS
-  const strokeHalf = (size * glyphScale * 0.088) / 2
-  const glyphOffset = (size - size * glyphScale) / 2
-  const pts = ECG.map(([x, y]) => [glyphOffset + x * size * glyphScale, glyphOffset + y * size * glyphScale])
+function resize(image, width, height) {
+  const out = Buffer.alloc(width * height * 4)
+  const scaleX = image.width / width
+  const scaleY = image.height / height
 
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const cx = x + 0.5
-      const cy = y + 0.5
+  for (let y = 0; y < height; y++) {
+    const y0 = Math.floor(y * scaleY)
+    const y1 = Math.max(y0 + 1, Math.ceil((y + 1) * scaleY))
 
-      // Gradiente diagonal do fundo.
-      const t = clamp01((cx / size) * 0.45 + (cy / size) * 0.55)
-      let r = mix(GRAD_A[0], GRAD_B[0], t)
-      let g = mix(GRAD_A[1], GRAD_B[1], t)
-      let b = mix(GRAD_A[2], GRAD_B[2], t)
+    for (let x = 0; x < width; x++) {
+      const x0 = Math.floor(x * scaleX)
+      const x1 = Math.max(x0 + 1, Math.ceil((x + 1) * scaleX))
 
-      // Brilho radial suave no canto superior esquerdo.
-      const gl = clamp01(1 - Math.hypot(cx - size * 0.28, cy - size * 0.22) / (size * 0.72))
-      const glow = gl * gl * 0.28
-      r = mix(r, 255, glow)
-      g = mix(g, 255, glow)
-      b = mix(b, 255, glow)
-
-      // Traçado branco.
-      const stroke = clamp01(strokeHalf + 0.5 - sdPolyline(cx, cy, pts))
-      r = mix(r, 255, stroke)
-      g = mix(g, 255, stroke)
-      b = mix(b, 255, stroke)
-
-      // Sombra sutil sob o traçado dá profundidade sem poluir.
-      const shadow = clamp01(strokeHalf + size * 0.012 + 0.5 - sdPolyline(cx, cy - size * 0.012, pts)) * (1 - stroke)
-      r = mix(r, INK[0], shadow * 0.18)
-      g = mix(g, INK[1], shadow * 0.18)
-      b = mix(b, INK[2], shadow * 0.18)
-
-      const alpha =
-        shape === 'rounded'
-          ? clamp01(0.5 - sdRoundedBox(cx - half, cy - half, half, half, radius))
-          : 1
-
-      const i = (y * size + x) * 4
-      buf[i] = Math.round(r)
-      buf[i + 1] = Math.round(g)
-      buf[i + 2] = Math.round(b)
-      buf[i + 3] = Math.round(alpha * 255)
+      let r = 0
+      let g = 0
+      let b = 0
+      let a = 0
+      let n = 0
+      for (let sy = y0; sy < y1 && sy < image.height; sy++) {
+        for (let sx = x0; sx < x1 && sx < image.width; sx++) {
+          const i = (sy * image.width + sx) * 4
+          r += image.rgba[i]
+          g += image.rgba[i + 1]
+          b += image.rgba[i + 2]
+          a += image.rgba[i + 3]
+          n++
+        }
+      }
+      const to = (y * width + x) * 4
+      out[to] = Math.round(r / n)
+      out[to + 1] = Math.round(g / n)
+      out[to + 2] = Math.round(b / n)
+      out[to + 3] = Math.round(a / n)
     }
   }
-  return encodePng(size, size, buf)
+
+  return { width, height, rgba: out }
 }
 
-const targets = [
-  ['public/icons/icon-192.png', 192, 'rounded', 0.9],
-  ['public/icons/icon-512.png', 512, 'rounded', 0.9],
-  // Maskable: conteúdo dentro da zona segura de 80%.
-  ['public/icons/maskable-192.png', 192, 'square', 0.62],
-  ['public/icons/maskable-512.png', 512, 'square', 0.62],
-  // iOS aplica a própria máscara: entregar quadrado cheio e opaco.
-  ['public/apple-touch-icon.png', 180, 'square', 0.82],
-]
+function solid(width, height, [r, g, b]) {
+  const rgba = Buffer.alloc(width * height * 4)
+  for (let i = 0; i < rgba.length; i += 4) {
+    rgba[i] = r
+    rgba[i + 1] = g
+    rgba[i + 2] = b
+    rgba[i + 3] = 255
+  }
+  return { width, height, rgba }
+}
+
+function drawInto(base, layer, x, y) {
+  for (let sy = 0; sy < layer.height; sy++) {
+    const ty = y + sy
+    if (ty < 0 || ty >= base.height) continue
+    for (let sx = 0; sx < layer.width; sx++) {
+      const tx = x + sx
+      if (tx < 0 || tx >= base.width) continue
+      layer.rgba.copy(base.rgba, (ty * base.width + tx) * 4, (sy * layer.width + sx) * 4, (sy * layer.width + sx) * 4 + 4)
+    }
+  }
+  return base
+}
+
+/** Cor mais frequente da borda — o fundo que completa o ícone "maskable". */
+function edgeColor(image) {
+  const counts = new Map()
+  const sample = (x, y) => {
+    const i = (y * image.width + x) * 4
+    const key = `${image.rgba[i]},${image.rgba[i + 1]},${image.rgba[i + 2]}`
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  for (let x = 0; x < image.width; x++) {
+    sample(x, 0)
+    sample(x, image.height - 1)
+  }
+  for (let y = 0; y < image.height; y++) {
+    sample(0, y)
+    sample(image.width - 1, y)
+  }
+  const [best] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]
+  return best.split(',').map(Number)
+}
+
+// ---------- geração ----------
+const source = decodePng(readFileSync(SOURCE))
+const background = edgeColor(source)
+const hex = `#${background.map((c) => c.toString(16).padStart(2, '0')).join('')}`
 
 mkdirSync(resolve(root, 'public/icons'), { recursive: true })
-for (const [file, size, shape, scale] of targets) {
-  writeFileSync(resolve(root, file), drawIcon(size, shape, scale))
-  console.log('gerado', file, `${size}x${size}`)
+
+const save = (path, image) => {
+  writeFileSync(resolve(root, path), encodePng(image.width, image.height, image.rgba))
+  console.log(`${path.padEnd(34)} ${image.width}×${image.height}`)
 }
+
+/** Ícone comum: o desenho ocupa o quadrado inteiro. */
+const plain = (size) => resize(source, size, size)
+
+/** Ícone "maskable": o desenho encolhe e o fundo completa as bordas. */
+const maskable = (size) => {
+  const inner = Math.round(size * MASKABLE_SCALE)
+  const offset = Math.round((size - inner) / 2)
+  return drawInto(solid(size, size, background), resize(source, inner, inner), offset, offset)
+}
+
+console.log(`fonte: assets/icon-source.png (${source.width}×${source.height})`)
+console.log(`fundo das bordas: ${hex}\n`)
+
+save('public/icons/icon-192.png', plain(192))
+save('public/icons/icon-512.png', plain(512))
+save('public/icons/maskable-192.png', maskable(192))
+save('public/icons/maskable-512.png', maskable(512))
+save('public/apple-touch-icon.png', plain(180))
+save('public/favicon-32.png', plain(32))

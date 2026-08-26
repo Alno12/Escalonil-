@@ -23,7 +23,7 @@ export default defineConfig({
       // "prompt": o usuário decide quando atualizar (ver UpdatePrompt.tsx).
       registerType: 'prompt',
       injectRegister: null,
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'icons/*.png'],
+      includeAssets: ['favicon-32.png', 'apple-touch-icon.png', 'icons/*.png'],
       manifest: {
         id: base,
         name: 'Escalonil — Plantões',
@@ -36,8 +36,11 @@ export default defineConfig({
         scope: base,
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#0B0F14',
-        theme_color: '#0B0F14',
+        // O ícone é amarelo: a tela de abertura usa o fundo CLARO do app, não
+        // o amarelo dele — senão o ícone some dentro do próprio fundo. E o app
+        // abre no claro por padrão, então é o que aparece logo em seguida.
+        background_color: '#f2f2f7',
+        theme_color: '#f4f5f8',
         categories: ['medical', 'productivity', 'finance'],
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
