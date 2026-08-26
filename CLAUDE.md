@@ -124,6 +124,15 @@ que era o antigo, e a cor do local existente era sobrescrita sem ninguém pedir.
 Se precisar comparar nome de local em qualquer lugar novo, importe daqui — não
 escreva `.toLowerCase()` no componente.
 
+**15. A restauração de backup não confia no arquivo.**
+`parseBackup` recalcula `expectedAmount` (o invariante 3 vale também para dado
+importado) e recusa o que o app nunca produziria: data que não existe no
+calendário, plantão que termina antes de começar, valor negativo, identificador
+repetido e dois recebimentos para o mesmo plantão. Cada recusa tem mensagem
+própria — "não foi possível restaurar" sozinho não diz se o arquivo está
+corrompido ou se o problema é passageiro. Restaurar continua sendo tudo ou
+nada, dentro de uma transação: falhou, os dados atuais ficam intactos.
+
 **12. Recebimento em lote nunca rateia valores.**
 `registerPayments` grava cada plantão pelo próprio `expectedAmount`. Se o
 depósito veio diferente, o ajuste é plantão a plantão — inventar um rateio
@@ -234,6 +243,10 @@ npm run lint && npm test && npm run build
 Migração de banco não tem teste automático — o vitest roda em Node, sem
 IndexedDB. Ao subir a versão do Dexie, monte o esquema anterior no navegador,
 abra o app em cima e confira que os registros antigos sobreviveram.
+
+No CSV, o texto que o usuário escreve (local, tipo, anotações) passa por
+`csvText`: uma anotação começando com `=`, `+`, `-` ou `@` é lida como FÓRMULA
+pelo Excel. As colunas numéricas não passam por lá — nelas o `-` é sinal.
 
 Os testes cobrem as regras críticas: virada de meia-noite, duração, valor
 esperado, situação do pagamento, conflitos, escalas e recorrências, somas

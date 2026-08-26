@@ -73,8 +73,14 @@ export function BackupSection() {
     try {
       await restoreBackup(pending)
       toast.success('Backup restaurado')
-    } catch {
-      toast.error('Não foi possível restaurar o backup.')
+    } catch (e) {
+      // Dizer o que houve: "não foi possível" sozinho não distingue arquivo
+      // corrompido de problema passageiro, e não sugere o que fazer.
+      toast.error(
+        e instanceof Error && e.message
+          ? `Não foi possível restaurar: ${e.message}`
+          : 'Não foi possível restaurar o backup. Seus dados atuais continuam intactos.',
+      )
     } finally {
       setPending(null)
       setBusy(false)
