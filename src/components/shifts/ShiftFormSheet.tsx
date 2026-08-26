@@ -7,6 +7,7 @@ import { ColorPicker } from '@/components/ui/ColorPicker'
 import { useAppData } from '@/state/appDataContext'
 import { useToast } from '@/state/toastContext'
 import { createShifts, ensureLocation, updateShift, type ShiftInput } from '@/data/repository'
+import { useMoneyMask } from '@/hooks/useMoneyMask'
 import { findConflicts } from '@/domain/conflicts'
 import { findLocationByName } from '@/domain/location'
 import {
@@ -97,6 +98,15 @@ export function ShiftFormSheet({
     })
     setError(null)
   }
+
+  // Os dois campos de dinheiro se preenchem da direita para a esquerda e
+  // continuam espelhando um ao outro pela duração.
+  const amountMask = useMoneyMask((amountText) =>
+    setValues((prev) => syncMoney({ ...prev, amountText }, 'fixed')),
+  )
+  const hourlyMask = useMoneyMask((hourlyText) =>
+    setValues((prev) => syncMoney({ ...prev, hourlyText }, 'hourly')),
+  )
 
   const range = useMemo(() => formRange(values), [values])
   const duration = formDuration(values)
@@ -460,14 +470,10 @@ export function ShiftFormSheet({
                 <span className="money-field__prefix">R$</span>
                 <input
                   className="input num"
-                  type="text"
-                  inputMode="decimal"
                   value={values.amountText}
                   placeholder="0,00"
                   aria-label="Valor do plantão"
-                  onChange={(e) =>
-                    setValues((prev) => syncMoney({ ...prev, amountText: e.target.value }, 'fixed'))
-                  }
+                  {...amountMask}
                 />
               </span>
             </div>
@@ -479,15 +485,10 @@ export function ShiftFormSheet({
                   <span className="money-field__prefix">R$</span>
                   <input
                     className="input num"
-                    type="text"
-                    inputMode="decimal"
                     value={values.hourlyText}
                     placeholder="0,00"
-                    onChange={(e) =>
-                      setValues((prev) =>
-                        syncMoney({ ...prev, hourlyText: e.target.value }, 'hourly'),
-                      )
-                    }
+                    aria-label="Valor por hora"
+                    {...hourlyMask}
                   />
                 </span>
               </label>

@@ -4,6 +4,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react'
+import { useMoneyMask } from '@/hooks/useMoneyMask'
 
 interface FieldProps {
   label: string
@@ -68,25 +69,35 @@ export function Select({
   )
 }
 
+type MoneyInputProps = Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'onChange' | 'type' | 'inputMode'
+> & {
+  suffix?: string
+  /** Recebe o texto já mascarado ("1.200,00"). */
+  onValueChange: (value: string) => void
+}
+
 /**
- * Campo de dinheiro: prefixo "R$" e teclado numérico no iPhone.
- * O valor fica como texto enquanto o usuário digita e só vira número ao salvar
- * (ver `parseMoneyInput`), o que evita o campo "pular" durante a digitação.
+ * Campo de dinheiro: prefixo "R$", teclado numérico e máscara brasileira.
+ * O valor se preenche da direita para a esquerda e só vira número ao salvar
+ * (ver `parseMoneyInput`).
  */
 export function MoneyInput({
   suffix,
   className = '',
+  onValueChange,
   ...rest
-}: InputHTMLAttributes<HTMLInputElement> & { suffix?: string }) {
+}: MoneyInputProps) {
+  const mask = useMoneyMask(onValueChange)
   return (
     <div className="money-input">
       <span className="money-input__prefix">R$</span>
       <input
-        type="text"
-        inputMode="decimal"
-        autoComplete="off"
         className={`input money-input__control ${className}`.trim()}
+        placeholder="0,00"
         {...rest}
+        {...mask}
       />
       {suffix && <span className="money-input__suffix">{suffix}</span>}
     </div>

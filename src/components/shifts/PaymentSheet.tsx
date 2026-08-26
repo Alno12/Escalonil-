@@ -7,15 +7,19 @@ import { useAppData } from '@/state/appDataContext'
 import { useToast } from '@/state/toastContext'
 import { registerPayment, removePayment } from '@/data/repository'
 import { formatDate, formatDuration, todayISO } from '@/domain/datetime'
-import { formatMoney, formatMoneySigned, parseMoneyInput, roundMoney } from '@/domain/money'
+import {
+  formatMoney,
+  formatMoneySigned,
+  moneyToInput,
+  parseMoneyInput,
+  roundMoney,
+} from '@/domain/money'
 
 interface PaymentSheetProps {
   open: boolean
   shiftId: string
   onClose: () => void
 }
-
-const moneyToText = (value: number) => value.toFixed(2).replace('.', ',')
 
 /** Registro de recebimento (§25) com indicador de divergência (§26). */
 export function PaymentSheet({ open, shiftId, onClose }: PaymentSheetProps) {
@@ -26,7 +30,7 @@ export function PaymentSheet({ open, shiftId, onClose }: PaymentSheetProps) {
   // Ao marcar como recebido já vem preenchido com hoje e o valor previsto.
   const [receivedDate, setReceivedDate] = useState(() => view?.payment?.receivedDate ?? todayISO())
   const [amountText, setAmountText] = useState(() =>
-    moneyToText(view?.payment?.receivedAmount ?? view?.shift.expectedAmount ?? 0),
+    moneyToInput(view?.payment?.receivedAmount ?? view?.shift.expectedAmount ?? 0),
   )
   const [notes, setNotes] = useState(() => view?.payment?.notes ?? '')
   const [saving, setSaving] = useState(false)
@@ -95,7 +99,7 @@ export function PaymentSheet({ open, shiftId, onClose }: PaymentSheetProps) {
           <MoneyInput
             id="payment-amount"
             value={amountText}
-            onChange={(e) => setAmountText(e.target.value)}
+            onValueChange={setAmountText}
           />
         </Field>
 

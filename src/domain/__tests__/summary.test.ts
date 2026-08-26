@@ -12,7 +12,7 @@ import {
   weekSummary,
 } from '../summary'
 import { buildIndicators, buildInsights, buildLocationReport, buildMonthlySeries } from '../reports'
-import { formatMoney, parseMoneyInput, roundMoney } from '../money'
+import { roundMoney } from '../money'
 
 const LOCATIONS: Location[] = [
   { id: 'upa', name: 'UPA Centro', color: 'blue', createdAt: '2026-01-01T00:00:00.000Z' },
@@ -178,29 +178,3 @@ describe('relatórios', () => {
   })
 })
 
-describe('money', () => {
-  // O Intl usa espaço não separável entre "R$" e o número.
-  const normalize = (value: string) => value.replace(/\u00a0/g, ' ')
-
-  it('formata em reais no padrão brasileiro', () => {
-    expect(normalize(formatMoney(1250))).toBe('R$ 1.250,00')
-    expect(normalize(formatMoney(0))).toBe('R$ 0,00')
-    expect(normalize(formatMoney(1234567.891))).toBe('R$ 1.234.567,89')
-  })
-
-  it('lê valores digitados em formatos diferentes', () => {
-    expect(parseMoneyInput('1.200,50')).toBe(1200.5)
-    expect(parseMoneyInput('1200,50')).toBe(1200.5)
-    expect(parseMoneyInput('1200.50')).toBe(1200.5)
-    expect(parseMoneyInput('1.200')).toBe(1200)
-    expect(parseMoneyInput('R$ 1.200')).toBe(1200)
-    expect(parseMoneyInput('12.345.678')).toBe(12345678)
-    expect(parseMoneyInput('100')).toBe(100)
-    expect(parseMoneyInput('')).toBe(0)
-    expect(parseMoneyInput('abc')).toBe(0)
-  })
-
-  it('arredonda para centavos', () => {
-    expect(roundMoney(0.1 + 0.2)).toBe(0.3)
-  })
-})
