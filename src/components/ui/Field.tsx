@@ -149,3 +149,31 @@ export function ChipGroup({
     </div>
   )
 }
+
+/**
+ * Interruptor no padrão do iOS. É um `button` com `role="switch"` em vez de um
+ * `input[type=checkbox]`: o desenho é todo nosso e o estado vive no React,
+ * então a caixa nativa só atrapalharia.
+ */
+export function Switch({
+  checked,
+  onChange,
+  ariaLabel,
+}: {
+  checked: boolean
+  onChange: (checked: boolean) => void
+  ariaLabel: string
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={ariaLabel}
+      className={`switch ${checked ? 'is-on' : ''}`.trim()}
+      onClick={() => onChange(!checked)}
+    >
+      <span className="switch__knob" aria-hidden="true" />
+    </button>
+  )
+}

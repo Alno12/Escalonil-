@@ -23,6 +23,10 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultFixedAmount: 0,
   shiftTypes: DEFAULT_SHIFT_TYPES,
   lastBackupAt: null,
+  // O app foi feito de presente e já vem com a data das férias marcada — é
+  // o easter egg, não uma configuração que alguém precise descobrir.
+  vacationDate: '2026-10-11',
+  vacationEnabled: true,
   updatedAt: new Date(0).toISOString(),
 }
 

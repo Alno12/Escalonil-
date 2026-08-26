@@ -470,6 +470,12 @@
   padding-top: var(--sp-2);
 }
 
+/* Formulário dentro de um cartão SEM padding — a linha do interruptor
+   precisa do cartão inteiro para a hairline ficar recuada como nas outras. */
+.form--inset {
+  padding: var(--sp-2) var(--row-pad) var(--sp-4);
+}
+
 .form-note {
   padding: 0 var(--sp-1);
   margin-top: calc(var(--sp-3) * -1 + 2px);
@@ -1262,6 +1268,34 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  color: var(--text-2);
+}
+
+/* ---------------- Contagem das férias ---------------- */
+/*
+ * Discreta de propósito: é uma piada interna, não uma informação do app.
+ * Encosta no cartão do próximo plantão em vez de virar mais um bloco na tela.
+ */
+.vacation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: var(--sp-2);
+  padding: 0 var(--sp-4);
+  font-size: var(--text-footnote);
+  color: var(--text-3);
+  text-align: center;
+  animation: fade-in var(--dur-slow) var(--ease) backwards;
+}
+
+.vacation svg {
+  flex: none;
+  color: var(--orange);
+}
+
+.vacation-preview {
+  font-size: var(--text-footnote);
   color: var(--text-2);
 }
 

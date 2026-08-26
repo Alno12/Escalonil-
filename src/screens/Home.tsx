@@ -20,6 +20,7 @@ import {
   relativeDayLabel,
 } from '@/domain/datetime'
 import { formatMoneyCompact, formatNumber } from '@/domain/money'
+import { vacationCountdown } from '@/domain/vacation'
 import {
   currentOrNextShift,
   filterByMonth,
@@ -33,8 +34,10 @@ import {
  * qual é o próximo, quanto vai trabalhar e quanto tem a receber.
  */
 export function Home() {
-  const { ready, views, now, today } = useAppData()
+  const { ready, views, now, today, settings } = useAppData()
   const sheets = useShiftSheets()
+
+  const vacation = vacationCountdown(settings.vacationDate, today, settings.vacationEnabled)
 
   const next = useMemo(() => currentOrNextShift(views, now), [views, now])
   const week = useMemo(() => weekSummary(views, today), [views, today])
@@ -76,6 +79,12 @@ export function Home() {
           {next && (
             <section aria-label="Próximo plantão">
               <NextShiftCard viewId={next.shift.id} />
+              {vacation && (
+                <p className="vacation">
+                  <Icon name="sun" size={14} />
+                  {vacation}
+                </p>
+              )}
             </section>
           )}
 
