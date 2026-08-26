@@ -1762,6 +1762,195 @@
   color: var(--text-2);
 }
 
+/* ---------------- Ritmo da semana ---------------- */
+.weekday {
+  display: flex;
+  flex-direction: column;
+}
+
+.weekday__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  height: 126px;
+}
+
+.weekday__col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.weekday__value {
+  font-size: var(--text-micro);
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.weekday__track {
+  display: flex;
+  align-items: flex-end;
+  flex: 1;
+  width: 100%;
+}
+
+.weekday__bar {
+  width: 100%;
+  border-radius: 6px;
+  background: var(--accent);
+  animation: rise-in var(--dur-slow) var(--ease) backwards;
+}
+
+.weekday__day {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.weekday__col.is-max .weekday__value,
+.weekday__col.is-max .weekday__day {
+  color: var(--accent-text);
+}
+
+.weekday__note {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--separator);
+  font-size: var(--text-footnote);
+  color: var(--text-2);
+}
+
+.weekday__note svg {
+  flex: none;
+  color: var(--text-3);
+}
+
+.weekday__note b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ---------------- Mapa do mês ---------------- */
+.daymap__head,
+.daymap__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.daymap__head {
+  margin-bottom: var(--sp-2);
+}
+
+.daymap__head span {
+  text-align: center;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.daymap__cell {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 7px;
+  background: var(--fill);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.daymap__cell--void {
+  background: transparent;
+}
+/* O número escurece junto com a faixa: cinza claro sobre roxo médio some. */
+.daymap__cell--1 {
+  background: var(--heat-1);
+  color: var(--text-2);
+}
+.daymap__cell--2 {
+  background: var(--heat-2);
+  color: var(--text);
+}
+.daymap__cell--3 {
+  background: var(--heat-3);
+  color: var(--text-on-accent);
+}
+.daymap__cell--4 {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.daymap__scale {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-top: var(--sp-4);
+  font-size: var(--text-caption);
+  color: var(--text-3);
+}
+
+.daymap__scale i {
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+}
+
+/* ---------------- Recordes ---------------- */
+.records {
+  display: flex;
+  flex-direction: column;
+}
+
+.records__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 13px var(--row-pad);
+}
+
+.records__row + .records__row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: calc(var(--row-pad) + 40px);
+  right: 0;
+  height: 1px;
+  background: var(--separator);
+}
+
+.records__icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.records__label {
+  font-size: var(--text-subhead);
+}
+
+.records__value {
+  margin-left: auto;
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-align: right;
+}
+
 /* ---------------- Ajustes ---------------- */
 .settings-list {
   display: flex;
