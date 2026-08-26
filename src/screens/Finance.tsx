@@ -14,11 +14,10 @@ import { formatMoney } from '@/domain/money'
 import { filterByMonth, financeTotals, sortByStart } from '@/domain/summary'
 import { PeriodNav } from './schedule/PeriodNav'
 
-type Tab = 'pending' | 'overdue' | 'received'
+type Tab = 'pending' | 'received'
 
 const TABS = [
   { value: 'pending' as const, label: 'A receber' },
-  { value: 'overdue' as const, label: 'Atrasados' },
   { value: 'received' as const, label: 'Recebidos' },
 ]
 
@@ -45,7 +44,6 @@ export function Finance() {
   const lists = useMemo(
     () => ({
       pending: sortByStart(views.filter((v) => v.paymentStatus === 'pending')),
-      overdue: sortByStart(views.filter((v) => v.paymentStatus === 'overdue')),
       received: sortByStart(views.filter((v) => v.paymentStatus === 'received'), 'desc'),
     }),
     [views],
@@ -105,7 +103,6 @@ export function Finance() {
               <MoneyRow label="Previsto" value={monthTotals.expected} strong />
               <MoneyRow label="Recebido" value={monthTotals.received} tone="success" />
               <MoneyRow label="A receber" value={monthTotals.pending} strong />
-              <MoneyRow label="Atrasado" value={monthTotals.overdue} tone="danger" />
             </div>
           </section>
 
@@ -123,13 +120,7 @@ export function Finance() {
               <p className="list-count">
                 Todos os períodos ·{' '}
                 <strong className="num">
-                  {formatMoney(
-                    tab === 'received'
-                      ? globalTotals.received
-                      : tab === 'overdue'
-                        ? globalTotals.overdue
-                        : globalTotals.pending,
-                  )}
+                  {formatMoney(tab === 'received' ? globalTotals.received : globalTotals.pending)}
                 </strong>
               </p>
               {canSelect && (
@@ -149,7 +140,6 @@ export function Finance() {
                   <PaymentRow
                     key={view.shift.id}
                     view={view}
-                    today={today}
                     onOpen={sheets.openShift}
                     onRegister={sheets.openPayment}
                     selection={
@@ -163,13 +153,9 @@ export function Finance() {
             ) : (
               <EmptyState
                 compact
-                icon={tab === 'overdue' ? 'check' : 'wallet'}
+                icon="wallet"
                 title={
-                  tab === 'pending'
-                    ? 'Nada a receber no momento'
-                    : tab === 'overdue'
-                      ? 'Nenhum pagamento atrasado'
-                      : 'Nenhum pagamento registrado'
+                  tab === 'pending' ? 'Nada a receber no momento' : 'Nenhum pagamento registrado'
                 }
                 description={
                   tab === 'received'

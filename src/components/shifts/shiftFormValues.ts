@@ -9,8 +9,9 @@ import {
   joinDateTime,
   timePartOf,
   todayISO,
+  toDate,
 } from '@/domain/datetime'
-import { computeExpectedAmount, suggestPaymentDate } from '@/domain/shift'
+import { computeExpectedAmount } from '@/domain/shift'
 import { parseMoneyInput, roundMoney } from '@/domain/money'
 
 /** Frequências oferecidas na recorrência. */
@@ -27,6 +28,17 @@ export const REPEAT_LABELS: Record<RepeatMode, string> = {
 /** Teto de segurança para uma série — evita gerar milhares de plantões. */
 export const MAX_OCCURRENCES = 120
 
+/** Dias da semana, na ordem brasileira (domingo primeiro). */
+export const WEEKDAY_OPTIONS = [
+  { value: 0, label: 'Dom' },
+  { value: 1, label: 'Seg' },
+  { value: 2, label: 'Ter' },
+  { value: 3, label: 'Qua' },
+  { value: 4, label: 'Qui' },
+  { value: 5, label: 'Sex' },
+  { value: 6, label: 'Sáb' },
+]
+
 /** Atalhos de duração do formulário, em horas. */
 export const DURATION_SHORTCUTS = [6, 12, 24, 36, 48]
 
@@ -41,6 +53,11 @@ export interface ShiftFormValues {
   endDate: LocalDate
   endTime: string
   repeat: RepeatMode
+  /**
+   * Dias da semana marcados quando a frequência é semanal (0 = domingo).
+   * Vazio nunca acontece: o formulário garante ao menos o dia do início.
+   */
+  weekdays: number[]
   repeatUntil: LocalDate
   /** Valor total do plantão, como texto enquanto o usuário digita. */
   amountText: string
@@ -48,7 +65,6 @@ export interface ShiftFormValues {
   hourlyText: string
   /** Qual dos dois campos o usuário editou por último. */
   paymentMode: PaymentMode
-  expectedPaymentDate: string
   notes: string
 }
 
@@ -69,11 +85,11 @@ export function emptyForm(settings: Settings, date?: LocalDate): ShiftFormValues
     endDate: datePartOf(end),
     endTime: timePartOf(end),
     repeat: 'none',
+    weekdays: [toDate(startDate).getDay()],
     repeatUntil: addMonths(startDate, 3),
     amountText: moneyToText(settings.defaultFixedAmount),
     hourlyText: moneyToText(settings.defaultHourlyRate),
     paymentMode: settings.defaultPaymentMode,
-    expectedPaymentDate: suggestPaymentDate(end, settings.paymentTermDays),
     notes: '',
   }
 }
@@ -95,13 +111,13 @@ export function formFromShift(
     endTime: timePartOf(shift.endDateTime),
     // Repetição é sempre uma escolha nova: editar ou duplicar não recria a série.
     repeat: 'none',
+    weekdays: [toDate(datePartOf(shift.startDateTime)).getDay()],
     repeatUntil: addMonths(datePartOf(shift.startDateTime), 3),
     amountText: moneyToText(shift.expectedAmount),
     hourlyText: moneyToText(
       shift.hourlyRate > 0 ? shift.hourlyRate : hours > 0 ? roundMoney(shift.expectedAmount / hours) : 0,
     ),
     paymentMode: shift.paymentMode,
-    expectedPaymentDate: shift.expectedPaymentDate ?? '',
     notes: shift.notes,
   }
 }
@@ -111,7 +127,6 @@ export function formFromDuplicate(
   shift: Shift,
   locationName: string,
   color: LocationColor,
-  settings: Settings,
 ): ShiftFormValues {
   const base = formFromShift(shift, locationName, color)
   const today = todayISO()
@@ -124,8 +139,8 @@ export function formFromDuplicate(
     startDate: today,
     endDate: datePartOf(end),
     endTime: timePartOf(end),
+    weekdays: [toDate(today).getDay()],
     repeatUntil: addMonths(today, 3),
-    expectedPaymentDate: suggestPaymentDate(end, settings.paymentTermDays),
   }
 }
 
@@ -194,10 +209,24 @@ export function syncMoney(values: ShiftFormValues, edited: PaymentMode): ShiftFo
   }
 }
 
-/** Datas de início de cada ocorrência da série, respeitando a data limite. */
+/**
+ * Datas de início de cada ocorrência da série, respeitando a data limite.
+ *
+ * Na frequência semanal a série segue os DIAS MARCADOS: escolher segunda e
+ * quinta gera duas ocorrências por semana. Nas demais frequências o passo é
+ * fixo a partir da data de início.
+ */
 export function repeatDates(values: ShiftFormValues): LocalDate[] {
   if (values.repeat === 'none') return [values.startDate]
 
+  const dates: LocalDate[] =
+    values.repeat === 'weekly' ? weeklyDates(values) : steppedDates(values)
+
+  // A primeira ocorrência sempre entra, mesmo se o limite for anterior a ela.
+  return dates.length > 0 ? dates : [values.startDate]
+}
+
+function steppedDates(values: ShiftFormValues): LocalDate[] {
   const dates: LocalDate[] = []
   let current = values.startDate
 
@@ -206,9 +235,31 @@ export function repeatDates(values: ShiftFormValues): LocalDate[] {
     current =
       values.repeat === 'monthly'
         ? addMonths(current, 1)
-        : addDays(current, values.repeat === 'daily' ? 1 : values.repeat === 'weekly' ? 7 : 14)
+        : addDays(current, values.repeat === 'daily' ? 1 : 14)
   }
+  return dates
+}
 
-  // A primeira ocorrência sempre entra, mesmo se o limite for anterior a ela.
-  return dates.length > 0 ? dates : [values.startDate]
+function weeklyDates(values: ShiftFormValues): LocalDate[] {
+  const selected = normalizeWeekdays(values)
+  const dates: LocalDate[] = []
+
+  // Começa no domingo da semana do início e varre dia a dia; simples de ler e
+  // impossível de errar a virada de mês ou de ano.
+  let cursor = addDays(values.startDate, -toDate(values.startDate).getDay())
+
+  while (cursor <= values.repeatUntil && dates.length < MAX_OCCURRENCES) {
+    if (cursor >= values.startDate && selected.includes(toDate(cursor).getDay())) {
+      dates.push(cursor)
+    }
+    cursor = addDays(cursor, 1)
+  }
+  return dates
+}
+
+/** Nunca devolve lista vazia: sem marcação, vale o dia da data de início. */
+export function normalizeWeekdays(values: ShiftFormValues): number[] {
+  return values.weekdays.length > 0
+    ? [...values.weekdays].sort((a, b) => a - b)
+    : [toDate(values.startDate).getDay()]
 }

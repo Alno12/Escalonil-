@@ -37,7 +37,6 @@ function shift(
     fixedAmount: expectedAmount,
     hourlyRate: 0,
     expectedAmount,
-    expectedPaymentDate: '2026-09-05',
     notes: '',
     cancelled: false,
     createdAt: '2026-08-01T00:00:00.000Z',
@@ -52,7 +51,6 @@ function payment(shiftId: string, receivedAmount: number, expectedAmount = recei
     shiftId,
     expectedAmount,
     receivedAmount,
-    expectedDate: '2026-09-05',
     receivedDate: '2026-09-04',
     notes: '',
     createdAt: '2026-09-04T00:00:00.000Z',
@@ -66,9 +64,7 @@ const NOW = toDate('2026-08-25T16:25')
 const SHIFTS = [
   shift('passado-pago', '2026-08-10T07:00', '2026-08-10T19:00', 900),
   shift('passado-pendente', '2026-08-12T19:00', '2026-08-13T07:00', 1200),
-  shift('passado-atrasado', '2026-08-14T07:00', '2026-08-14T19:00', 800, {
-    expectedPaymentDate: '2026-08-20',
-  }),
+  shift('passado-atrasado', '2026-08-14T07:00', '2026-08-14T19:00', 800),
   shift('agora', '2026-08-25T13:00', '2026-08-25T19:00', 650),
   shift('proximo', '2026-08-26T19:00', '2026-08-27T07:00', 1200, { locationId: 'hosp' }),
   shift('cancelado', '2026-08-27T07:00', '2026-08-27T19:00', 500, { cancelled: true }),
@@ -85,10 +81,10 @@ describe('financeTotals', () => {
     expect(totals.expected).toBe(900 + 1200 + 800 + 650 + 1200)
   })
 
-  it('separa a receber de atrasado', () => {
-    expect(totals.pending).toBe(1200)
-    expect(totals.overdue).toBe(800)
-    expect(totals.outstanding).toBe(2000)
+  it('soma tudo que foi realizado e não recebido em "a receber"', () => {
+    // Sem lógica de prazo: os três plantões passados não pagos entram juntos.
+    expect(totals.pending).toBe(1200 + 800)
+    expect(totals.outstanding).toBe(totals.pending)
   })
 
   it('usa o valor efetivamente recebido, não o previsto', () => {

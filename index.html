@@ -29,7 +29,8 @@
       // Aplica o tema antes da primeira pintura para não piscar.
       (function () {
         try {
-          var stored = localStorage.getItem('escalonil:theme') || 'system'
+          // O padrão do app é claro; 'system' só vale se o usuário escolher.
+          var stored = localStorage.getItem('escalonil:theme') || 'light'
           var dark =
             stored === 'dark' ||
             (stored === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)

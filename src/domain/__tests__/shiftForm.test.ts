@@ -32,7 +32,6 @@ const shift = (startDateTime: string, endDateTime: string, extra: Partial<Shift>
   fixedAmount: 1200,
   hourlyRate: 0,
   expectedAmount: 1200,
-  expectedPaymentDate: null,
   notes: '',
   cancelled: false,
   createdAt: '2026-08-01T00:00:00.000Z',
@@ -84,13 +83,49 @@ describe('repeatDates', () => {
     ])
   })
 
-  it('gera a série semanal', () => {
+  it('gera a série semanal no dia da data de início', () => {
+    // 25/08/2026 é uma terça-feira.
     expect(repeatDates(base({ repeat: 'weekly', repeatUntil: '2026-09-15' }))).toEqual([
       '2026-08-25',
       '2026-09-01',
       '2026-09-08',
       '2026-09-15',
     ])
+  })
+
+  it('gera uma ocorrência por dia da semana marcado', () => {
+    // Terça (2) e quinta (4), a partir de terça 25/08.
+    expect(
+      repeatDates(base({ repeat: 'weekly', weekdays: [2, 4], repeatUntil: '2026-09-04' })),
+    ).toEqual(['2026-08-25', '2026-08-27', '2026-09-01', '2026-09-03'])
+  })
+
+  it('inclui dias da semana anteriores ao início somente a partir da semana seguinte', () => {
+    // Segunda (1) marcada, mas o início é terça 25/08: a primeira segunda válida
+    // é a de 31/08, não a de 24/08.
+    expect(
+      repeatDates(base({ repeat: 'weekly', weekdays: [1], repeatUntil: '2026-09-10' })),
+    ).toEqual(['2026-08-31', '2026-09-07'])
+  })
+
+  it('ordena as ocorrências mesmo com dias marcados fora de ordem', () => {
+    const dates = repeatDates(
+      base({ repeat: 'weekly', weekdays: [5, 3], repeatUntil: '2026-09-05' }),
+    )
+    expect(dates).toEqual([...dates].sort())
+    expect(dates).toEqual(['2026-08-26', '2026-08-28', '2026-09-02', '2026-09-04'])
+  })
+
+  it('sem nenhum dia marcado, cai no dia da data de início', () => {
+    expect(
+      repeatDates(base({ repeat: 'weekly', weekdays: [], repeatUntil: '2026-09-08' })),
+    ).toEqual(['2026-08-25', '2026-09-01', '2026-09-08'])
+  })
+
+  it('os dias da semana não afetam as outras frequências', () => {
+    expect(
+      repeatDates(base({ repeat: 'daily', weekdays: [0], repeatUntil: '2026-08-27' })),
+    ).toEqual(['2026-08-25', '2026-08-26', '2026-08-27'])
   })
 
   it('gera a série quinzenal', () => {
@@ -119,6 +154,13 @@ describe('repeatDates', () => {
   it('respeita o teto de segurança da série', () => {
     const dates = repeatDates(base({ repeat: 'daily', repeatUntil: '2030-01-01' }))
     expect(dates).toHaveLength(MAX_OCCURRENCES)
+  })
+
+  it('o teto vale também para a série semanal com vários dias', () => {
+    const dates = repeatDates(
+      base({ repeat: 'weekly', weekdays: [0, 1, 2, 3, 4, 5, 6], repeatUntil: '2030-01-01' }),
+    )
+    expect(dates.length).toBeLessThanOrEqual(MAX_OCCURRENCES)
   })
 })
 
@@ -176,7 +218,7 @@ describe('formFromShift', () => {
 describe('formFromDuplicate', () => {
   it('move para hoje preservando a duração', () => {
     const original = shift('2026-08-10T07:00', '2026-08-11T19:00')
-    const values = formFromDuplicate(original, 'UPA', 'blue', DEFAULT_SETTINGS)
+    const values = formFromDuplicate(original, 'UPA', 'blue')
     expect(formDuration(values)).toBe(36)
     expect(values.startDate).not.toBe('2026-08-10')
     expect(formRange(values).startDateTime.slice(11)).toBe('07:00')

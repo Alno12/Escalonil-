@@ -40,9 +40,9 @@ src/
 direto, que interpreta a string como UTC.
 
 **2. Situação é sempre calculada, nunca armazenada.**
-`getShiftStatus()` e `getPaymentStatus()` recebem o `now`. "Atrasado" depende da
-data de hoje, então gravar esse estado no banco o deixaria velho no dia
-seguinte.
+`getShiftStatus()` e `getPaymentStatus()` recebem o `now`. "Em andamento"
+depende da hora atual, então gravar esse estado no banco o deixaria velho no
+minuto seguinte.
 
 **3. `expectedAmount` é derivado, mas persistido.**
 Fica no banco para listas e relatórios não recalcularem tudo. É sempre
@@ -51,9 +51,16 @@ alterar `paymentMode`, `fixedAmount`, `hourlyRate` ou os horários em qualquer
 outro lugar, o valor sai de sincronia.
 
 **4. Um `Payment` existe apenas para plantões pagos.**
-Sem registro = "ainda não recebido". `expectedAmount`/`expectedDate` no Payment
-são uma fotografia do momento do recebimento, para a divergência (§26)
-sobreviver a edições posteriores do plantão.
+Sem registro = "ainda não recebido". `expectedAmount` no Payment é uma
+fotografia do previsto no momento do recebimento, para a divergência sobreviver
+a edições posteriores do plantão.
+
+**4b. Não existe "atrasado". O app não controla prazos.**
+Plantão realizado e não pago fica "a receber" por tempo indeterminado, e só sai
+dessa lista quando o usuário registra o recebimento. Foi uma decisão explícita
+de simplificação: nada de data prevista, prazo padrão ou cobrança automática.
+Se isso voltar um dia, os valores antigos de `expectedPaymentDate` continuam
+gravados nos registros — a v3 do banco só removeu o índice, não os dados.
 
 **5. Conflito avisa, não bloqueia.**
 `findConflicts()` alimenta um aviso no formulário e um diálogo
@@ -82,7 +89,12 @@ que faz a agenda ficar legível de relance.
 `Shift.title` aparece depois do nome do local nas listas. Um plantão sem título
 continua mostrando o local normalmente.
 
-**9. Recebimento em lote nunca rateia valores.**
+**9. Na recorrência semanal, quem manda são os dias marcados.**
+`repeatDates` varre dia a dia a partir do domingo da semana de início e inclui
+os dias marcados que caem entre o início e a data limite. As demais frequências
+usam passo fixo. `normalizeWeekdays` garante que a lista nunca fica vazia.
+
+**12. Recebimento em lote nunca rateia valores.**
 `registerPayments` grava cada plantão pelo próprio `expectedAmount`. Se o
 depósito veio diferente, o ajuste é plantão a plantão — inventar um rateio
 criaria divergências que o usuário nunca escolheu.
@@ -101,14 +113,13 @@ imediatamente quando o app volta ao primeiro plano.
 ## Escopos financeiros (não misture)
 
 - `expected` — soma dos plantões não cancelados do recorte.
-- `pending` — realizados, não pagos, dentro do prazo.
-- `overdue` — realizados, não pagos, prazo vencido.
-- `outstanding` — `pending + overdue`.
+- `pending` — realizados e ainda não pagos.
+- `outstanding` — tudo que falta entrar; hoje é igual a `pending`.
 - `received` — soma do que entrou de fato (não do previsto).
 
-`pending` e `overdue` são **disjuntos**. Na tela Financeiro, os cartões do topo
-olham o mês selecionado e as listas abaixo mostram todos os períodos — de
-propósito, para nenhuma pendência antiga sumir por causa de um filtro.
+Na tela Financeiro, os valores do topo olham o mês selecionado e as listas
+abaixo mostram todos os períodos — de propósito, para nenhuma pendência antiga
+sumir por causa de um filtro.
 
 ## Interface — linguagem visual do iOS
 

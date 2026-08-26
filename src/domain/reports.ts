@@ -173,16 +173,8 @@ export function buildInsights(
   if (now.outstanding > 0) {
     insights.push({
       id: 'outstanding',
-      text: `Você tem ${formatMoney(now.outstanding)} pendentes de pagamento.`,
-      tone: now.overdue > 0 ? 'warning' : 'neutral',
-    })
-  }
-
-  if (now.overdue > 0) {
-    insights.push({
-      id: 'overdue',
-      text: `${formatMoney(now.overdue)} estão atrasados — vale cobrar.`,
-      tone: 'warning',
+      text: `Você tem ${formatMoney(now.outstanding)} a receber.`,
+      tone: 'neutral',
     })
   }
 

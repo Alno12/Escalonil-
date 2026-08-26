@@ -105,7 +105,6 @@ export function parseBackup(text: string): BackupFile {
     if (!DATE_TIME.test(startDateTime) || !DATE_TIME.test(endDateTime)) {
       throw new ImportError('Há plantões com data ou hora inválida no backup.')
     }
-    const expectedPaymentDate = str(s.expectedPaymentDate)
     return {
       id: str(s.id),
       title: str(s.title),
@@ -117,7 +116,6 @@ export function parseBackup(text: string): BackupFile {
       fixedAmount: num(s.fixedAmount),
       hourlyRate: num(s.hourlyRate),
       expectedAmount: num(s.expectedAmount),
-      expectedPaymentDate: DATE.test(expectedPaymentDate) ? expectedPaymentDate : null,
       notes: str(s.notes),
       cancelled: bool(s.cancelled),
       createdAt: str(s.createdAt, new Date().toISOString()),
@@ -137,7 +135,6 @@ export function parseBackup(text: string): BackupFile {
       shiftId: str(p.shiftId),
       expectedAmount: num(p.expectedAmount),
       receivedAmount: num(p.receivedAmount),
-      expectedDate: DATE.test(str(p.expectedDate)) ? str(p.expectedDate) : null,
       receivedDate: DATE.test(str(p.receivedDate)) ? str(p.receivedDate) : todayISO(),
       notes: str(p.notes),
       createdAt: str(p.createdAt, new Date().toISOString()),
@@ -152,7 +149,6 @@ export function parseBackup(text: string): BackupFile {
     defaultPaymentMode: rawSettings.defaultPaymentMode === 'hourly' ? 'hourly' : 'fixed',
     defaultHourlyRate: num(rawSettings.defaultHourlyRate),
     defaultFixedAmount: num(rawSettings.defaultFixedAmount),
-    paymentTermDays: num(rawSettings.paymentTermDays, DEFAULT_SETTINGS.paymentTermDays),
     shiftTypes: Array.isArray(rawSettings.shiftTypes)
       ? rawSettings.shiftTypes.filter((t): t is string => typeof t === 'string')
       : DEFAULT_SETTINGS.shiftTypes,
@@ -210,7 +206,6 @@ export function buildShiftsCsv(views: ShiftView[]): string {
     'Tipo',
     'Valor previsto',
     'Valor recebido',
-    'Data prevista',
     'Data recebimento',
     'Status',
     'Status pagamento',
@@ -226,7 +221,6 @@ export function buildShiftsCsv(views: ShiftView[]): string {
     v.shift.shiftType,
     csvNumber(v.shift.expectedAmount),
     v.payment ? csvNumber(v.payment.receivedAmount) : '',
-    v.shift.expectedPaymentDate ? formatDate(v.shift.expectedPaymentDate) : '',
     v.payment ? formatDate(v.payment.receivedDate) : '',
     shiftStatusLabel[v.status],
     paymentStatusLabel[v.paymentStatus],

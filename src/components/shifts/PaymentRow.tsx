@@ -1,12 +1,11 @@
 import type { ShiftView } from '@/db/types'
 import { Icon } from '@/components/ui/Icon'
-import { daysBetween, formatDate, formatDuration } from '@/domain/datetime'
+import { formatDate, formatDuration } from '@/domain/datetime'
 import { formatMoney, formatMoneySigned } from '@/domain/money'
 import { paymentDifference } from '@/domain/shift'
 
 interface PaymentRowProps {
   view: ShiftView
-  today: string
   onOpen: (id: string) => void
   onRegister: (id: string) => void
   /** Quando definido, a linha vira um seletor em vez de abrir o detalhe. */
@@ -14,9 +13,8 @@ interface PaymentRowProps {
 }
 
 /** Item da lista de pagamentos (§24), com prazo ou atraso em destaque. */
-export function PaymentRow({ view, today, onOpen, onRegister, selection }: PaymentRowProps) {
+export function PaymentRow({ view, onOpen, onRegister, selection }: PaymentRowProps) {
   const { shift, location, payment } = view
-  const overdue = view.paymentStatus === 'overdue'
   const difference = payment ? paymentDifference(payment) : 0
   const selecting = selection !== undefined
 
@@ -24,7 +22,6 @@ export function PaymentRow({ view, today, onOpen, onRegister, selection }: Payme
     <li
       className={[
         'payment-row',
-        overdue ? 'is-overdue' : '',
         selecting ? 'is-selecting' : '',
         selection?.selected ? 'is-selected' : '',
       ]
@@ -54,28 +51,15 @@ export function PaymentRow({ view, today, onOpen, onRegister, selection }: Payme
           Plantão {formatDate(shift.startDateTime)} · {formatDuration(view.durationHours)}
         </span>
 
-        <span className={`payment-row__term ${overdue ? 'is-overdue' : ''}`}>
-          {payment ? (
-            <>
-              <Icon name="check" size={14} />
-              Recebido em {formatDate(payment.receivedDate)}
-              {Math.abs(difference) >= 0.01 && (
-                <span className="payment-row__diff num">{formatMoneySigned(difference)}</span>
-              )}
-            </>
-          ) : shift.expectedPaymentDate ? (
-            <>
-              <Icon name={overdue ? 'alert' : 'clock'} size={14} />
-              Previsto {formatDate(shift.expectedPaymentDate)} ·{' '}
-              {termLabel(daysBetween(today, shift.expectedPaymentDate))}
-            </>
-          ) : (
-            <>
-              <Icon name="clock" size={14} />
-              Sem data prevista
-            </>
-          )}
-        </span>
+        {payment && (
+          <span className="payment-row__term">
+            <Icon name="check" size={14} />
+            Recebido em {formatDate(payment.receivedDate)}
+            {Math.abs(difference) >= 0.01 && (
+              <span className="payment-row__diff num">{formatMoneySigned(difference)}</span>
+            )}
+          </span>
+        )}
       </button>
 
       {!payment && !selecting && (
@@ -91,12 +75,4 @@ export function PaymentRow({ view, today, onOpen, onRegister, selection }: Payme
       )}
     </li>
   )
-}
-
-function termLabel(days: number): string {
-  if (days === 0) return 'é hoje'
-  if (days === 1) return 'falta 1 dia'
-  if (days > 1) return `faltam ${days} dias`
-  if (days === -1) return 'atrasado há 1 dia'
-  return `atrasado há ${Math.abs(days)} dias`
 }

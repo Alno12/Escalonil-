@@ -8,7 +8,6 @@ import { useAppData } from '@/state/appDataContext'
 import { useToast } from '@/state/toastContext'
 import { deleteShift, setShiftCancelled } from '@/data/repository'
 import {
-  daysBetween,
   formatDate,
   formatDuration,
   formatLongDate,
@@ -36,7 +35,7 @@ export function ShiftDetailSheet({
   onDuplicate,
   onPayment,
 }: ShiftDetailSheetProps) {
-  const { viewById, today } = useAppData()
+  const { viewById } = useAppData()
   const toast = useToast()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -90,18 +89,6 @@ export function ShiftDetailSheet({
                 shift.paymentMode === 'hourly'
                   ? `${formatMoney(shift.hourlyRate)}/h`
                   : 'Valor fixo'
-              }
-            />
-            <DetailItem
-              icon="calendar"
-              label="Pagamento previsto"
-              value={shift.expectedPaymentDate ? formatDate(shift.expectedPaymentDate) : '—'}
-              hint={
-                shift.expectedPaymentDate && view.paymentStatus === 'overdue'
-                  ? `Atrasado há ${Math.abs(daysBetween(shift.expectedPaymentDate, today))} dia(s)`
-                  : shift.expectedPaymentDate && view.paymentStatus === 'pending'
-                    ? relativeTerm(daysBetween(today, shift.expectedPaymentDate))
-                    : undefined
               }
             />
             {payment && (
@@ -196,13 +183,6 @@ export function ShiftDetailSheet({
       />
     </>
   )
-}
-
-function relativeTerm(days: number): string {
-  if (days === 0) return 'É hoje'
-  if (days === 1) return 'Falta 1 dia'
-  if (days > 1) return `Faltam ${days} dias`
-  return ''
 }
 
 function DetailItem({

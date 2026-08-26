@@ -12,20 +12,17 @@ import { roundMoney } from './money'
 export interface FinanceTotals {
   /** Soma dos valores previstos (plantões não cancelados). */
   expected: number
-  /** Realizados, ainda não pagos e dentro do prazo. */
+  /** Realizados e ainda não pagos. */
   pending: number
-  /** Realizados, não pagos e com a data prevista vencida. */
-  overdue: number
   /** Soma do que foi efetivamente recebido. */
   received: number
-  /** Tudo que ainda falta entrar: pending + overdue. */
+  /** Tudo que ainda falta entrar. Hoje é igual a `pending`. */
   outstanding: number
 }
 
 export const emptyTotals: FinanceTotals = {
   expected: 0,
   pending: 0,
-  overdue: 0,
   received: 0,
   outstanding: 0,
 }
@@ -33,23 +30,20 @@ export const emptyTotals: FinanceTotals = {
 export function financeTotals(views: ShiftView[]): FinanceTotals {
   let expected = 0
   let pending = 0
-  let overdue = 0
   let received = 0
 
   for (const v of views) {
     if (v.shift.cancelled) continue
     expected += v.shift.expectedAmount
     if (v.paymentStatus === 'pending') pending += v.shift.expectedAmount
-    else if (v.paymentStatus === 'overdue') overdue += v.shift.expectedAmount
     else if (v.paymentStatus === 'received') received += v.payment?.receivedAmount ?? 0
   }
 
   return {
     expected: roundMoney(expected),
     pending: roundMoney(pending),
-    overdue: roundMoney(overdue),
     received: roundMoney(received),
-    outstanding: roundMoney(pending + overdue),
+    outstanding: roundMoney(pending),
   }
 }
 

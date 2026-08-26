@@ -10,7 +10,6 @@ const base: Omit<Shift, 'id' | 'startDateTime' | 'endDateTime'> = {
   fixedAmount: 0,
   hourlyRate: 0,
   expectedAmount: 0,
-  expectedPaymentDate: null,
   notes: '',
   cancelled: false,
   createdAt: '2026-08-01T00:00:00.000Z',

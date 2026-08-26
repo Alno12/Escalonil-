@@ -1,5 +1,14 @@
 /* Estilos das telas. Os primitivos ficam em ui.css. */
 
+/* O rótulo não quebra: quem cede espaço é o valor à direita. */
+.row > .row__label {
+  white-space: nowrap;
+}
+
+.row--stack > .row__label {
+  white-space: normal;
+}
+
 .row__hint {
   margin-left: var(--sp-2);
   font-size: var(--text-footnote);
@@ -503,6 +512,44 @@
 
 .row__pair--money .money-field__prefix {
   font-size: var(--text-subhead);
+}
+
+/* Dias da semana da recorrência semanal. */
+.row--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--sp-2);
+}
+
+.weekday-group {
+  display: flex;
+  gap: 6px;
+}
+
+.weekday {
+  flex: 1;
+  min-height: 38px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--fill);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-2);
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.weekday:active {
+  transform: scale(0.94);
+}
+
+.weekday.is-active {
+  background: var(--accent);
+  color: var(--text-on-accent);
 }
 
 /* Amostras de cor do local. */

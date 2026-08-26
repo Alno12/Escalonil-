@@ -27,8 +27,10 @@ import {
   formDuration,
   formExpectedAmount,
   formRange,
+  normalizeWeekdays,
   repeatDates,
   REPEAT_LABELS,
+  WEEKDAY_OPTIONS,
   syncMoney,
   type RepeatMode,
   type ShiftFormValues,
@@ -96,6 +98,16 @@ export function ShiftFormSheet({
   const activeShortcut = activeDurationShortcut(values)
   const crossesDay = values.endDate !== values.startDate
 
+  const weekdays = normalizeWeekdays(values)
+
+  /** Desmarcar o último dia não é permitido: a série ficaria sem nenhuma data. */
+  const toggleWeekday = (day: number) =>
+    setValues((prev) => {
+      const current = normalizeWeekdays(prev)
+      const next = current.includes(day) ? current.filter((d) => d !== day) : [...current, day]
+      return { ...prev, weekdays: next.length > 0 ? next : current }
+    })
+
   const canRepeat = mode !== 'edit'
   const occurrences = useMemo(
     () => (canRepeat ? repeatDates(values) : [values.startDate]),
@@ -139,7 +151,6 @@ export function ShiftFormSheet({
         paymentMode: values.paymentMode,
         fixedAmount: parseMoneyInput(values.amountText),
         hourlyRate: parseMoneyInput(values.hourlyText),
-        expectedPaymentDate: values.expectedPaymentDate || null,
         notes: values.notes.trim(),
       }
 
@@ -345,6 +356,28 @@ export function ShiftFormSheet({
               </select>
             </label>
 
+            {showRepeat && values.repeat === 'weekly' && (
+              <div className="row row--stack">
+                <span className="row__label">Dias da semana</span>
+                <div className="weekday-group" role="group" aria-label="Dias da semana">
+                  {WEEKDAY_OPTIONS.map((day) => {
+                    const active = weekdays.includes(day.value)
+                    return (
+                      <button
+                        key={day.value}
+                        type="button"
+                        aria-pressed={active}
+                        className={`weekday ${active ? 'is-active' : ''}`}
+                        onClick={() => toggleWeekday(day.value)}
+                      >
+                        {day.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {showRepeat && values.repeat !== 'none' && (
               <label className="row">
                 <span className="row__label">Repetir até</span>
@@ -430,15 +463,6 @@ export function ShiftFormSheet({
                 </span>
               </label>
 
-              <label className="row">
-                <span className="row__label">Previsto para</span>
-                <input
-                  className="input"
-                  type="date"
-                  value={values.expectedPaymentDate}
-                  onChange={(e) => patch({ expectedPaymentDate: e.target.value })}
-                />
-              </label>
             </div>
           </div>
           <p className="form-note num">

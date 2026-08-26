@@ -12,12 +12,13 @@ vai trabalhar, quanto vai trabalhar e quanto tem para receber**.
   do mês e lista dos próximos plantões.
 - **Agenda** — visualização por semana, calendário mensal e lista cronológica
   com busca e filtros.
-- **Financeiro** — previsto, a receber, recebido e atrasado; registro de
-  recebimento com indicação de divergência entre o previsto e o recebido.
+- **Financeiro** — previsto, a receber e recebido; registro de recebimento com
+  indicação de divergência entre o previsto e o recebido. O app não controla
+  prazos: plantão realizado fica "a receber" até você marcar como pago.
 - **Relatórios** — indicadores do período, evolução mensal, insights gerados
   localmente e desempenho por local.
-- **Configurações** — tema, preferências de cadastro, locais, tipos de plantão,
-  backup em JSON e exportação para CSV.
+- **Ajustes** — tema (o app abre no claro), preferências de cadastro, locais e
+  suas cores, tipos de plantão, backup em JSON e exportação para CSV.
 
 Detecção de conflitos de horário, plantões que atravessam a meia-noite e
 histórico completo estão incluídos.
