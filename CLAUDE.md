@@ -229,7 +229,13 @@ O app segue a linguagem do Apple Saúde:
   número — não um ponto embaixo dele. O círculo é do NÚMERO, não da célula:
   com o número e os pontos empilhados, o par ficava centralizado mas o número
   subia metade da altura dos pontos e aparecia torto dentro do círculo do dia
-  selecionado, que ocupava a célula inteira.
+  selecionado, que ocupava a célula inteira. Dois ou mais plantões no mesmo dia
+  engrossam o anel de 1,5px para 3px — é o que sobrou da contagem que os
+  pontinhos davam. As quatro regras de anel têm a mesma especificidade dentro
+  de cada par, então a ORDEM no arquivo é que manda.
+- O cartão "Sobre", nos Ajustes, mostra o ícone oficial do app (`icons/icon-192.png`,
+  a cara do dono), não um ícone de traço. O caminho passa por
+  `import.meta.env.BASE_URL` porque o GitHub Pages serve numa subrota.
 - Números usam `.num` (tabular) para alinhar em colunas.
 
 Cuidado com a cascata: modificadores com a MESMA especificidade da regra base

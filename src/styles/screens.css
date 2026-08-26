@@ -1204,9 +1204,18 @@
     box-shadow var(--dur-fast) var(--ease);
 }
 
-/* Dia com plantão: um anel discreto em volta do número. */
+/*
+ * Anéis do dia. As quatro regras têm a MESMA especificidade dentro de cada
+ * par, então a ordem é que manda: fino, grosso, fino cinza, grosso cinza.
+ */
 .calendar__day.has-shifts .calendar__num {
   box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+/* Dois ou mais plantões no mesmo dia engrossam o anel — é o que sobrou da
+   contagem que os pontinhos davam. */
+.calendar__day.has-many .calendar__num {
+  box-shadow: inset 0 0 0 3px var(--accent);
 }
 
 .calendar__day.is-outside {
@@ -1216,6 +1225,10 @@
 /* Fora do mês o anel é cinza: não compete com o mês que está sendo olhado. */
 .calendar__day.is-outside.has-shifts .calendar__num {
   box-shadow: inset 0 0 0 1.5px var(--fill-2);
+}
+
+.calendar__day.is-outside.has-many .calendar__num {
+  box-shadow: inset 0 0 0 3px var(--fill-2);
 }
 
 .calendar__day.is-today {
@@ -1228,8 +1241,13 @@
   font-weight: 600;
 }
 
-/* Selecionado ganha o círculo cheio e dispensa o anel. */
-.calendar__day.is-selected .calendar__num {
+/*
+ * Selecionado ganha o círculo cheio e dispensa qualquer anel. O segundo
+ * seletor existe para vencer o `.is-outside.has-many` acima, que é mais
+ * específico que um `.is-selected` sozinho.
+ */
+.calendar__day.is-selected .calendar__num,
+.calendar__day.is-outside.is-selected .calendar__num {
   background: var(--accent);
   box-shadow: none;
 }
@@ -2136,14 +2154,13 @@
   border-bottom: 1px solid var(--separator);
 }
 
+/* Raio de 10px em 42px é a proporção do ícone arredondado do iOS. */
 .about__mark {
-  display: grid;
-  place-items: center;
   width: 42px;
   height: 42px;
+  flex: none;
   border-radius: 10px;
-  background: var(--accent);
-  color: #fff;
+  object-fit: cover;
 }
 
 .about__head strong {
