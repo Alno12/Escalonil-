@@ -86,3 +86,11 @@ describe('moneyToInput', () => {
     expect(moneyToInput(-10)).toBe('')
   })
 })
+
+describe('menos zero', () => {
+  it('não mostra sinal quando o arredondamento cai em -0', () => {
+    expect(roundMoney(-0.001)).toBe(-0)
+    expect(formatMoney(-0.001)).toBe(formatMoney(0))
+    expect(formatMoney(-0)).toBe(formatMoney(0))
+  })
+})

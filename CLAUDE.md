@@ -197,8 +197,11 @@ vez por isso.
   repõe o "hidden". Só recarregando a página destravava.
 - Toda cor, espaçamento e sombra vem de `styles/tokens.css`. Não escreva valores
   literais nos componentes, e defina qualquer token novo nos **dois** temas.
-- Campos de texto usam `font-size: 1rem` (16px) — abaixo disso o Safari dá zoom
-  ao focar.
+- Campos de texto usam **`--text-input-min` (16px)** — abaixo disso o Safari dá
+  zoom ao focar. Vale para os campos compactos dentro de `.row__pair` também,
+  que já estiveram a 15px. Esses campos precisam de `min-width: 0`: os seletores
+  nativos de data e hora impõem a largura intrínseca deles e vazam do cartão
+  em vez de encolher.
 - Respeite `env(safe-area-inset-*)` em qualquer elemento fixo.
 
 ## PWA, GitHub Pages e Netlify

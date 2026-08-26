@@ -99,7 +99,10 @@ export function weekSummary(views: ShiftView[], reference: LocalDate): PeriodSum
  * prioridade; senão, o próximo agendado.
  */
 export function currentOrNextShift(views: ShiftView[], now: Date = new Date()): ShiftView | undefined {
-  const running = views.find((v) => v.status === 'inProgress')
+  // Com dois plantões sobrepostos em andamento (raro, mas permitido — ver
+  // invariante 5), vale o que começou primeiro. Sem ordenar, quem aparecia
+  // era o primeiro do array, que é a ordem de gravação no banco.
+  const [running] = sortByStart(views.filter((v) => v.status === 'inProgress'))
   if (running) return running
   const nowMs = now.getTime()
   return sortByStart(views.filter((v) => v.status === 'scheduled')).find(

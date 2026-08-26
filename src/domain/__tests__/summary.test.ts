@@ -179,3 +179,14 @@ describe('relatórios', () => {
   })
 })
 
+
+describe('plantão em destaque com sobreposição', () => {
+  it('com dois em andamento, vale o que começou primeiro', () => {
+    const agora = toDate('2026-08-27T12:00')
+    const tarde = shift('tarde', '2026-08-27T11:00', '2026-08-27T23:00', 100)
+    const cedo = shift('cedo', '2026-08-27T06:00', '2026-08-27T18:00', 100)
+    const monta = (lista: Shift[]) => buildShiftViews(lista, LOCATIONS, [], agora)
+    expect(currentOrNextShift(monta([tarde, cedo]), agora)?.shift.id).toBe('cedo')
+    expect(currentOrNextShift(monta([cedo, tarde]), agora)?.shift.id).toBe('cedo')
+  })
+})

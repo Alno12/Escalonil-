@@ -482,16 +482,24 @@
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  gap: 6px;
+  /* Sem isto os campos nativos de data e hora impõem a largura intrínseca
+     deles e VAZAM do cartão em vez de encolher. Já acontecia antes de os
+     campos subirem para 16px; no Chromium do computador o ícone do seletor
+     come uns 40px por campo que o iPhone não gasta. */
+  min-width: 0;
 }
 
 .row__pair .input {
   width: auto;
-  padding: 4px 8px;
+  min-width: 0;
+  padding: 4px 6px;
   background: var(--fill);
   border-radius: var(--radius-sm);
   text-align: center;
-  font-size: var(--text-subhead);
+  /* Não desça daqui: são os campos de data, hora e valor/hora, e a 15px o
+     Safari dava zoom na página inteira a cada toque. */
+  font-size: var(--text-input-min);
 }
 
 .row__pair--money {

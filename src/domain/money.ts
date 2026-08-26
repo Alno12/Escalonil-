@@ -27,12 +27,14 @@ export function roundMoney(value: number): number {
 
 /** "R$ 1.250,00" */
 export function formatMoney(value: number): string {
-  return brl.format(roundMoney(value))
+  // `|| 0` troca -0 por 0: sem isso um arredondamento de fração de centavo
+  // para baixo virava "-R$ 0,00" na tela.
+  return brl.format(roundMoney(value) || 0)
 }
 
 /** "R$ 1.250" — para cartões de destaque; arredonda centavos. */
 export function formatMoneyCompact(value: number): string {
-  const rounded = roundMoney(value)
+  const rounded = roundMoney(value) || 0
   return Number.isInteger(rounded) ? brlCompact.format(rounded) : brl.format(rounded)
 }
 
