@@ -100,6 +100,13 @@ export interface Settings {
   shiftTypes: string[]
   /** Quando o último backup foi exportado (ISO UTC). null = nunca. */
   lastBackupAt: string | null
+  /**
+   * Primeiro dia das próximas férias. Alimenta a contagem que aparece embaixo
+   * do cartão do próximo plantão. null = sem data marcada.
+   */
+  vacationDate: LocalDate | null
+  /** Desliga a contagem sem apagar a data. */
+  vacationEnabled: boolean
   updatedAt: string
 }
 

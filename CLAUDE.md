@@ -23,6 +23,7 @@ src/
 │   ├── location.ts   o que conta como "o mesmo lugar"
 │   ├── recurrence.ts escalas (12×36, 5×2) e recorrências de uma série
 │   ├── backupReminder.ts  quando cobrar um backup novo
+│   ├── vacation.ts   a contagem das férias (easter egg)
 │   ├── summary.ts    somas financeiras e recortes de agenda
 │   ├── reports.ts    indicadores, por local, insights, ritmo e recordes
 │   └── periods.ts    períodos dos relatórios e o período anterior equivalente
@@ -232,6 +233,15 @@ O app segue a linguagem do Apple Saúde:
   são DUAS LINHAS de um cartão só, e o cartão Financeiro não repete o previsto
   do mês (que já está na linha "Este mês"). Ao acrescentar qualquer coisa ali,
   meça de novo: o objetivo é o primeiro plantão da lista aparecer sem rolar.
+- A contagem das férias é um EASTER EGG e mora embaixo do cartão do próximo
+  plantão, discreta de propósito (`--text-footnote` em `--text-3`). A frase é
+  uma só; o que muda com a distância é a gramática — "daqui 1 dias" e "daqui 0
+  dias" estariam errados, então amanhã e o próprio dia têm texto próprio.
+  Passada a data a linha some, porque o app não sabe quando as férias acabam, e
+  os Ajustes passam a pedir a próxima. `vacationDate` e `vacationEnabled` são
+  campos novos de `Settings` e NÃO exigiram versão nova do Dexie: a tabela é
+  indexada só por `id` e `AppDataProvider` mescla `DEFAULT_SETTINGS` na
+  leitura, então quem já tinha o app instalado recebe os padrões sozinho.
 - O cartão do próximo plantão é tingido com a COR DO LOCAL, em degradê que some
   para baixo. Chapado, as cores quentes embarram o tema escuro e o texto
   secundário perde contraste — foi por isso que virou degradê.

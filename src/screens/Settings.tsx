@@ -9,6 +9,7 @@ import { PreferencesSection } from './settings/PreferencesSection'
 import { LocationsSection } from './settings/LocationsSection'
 import { TypesSection } from './settings/TypesSection'
 import { BackupSection } from './settings/BackupSection'
+import { VacationSection } from './settings/VacationSection'
 import { APP_VERSION } from '@/appInfo'
 
 const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
@@ -40,6 +41,7 @@ export function Settings() {
         <PreferencesSection />
         <LocationsSection />
         <TypesSection />
+        <VacationSection />
         <BackupSection />
 
         <section aria-label="Sobre o aplicativo">

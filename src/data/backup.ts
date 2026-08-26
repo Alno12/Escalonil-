@@ -220,6 +220,10 @@ export function parseBackup(text: string): BackupFile {
       ? rawSettings.shiftTypes.filter((t): t is string => typeof t === 'string')
       : DEFAULT_SETTINGS.shiftTypes,
     lastBackupAt: typeof rawSettings.lastBackupAt === 'string' ? rawSettings.lastBackupAt : null,
+    // A data das férias vem do arquivo; a validade quem confere é o domínio,
+    // que já devolve `null` para o que não existe no calendário.
+    vacationDate: DATE.test(str(rawSettings.vacationDate)) ? str(rawSettings.vacationDate) : null,
+    vacationEnabled: bool(rawSettings.vacationEnabled, true),
     id: 'app',
     updatedAt: str(rawSettings.updatedAt, new Date().toISOString()),
   }

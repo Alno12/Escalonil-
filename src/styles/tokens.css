@@ -111,6 +111,9 @@
   --seg-active: #ffffff;
   --seg-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
 
+  /* Botão do interruptor: branco nos DOIS temas, como no iOS. */
+  --switch-knob: #ffffff;
+
   /* Faixas do mapa do mês: até 6h, até 12h, até 18h e mais que isso. */
   --heat-1: rgba(88, 86, 214, 0.28);
   --heat-2: rgba(88, 86, 214, 0.5);
@@ -176,6 +179,8 @@
   --chart-bar-strong: rgba(94, 92, 230, 0.5);
   --seg-active: #48484a;
   --seg-shadow: none;
+
+  --switch-knob: #ffffff;
 
   --heat-1: rgba(94, 92, 230, 0.32);
   --heat-2: rgba(94, 92, 230, 0.55);
