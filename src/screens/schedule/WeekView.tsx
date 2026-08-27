@@ -3,24 +3,16 @@ import { Button } from '@/components/ui/Button'
 import { ShiftRow } from '@/components/shifts/ShiftRow'
 import { useAppData } from '@/state/appDataContext'
 import { useShiftSheets } from '@/state/shiftSheetsContext'
-import {
-  addDays,
-  formatDayMonth,
-  startOfWeek,
-  toDate,
-  weekdayNamesShort,
-} from '@/domain/datetime'
+import { addDays, startOfWeek, toDate, weekdayNamesShort } from '@/domain/datetime'
 import { periodSummary, shiftsOnDay } from '@/domain/summary'
-import { PeriodNav } from './PeriodNav'
 import { PeriodSummary } from './PeriodSummary'
 
 interface WeekViewProps {
   reference: string
-  onReferenceChange: (date: string) => void
 }
 
 /** Semana de domingo a sábado, um bloco por dia. */
-export function WeekView({ reference, onReferenceChange }: WeekViewProps) {
+export function WeekView({ reference }: WeekViewProps) {
   const { views, today } = useAppData()
   const sheets = useShiftSheets()
 
@@ -40,14 +32,6 @@ export function WeekView({ reference, onReferenceChange }: WeekViewProps) {
 
   return (
     <>
-      <PeriodNav
-        label={`${formatDayMonth(start)} — ${formatDayMonth(addDays(start, 6))}`}
-        onPrev={() => onReferenceChange(addDays(start, -7))}
-        onNext={() => onReferenceChange(addDays(start, 7))}
-        onToday={() => onReferenceChange(today)}
-        showToday={startOfWeek(today) !== start}
-      />
-
       <PeriodSummary summary={summary} />
 
       <div className="week-days">

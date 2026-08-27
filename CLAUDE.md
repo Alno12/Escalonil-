@@ -218,6 +218,13 @@ O app segue a linguagem do Apple Saúde:
   (`left: var(--row-pad)`), nunca por bordas completas.
 - Cinco abas no rodapé, sem botão de ação no meio. **Novo plantão** vive no
   canto superior direito de cada tela (`ScreenHeader`).
+- Na Agenda, a barra de período mora DENTRO do cabeçalho (`screen-header__below`),
+  junto das abas — não dentro de cada visão. O cabeçalho é `sticky`, então ela
+  fica na tela ao rolar; solta, ela saía junto com o conteúdo e o calendário
+  sozinho não dizia que mês era. Por isso `Schedule` é quem monta o rótulo e as
+  setas: a Semana e o Mês só desenham o próprio conteúdo. A MESMA `PeriodNav` é
+  usada solta no Financeiro, então o ajuste de margem é uma regra descendente
+  (`.screen-header__below .period-nav`), nunca no seletor global.
 - A barra de abas tem o PRÓPRIO conjunto de ícones (`layout/tabIcons.tsx`):
   traço de 2px e cantos bem mais redondos. O conjunto geral de
   `components/ui/Icon` continua fino porque `calendar`, `wallet` e `chart`

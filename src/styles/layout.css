@@ -84,8 +84,22 @@
   color: var(--text-2);
 }
 
+/*
+ * Abas e barra de período, empilhadas dentro do cabeçalho — que é sticky.
+ * A barra ficava dentro de cada visão e rolava para fora com o conteúdo:
+ * depois de rolar a lista do dia, o calendário sozinho não diz que mês é.
+ * Aqui ela herda o véu e a safe area do cabeçalho, sem `top` em pixels.
+ */
 .screen-header__below {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
   margin-top: var(--sp-3);
+}
+
+/* A mesma barra é usada solta no Financeiro, onde a margem faz falta. */
+.screen-header__below .period-nav {
+  margin-bottom: 0;
 }
 
 /* Botão de novo plantão, no canto superior direito. */

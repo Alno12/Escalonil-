@@ -4,9 +4,18 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { LoadingScreen } from '@/components/ui/Skeleton'
 import { useAppData } from '@/state/appDataContext'
+import {
+  addDays,
+  addMonths,
+  formatDayMonth,
+  formatMonthYear,
+  monthPartOf,
+  startOfWeek,
+} from '@/domain/datetime'
 import { WeekView } from './schedule/WeekView'
 import { MonthView } from './schedule/MonthView'
 import { ListView } from './schedule/ListView'
+import { PeriodNav } from './schedule/PeriodNav'
 
 type Tab = 'week' | 'month' | 'list'
 
@@ -33,13 +42,53 @@ export function Schedule() {
   const [tab, setTab] = useState<Tab>(() => TAB_BY_PARAM[params.get('v') ?? ''] ?? 'month')
   const [reference, setReference] = useState(today)
 
+  /**
+   * A navegação do período mora AQUI, e não dentro de cada visão, porque ela
+   * vai no cabeçalho — que é fixo. Dentro da Semana e do Mês ela rolava para
+   * fora da tela junto com o conteúdo, e ficava impossível saber que mês se
+   * está olhando depois de rolar a lista do dia.
+   */
+  const weekStart = startOfWeek(reference)
+  const nav =
+    tab === 'week'
+      ? {
+          label: `${formatDayMonth(weekStart)} — ${formatDayMonth(addDays(weekStart, 6))}`,
+          onPrev: () => setReference(addDays(weekStart, -7)),
+          onNext: () => setReference(addDays(weekStart, 7)),
+          showToday: startOfWeek(today) !== weekStart,
+        }
+      : tab === 'month'
+        ? {
+            label: formatMonthYear(reference),
+            onPrev: () => setReference(addMonths(reference, -1)),
+            onNext: () => setReference(addMonths(reference, 1)),
+            showToday: monthPartOf(today) !== monthPartOf(reference),
+          }
+        : null
+
   return (
     <>
       <ScreenHeader
         title="Agenda"
         subtitle={`${views.length} ${views.length === 1 ? 'plantão cadastrado' : 'plantões cadastrados'}`}
         below={
-          <SegmentedControl ariaLabel="Visualização da agenda" options={TABS} value={tab} onChange={setTab} />
+          <>
+            <SegmentedControl
+              ariaLabel="Visualização da agenda"
+              options={TABS}
+              value={tab}
+              onChange={setTab}
+            />
+            {nav && (
+              <PeriodNav
+                label={nav.label}
+                onPrev={nav.onPrev}
+                onNext={nav.onNext}
+                onToday={() => setReference(today)}
+                showToday={nav.showToday}
+              />
+            )}
+          </>
         }
       />
 
@@ -47,7 +96,7 @@ export function Schedule() {
         <LoadingScreen />
       ) : (
         <div className="screen">
-          {tab === 'week' && <WeekView reference={reference} onReferenceChange={setReference} />}
+          {tab === 'week' && <WeekView reference={reference} />}
           {tab === 'month' && <MonthView selected={reference} onSelect={setReference} />}
           {tab === 'list' && <ListView />}
         </div>

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ShiftRow } from '@/components/shifts/ShiftRow'
@@ -6,7 +7,6 @@ import { useAppData } from '@/state/appDataContext'
 import { useShiftSheets } from '@/state/shiftSheetsContext'
 import {
   addDays,
-  addMonths,
   formatLongDate,
   formatMonthYear,
   monthPartOf,
@@ -17,7 +17,6 @@ import {
 } from '@/domain/datetime'
 import { filterByMonth, occupiedDays, periodSummary, shiftsOnDay } from '@/domain/summary'
 import type { LocationColor } from '@/db/types'
-import { PeriodNav } from './PeriodNav'
 import { PeriodSummary } from './PeriodSummary'
 
 interface MonthViewProps {
@@ -63,14 +62,6 @@ export function MonthView({ selected, onSelect }: MonthViewProps) {
 
   return (
     <>
-      <PeriodNav
-        label={formatMonthYear(selected)}
-        onPrev={() => onSelect(addMonths(selected, -1))}
-        onNext={() => onSelect(addMonths(selected, 1))}
-        onToday={() => onSelect(today)}
-        showToday={monthPartOf(today) !== month}
-      />
-
       <PeriodSummary summary={summary} />
 
       <Card padded={false} className="calendar">
