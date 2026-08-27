@@ -157,8 +157,8 @@ export function ShareMonthSheet({ open, month, onClose }: ShareMonthSheetProps) 
 
           {viaShareSheet && (
             <p className="form-note">
-              Imprimir abre a lista do sistema — escolha <strong>Imprimir</strong> nela.
-              Assim a folha sai certa em qualquer papel.
+              Imprimir abre a lista do sistema — escolha <strong>Imprimir</strong> nela. A
+              folha vai como PDF, já em A4 deitada.
             </p>
           )}
         </div>

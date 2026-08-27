@@ -11,10 +11,17 @@
  * `printsViaShareSheet`.
  */
 import { SHEET_HEIGHT, SHEET_WIDTH } from '@/domain/monthSheetSvg'
+import { buildMonthSheetPdf } from './monthSheetPdf'
 import { shareOrDownload } from './backup'
 
 /** Dobro do tamanho da folha: quem recebe no WhatsApp vai dar pinça. */
 const SCALE = 2
+
+/** Na impressão o papel é maior que a tela: 3× dá ~290 pontos por polegada. */
+const PRINT_SCALE = 3
+
+/** Qualidade do JPEG que vai dentro do PDF — o desenho tem traços finos. */
+const PRINT_QUALITY = 0.94
 
 /** Se o `afterprint` não vier (o Safari às vezes engole), a folha sai daqui. */
 const PRINT_CLEANUP_MS = 60_000
@@ -43,10 +50,25 @@ export function printsViaShareSheet(): boolean {
 /** Manda a folha para a impressora, pelo caminho que o aparelho aceita. */
 export async function printMonthSheet(svg: string, month: string): Promise<void> {
   if (printsViaShareSheet()) {
-    await shareMonthSheet(svg, month)
+    // PDF, e não a imagem do compartilhamento: o iOS escolhe o papel padrão
+    // pelo TIPO do arquivo. Foto abre a caixa em 4×6 polegadas; documento abre
+    // em A4, que é o que a folha precisa.
+    const pdf = await monthSheetToPdf(svg)
+    await shareOrDownload(new File([pdf], `escala-${month}.pdf`, { type: 'application/pdf' }))
     return
   }
   printPage(svg)
+}
+
+/** A folha como PDF de uma página, em A4 deitada. */
+export async function monthSheetToPdf(svg: string): Promise<Blob> {
+  const canvas = await renderSheet(svg, PRINT_SCALE)
+  const jpeg = await toBlob(canvas, 'image/jpeg', PRINT_QUALITY)
+  return buildMonthSheetPdf({
+    data: await jpeg.arrayBuffer(),
+    width: canvas.width,
+    height: canvas.height,
+  })
 }
 
 /**
@@ -83,30 +105,39 @@ function printPage(svg: string): void {
  * hexadecimal e usa a pilha de fontes do sistema.
  */
 export async function monthSheetToPng(svg: string): Promise<Blob> {
+  return toBlob(await renderSheet(svg, SCALE), 'image/png')
+}
+
+/** O desenho pintado num canvas — o mesmo para a imagem e para o PDF. */
+async function renderSheet(svg: string, scale: number): Promise<HTMLCanvasElement> {
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }))
   try {
     const image = await loadImage(url)
     const canvas = document.createElement('canvas')
-    canvas.width = SHEET_WIDTH * SCALE
-    canvas.height = SHEET_HEIGHT * SCALE
+    canvas.width = SHEET_WIDTH * scale
+    canvas.height = SHEET_HEIGHT * scale
 
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new Error('Não foi possível gerar a imagem da folha.')
     // O PNG guarda transparência, e fundo transparente vira PRETO na conversa
-    // de quem recebe no tema escuro.
+    // de quem recebe no tema escuro. O JPEG do PDF nem transparência tem.
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
-
-    return await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error('Não foi possível gerar a imagem.'))),
-        'image/png',
-      )
-    })
+    return canvas
   } finally {
     URL.revokeObjectURL(url)
   }
+}
+
+function toBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('Não foi possível gerar a imagem.'))),
+      type,
+      quality,
+    )
+  })
 }
 
 /** Manda a folha para o share sheet como "escala-2026-08.png". */
