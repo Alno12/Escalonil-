@@ -350,7 +350,7 @@ export function ShiftFormSheet({
                   className="input"
                   type="text"
                   value={values.locationName}
-                  placeholder="UPA Centro"
+                  placeholder="Nome do local"
                   autoComplete="off"
                   onChange={(e) => chooseLocation(e.target.value)}
                 />
