@@ -9,6 +9,7 @@ import {
   endOfWeek,
   formatCountdown,
   formatDate,
+  formatDateShort,
   formatDuration,
   formatLongDate,
   relativeDayLabel,
@@ -116,5 +117,25 @@ describe('formatação em pt-BR', () => {
     expect(formatCountdown('2026-08-25T17:00', now)).toBe('Em 35 min')
     expect(formatCountdown('2026-08-27T19:00', now)).toBe('Em 2 dias')
     expect(formatCountdown('2026-08-25T10:00', now)).toBe('Agora')
+  })
+})
+
+describe('ano nas datas curtas', () => {
+  it('esconde o ano quando a data é do ano corrente', () => {
+    expect(formatDateShort('2026-08-25', '2026-08-27')).toBe('25/08')
+  })
+
+  it('mostra o ano quando a data é de outro ano', () => {
+    expect(formatDateShort('2025-08-25', '2026-08-27')).toBe('25/08/25')
+    expect(formatDateShort('2027-01-03', '2026-08-27')).toBe('03/01/27')
+  })
+
+  it('sem referência, continua o formato curto de sempre', () => {
+    expect(formatDateShort('2025-08-25')).toBe('25/08')
+  })
+
+  it('o rótulo relativo leva o ano junto', () => {
+    expect(relativeDayLabel('2025-08-25', '2026-08-27')).toBe('Seg, 25/08/25')
+    expect(relativeDayLabel('2026-08-25', '2026-08-27')).toBe('Ter, 25/08')
   })
 })

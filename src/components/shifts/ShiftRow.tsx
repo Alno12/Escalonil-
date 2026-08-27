@@ -1,4 +1,5 @@
 import type { ShiftView } from '@/db/types'
+import { useAppData } from '@/state/appDataContext'
 import { formatDateShort, formatDuration, formatTime, isSameDay } from '@/domain/datetime'
 import { formatMoneyCompact } from '@/domain/money'
 import { PaymentStatusPill } from '@/components/ui/StatusPill'
@@ -16,6 +17,8 @@ interface ShiftRowProps {
  */
 export function ShiftRow({ view, onClick, showDate = false }: ShiftRowProps) {
   const { shift, location } = view
+  // O ano entra só quando o plantão é de outro ano — ver formatDateShort.
+  const { today } = useAppData()
   const overnight = !isSameDay(shift.startDateTime, shift.endDateTime)
 
   return (
@@ -40,7 +43,7 @@ export function ShiftRow({ view, onClick, showDate = false }: ShiftRowProps) {
           </span>
 
           <span className="shift-row__meta num">
-            {showDate && <span className="shift-row__date">{formatDateShort(shift.startDateTime)} · </span>}
+            {showDate && <span className="shift-row__date">{formatDateShort(shift.startDateTime, today)} · </span>}
             {formatTime(shift.startDateTime)} → {formatTime(shift.endDateTime)}
             {overnight && <span className="shift-row__plus">+1</span>}
             <span aria-hidden="true"> · </span>

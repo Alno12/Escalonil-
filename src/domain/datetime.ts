@@ -158,10 +158,17 @@ export function formatDate(value: LocalDate | LocalDateTime): string {
   return `${d}/${m}/${y}`
 }
 
-/** "25/08" */
-export function formatDateShort(value: LocalDate | LocalDateTime): string {
-  const [, m, d] = value.slice(0, 10).split('-')
-  return `${d}/${m}`
+/**
+ * "25/08", ou "25/08/25" quando a data cai fora do ano de `today`.
+ *
+ * O ano só aparece quando muda alguma coisa: na lista da agenda, um plantão de
+ * 2025 e um de 2026 apareciam os dois como "25/08". Sem `today`, o ano nunca
+ * entra — é o formato curto de sempre.
+ */
+export function formatDateShort(value: LocalDate | LocalDateTime, today?: LocalDate): string {
+  const [y, m, d] = value.slice(0, 10).split('-')
+  const outroAno = today !== undefined && y !== today.slice(0, 4)
+  return outroAno ? `${d}/${m}/${y.slice(2)}` : `${d}/${m}`
 }
 
 /** "Terça-feira, 25 de agosto" */
@@ -238,7 +245,7 @@ export function relativeDayLabel(date: LocalDate, today: LocalDate): string {
   if (diff === 1) return 'Amanhã'
   if (diff === -1) return 'Ontem'
   const d = toDate(date)
-  return `${WEEKDAYS_SHORT[d.getDay()]}, ${formatDateShort(date)}`
+  return `${WEEKDAYS_SHORT[d.getDay()]}, ${formatDateShort(date, today)}`
 }
 
 export function isSameDay(a: LocalDate | LocalDateTime, b: LocalDate | LocalDateTime): boolean {
