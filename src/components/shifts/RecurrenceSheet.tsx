@@ -5,6 +5,8 @@ import { toDate } from '@/domain/datetime'
 import {
   CUSTOM_IDS,
   defaultCustom,
+  MONTH_POSITION_OPTIONS,
+  monthlyWeekdayLabel,
   normalizeWeekdays,
   recurrenceGroups,
   selectedOptionId,
@@ -49,7 +51,10 @@ export function RecurrenceSheet({
    * embaixo: fechar a folha ali esconderia justamente a escolha que falta.
    */
   const pick = (option: RecurrenceOption) => {
-    onChange(option.recurrence)
+    // Tocar de novo na linha JÁ marcada não pode desfazer o ajuste feito
+    // embaixo dela: a escala do preset apagaria a posição que o usuário
+    // acabou de escolher.
+    if (!(option.expand && selected === option.id)) onChange(option.recurrence)
     setEditing(null)
     if (!option.expand) onClose()
   }
@@ -95,7 +100,14 @@ export function RecurrenceSheet({
                       option.custom ? openEditor(option.custom) : pick(option)
                     }
                   >
-                    <span className="row__label">{option.label}</span>
+                    <span className="row__label">
+                      {/* A linha da posição no mês nasce com a posição da data,
+                          mas quem manda passa a ser o que o usuário marcou
+                          embaixo dela — o rótulo tem que acompanhar. */}
+                      {option.expand === 'monthlyWeekday' && value.kind === 'monthlyWeekday'
+                        ? monthlyWeekdayLabel(value)
+                        : option.label}
+                    </span>
                     {selected === option.id && (
                       <span className="option__check" aria-hidden="true">
                         <Icon name="check" size={17} strokeWidth={2.4} />
@@ -116,6 +128,12 @@ export function RecurrenceSheet({
                   {option.expand === 'weekdays' && selected === option.id && (
                     <WeekdayPicker value={value} startDate={startDate} onChange={onChange} />
                   )}
+
+                  {option.expand === 'monthlyWeekday' &&
+                    selected === option.id &&
+                    value.kind === 'monthlyWeekday' && (
+                      <MonthPositionPicker value={value} onChange={onChange} />
+                    )}
                 </Fragment>
               ))}
             </div>
@@ -167,6 +185,58 @@ function WeekdayPicker({
         ))}
       </div>
     </div>
+  )
+}
+
+/**
+ * A posição no mês, escolhida à mão: "1ª" + "Sáb" é todo primeiro sábado.
+ *
+ * Antes a posição era DEDUZIDA da data do plantão, e nada na tela contava
+ * isso — com a data numa quarta, a linha lia "na quarta quarta-feira" e não
+ * havia como pedir o primeiro sábado sem procurar a data certa no calendário.
+ */
+function MonthPositionPicker({
+  value,
+  onChange,
+}: {
+  value: Extract<Recurrence, { kind: 'monthlyWeekday' }>
+  onChange: (recurrence: Recurrence) => void
+}) {
+  return (
+    <>
+      <div className="row row--stack">
+        <span className="row__label">Posição no mês</span>
+        <div className="weekday-group" role="group" aria-label="Posição no mês">
+          {MONTH_POSITION_OPTIONS.map((position) => (
+            <button
+              key={position.value}
+              type="button"
+              aria-pressed={value.nth === position.value}
+              className={`weekday ${value.nth === position.value ? 'is-active' : ''}`}
+              onClick={() => onChange({ ...value, nth: position.value })}
+            >
+              {position.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="row row--stack">
+        <span className="row__label">Dia da semana</span>
+        <div className="weekday-group" role="group" aria-label="Dia da semana">
+          {WEEKDAY_OPTIONS.map((day) => (
+            <button
+              key={day.value}
+              type="button"
+              aria-pressed={value.weekday === day.value}
+              className={`weekday ${value.weekday === day.value ? 'is-active' : ''}`}
+              onClick={() => onChange({ ...value, weekday: day.value })}
+            >
+              {day.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
   )
 }
 

@@ -109,6 +109,27 @@ segunda daquela mesma semana. Foi um pedido explícito do dono do app — não
 "conserte" isso. `normalizeWeekdays` garante que a lista nunca fica vazia e
 `MAX_OCCURRENCES` é o teto de segurança de qualquer escala.
 
+**9c. A POSIÇÃO NO MÊS é a exceção do 9, e é de propósito.**
+Numa escala `monthlyWeekday` a série PULA para frente: o primeiro plantão cai
+na primeira data que satisfaz `{nth, weekday}` e é **igual ou posterior** à
+data digitada. Com o plantão numa quarta, 26/08, e "primeiro sábado" marcado,
+ele vai para 05/09 — o primeiro sábado de agosto já passou.
+
+As duas regras estão certas, cada uma pelo seu motivo, e **nenhuma das duas é
+para ser "uniformizada" com a outra**. No 9 o dia da semana é o dia da própria
+data digitada, então voltar até o domingo daquela semana devolve exatamente o
+que o médico marcou. Aqui a posição é ESCOLHIDA à mão — `{nth, weekday}` mora
+na recorrência, não é mais deduzida da data —, então a data digitada vira só o
+ponto de partida: gerar para trás criaria um plantão num dia que o usuário
+nunca viu. Foi decisão explícita do dono do app, com as duas escritas aqui de
+propósito para ninguém achar que é incoerência.
+
+`sameRecurrence` compara `nth` e `weekday`; `selectedOptionId` devolve
+`monthly-weekday` para qualquer posição, porque a posição é o ajuste DENTRO da
+linha (invariante 19), não outra linha. `recurrenceLabel` monta a frase a
+partir da recorrência — ler a posição da data era justamente o que fazia a
+linha dizer "na quarta quarta-feira" e parecer que a opção não existia.
+
 **9b. Toda escala é `{work, off}`, em horas ou em dias.**
 `12×36` é `{kind:'hours', segments:[{work:12, off:36}]}`; `5×2` é o mesmo em
 dias. Escalas com dois trechos (`12×24, 12×72`) são dois segmentos percorridos
@@ -125,7 +146,12 @@ recorrência semanal é o intervalo, não os dias: `selectedOptionId` manda todo
 `everyWeeks: 1` para "Todas as semanas" e todo `2` para "A cada 2 semanas",
 senão a marca pulava para a linha personalizada no primeiro dia marcado. Os
 presets que nomeiam os dias no próprio rótulo — "de segunda a sexta" — são
-testados antes e continuam com casa própria. Os grupos vêm na ordem
+testados antes e continuam com casa própria. "Todos os meses no primeiro
+sábado" expande do mesmo jeito, com a posição e o dia da semana (9c), e o
+rótulo da própria linha acompanha o que está marcado embaixo dela — o rótulo
+fixo do catálogo descreveria a data, não a escolha. Tocar de novo numa linha
+JÁ marcada não reaplica o preset: a escala pronta apagaria o ajuste que o
+usuário acabou de fazer. Os grupos vêm na ordem
 Recorrentes → Horas → Dias: escala fixa é o caso comum, e ela ficava embaixo
 de dezesseis linhas de ciclo.
 

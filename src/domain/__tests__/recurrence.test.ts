@@ -3,6 +3,7 @@ import {
   dayScale,
   hourScale,
   MAX_OCCURRENCES,
+  nthWeekdayOf,
   nthWeekdayPhrase,
   recurrenceGroups,
   recurrenceLabel,
@@ -127,6 +128,8 @@ describe('a série começa no dia marcado, mesmo no passado', () => {
 })
 
 describe('escalas mensais', () => {
+  const firstSaturday: Recurrence = { kind: 'monthlyWeekday', nth: 1, weekday: 6 }
+
   it('todo mês no mesmo dia, sem escorregar em fevereiro', () => {
     expect(recurrenceStarts('2026-01-31T07:00', { kind: 'monthlyDay' }, '2026-04-30')).toEqual([
       '2026-01-31T07:00',
@@ -138,7 +141,7 @@ describe('escalas mensais', () => {
 
   it('todo mês na mesma posição da semana', () => {
     // 01/08/2026 é o primeiro sábado de agosto.
-    expect(recurrenceStarts('2026-08-01T07:00', { kind: 'monthlyWeekday' }, '2026-11-30')).toEqual([
+    expect(recurrenceStarts('2026-08-01T07:00', firstSaturday, '2026-11-30')).toEqual([
       '2026-08-01T07:00',
       '2026-09-05T07:00',
       '2026-10-03T07:00',
@@ -149,8 +152,35 @@ describe('escalas mensais', () => {
   it('pula os meses sem a quinta ocorrência do dia', () => {
     // 29/08/2026 é o 5º sábado de agosto. Setembro, novembro e dezembro só têm
     // quatro sábados, então ficam de fora.
-    const dates = recurrenceStarts('2026-08-29T07:00', { kind: 'monthlyWeekday' }, '2027-02-28')
+    const fifthSaturday: Recurrence = { kind: 'monthlyWeekday', nth: 5, weekday: 6 }
+    const dates = recurrenceStarts('2026-08-29T07:00', fifthSaturday, '2027-02-28')
     expect(dates).toEqual(['2026-08-29T07:00', '2026-10-31T07:00', '2027-01-30T07:00'])
+  })
+
+  /*
+   * A EXCEÇÃO deliberada à regra central (invariante 9c): aqui a posição é
+   * escolhida à mão, então a série pula para a primeira data que a satisfaz
+   * a partir do dia digitado — nunca para trás.
+   */
+  it('pula para a próxima quando a posição já passou no mês do início', () => {
+    // 26/08/2026 é quarta; o primeiro sábado de agosto (01/08) já passou.
+    const dates = recurrenceStarts('2026-08-26T07:00', firstSaturday, '2026-10-31')
+    expect(dates).toEqual(['2026-09-05T07:00', '2026-10-03T07:00'])
+  })
+
+  it('começa no próprio mês quando a posição ainda está por vir', () => {
+    // 01/08/2026 é sábado; a primeira segunda de agosto é 03/08.
+    const firstMonday: Recurrence = { kind: 'monthlyWeekday', nth: 1, weekday: 1 }
+    expect(recurrenceStarts('2026-08-01T07:00', firstMonday, '2026-09-30')).toEqual([
+      '2026-08-03T07:00',
+      '2026-09-07T07:00',
+    ])
+  })
+
+  it('começa no próprio dia quando a data já satisfaz a posição', () => {
+    expect(recurrenceStarts('2026-08-01T07:00', firstSaturday, '2026-08-31')).toEqual([
+      '2026-08-01T07:00',
+    ])
   })
 })
 
@@ -200,9 +230,12 @@ describe('catálogo', () => {
 
   it('descreve o dia do mês no gênero certo', () => {
     // 01/08/2026 é sábado; 03/08/2026 é segunda-feira.
-    expect(nthWeekdayPhrase('2026-08-01')).toBe('no primeiro sábado')
-    expect(nthWeekdayPhrase('2026-08-03')).toBe('na primeira segunda-feira')
-    expect(nthWeekdayPhrase('2026-08-19')).toBe('na terceira quarta-feira')
+    expect(nthWeekdayPhrase({ nth: 1, weekday: 6 })).toBe('no primeiro sábado')
+    expect(nthWeekdayPhrase({ nth: 1, weekday: 1 })).toBe('na primeira segunda-feira')
+    expect(nthWeekdayPhrase({ nth: 3, weekday: 3 })).toBe('na terceira quarta-feira')
+    // A posição vem da recorrência, não mais da data: com o plantão numa
+    // quarta ainda dá para pedir o primeiro sábado.
+    expect(nthWeekdayOf('2026-08-19')).toEqual({ nth: 3, weekday: 3 })
   })
 
   it('reconhece a escala escolhida', () => {
@@ -227,6 +260,27 @@ describe('catálogo', () => {
     expect(
       selectedOptionId({ kind: 'weekdays', weekdays: [1, 2, 3, 4, 5], everyWeeks: 1 }, '2026-08-25'),
     ).toBe('weekdays-1-5')
+  })
+
+  it('mexer na posição não tira a marca de "Todos os meses"', () => {
+    // A posição é o ajuste DENTRO da linha, como os dias em "Todas as semanas".
+    // 25/08/2026 é a 4ª terça: qualquer outra posição continua na mesma linha.
+    expect(
+      selectedOptionId({ kind: 'monthlyWeekday', nth: 4, weekday: 2 }, '2026-08-25'),
+    ).toBe('monthly-weekday')
+    expect(
+      selectedOptionId({ kind: 'monthlyWeekday', nth: 1, weekday: 6 }, '2026-08-25'),
+    ).toBe('monthly-weekday')
+  })
+
+  it('a linha Frequência mostra a posição escolhida, não a da data', () => {
+    // Plantão numa terça, escala no primeiro sábado.
+    expect(
+      recurrenceLabel({ kind: 'monthlyWeekday', nth: 1, weekday: 6 }, '2026-08-25'),
+    ).toBe('Todos os meses no primeiro sábado')
+    expect(
+      recurrenceLabel({ kind: 'monthlyWeekday', nth: 2, weekday: 3 }, '2026-08-25'),
+    ).toBe('Todos os meses na segunda quarta-feira')
   })
 
   it('a linha Frequência mostra os dias escolhidos', () => {
@@ -265,5 +319,12 @@ describe('catálogo', () => {
     ).toBe(true)
     expect(sameRecurrence(hourScale([12, 36]), dayScale([12, 36]))).toBe(false)
     expect(sameRecurrence(hourScale([12, 36]), hourScale([12, 36], [12, 72]))).toBe(false)
+  })
+
+  it('duas posições no mês só são a mesma escala com o mesmo dia', () => {
+    const firstSaturday: Recurrence = { kind: 'monthlyWeekday', nth: 1, weekday: 6 }
+    expect(sameRecurrence(firstSaturday, { kind: 'monthlyWeekday', nth: 1, weekday: 6 })).toBe(true)
+    expect(sameRecurrence(firstSaturday, { kind: 'monthlyWeekday', nth: 2, weekday: 6 })).toBe(false)
+    expect(sameRecurrence(firstSaturday, { kind: 'monthlyWeekday', nth: 1, weekday: 0 })).toBe(false)
   })
 })
