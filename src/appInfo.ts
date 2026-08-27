@@ -1,8 +1,8 @@
 /** Versão exibida em Configurações → Sobre. Mantenha em sincronia com o package.json. */
-export const APP_VERSION = '1.1.0'
+export const APP_VERSION = '1.2.0'
 
 /** Como a versão aparece na frase para o usuário — "1.1", não "1.1.0". */
-export const APP_RELEASE = '1.1'
+export const APP_RELEASE = '1.2'
 
 /**
  * O que mudou nesta versão, na ordem em que o usuário vai notar.
@@ -12,7 +12,9 @@ export const APP_RELEASE = '1.1'
  * na próxima. Só a versão nova conhece a própria lista.
  */
 export const APP_CHANGES = [
-  'Modelos de plantão: preencha um plantão novo em um toque.',
-  'Bolinhas coloridas no calendário — a cor é a do local.',
+  'Compartilhe a escala do mês: uma folha só, pelo WhatsApp ou impressa.',
+  'A Agenda abre no Mês, e o cabeçalho do período fica fixo ao rolar.',
+  'Filtros da Lista mais enxutos, atrás de um botão só.',
+  'Escala "todo primeiro sábado": escolha a posição no mês na hora.',
   'Correção de bugs.',
 ]
