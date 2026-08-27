@@ -259,23 +259,22 @@ ligado, o bloco precisa de 1,42 de altura para cada 1 de largura, deixa de
 caber na caixa em que foi diagramado, e o Safari **remove o bloco inteiro** —
 sai uma folha em branco.
 
-**Como o navegador não conta, quem conta é o USUÁRIO.** A folha de
-compartilhar tem uma chave **"Papel deitado"** (`Settings.printLandscape`) que
-põe `print-sheet--landscape` no elemento impresso, e o ramo girado é um
-`:not()` dela — ligada, o giro some e vale o ramo deitado, que é o certo para
-esse papel. É a única escolha dessa folha que fica GUARDADA, e por ser de outra
-natureza: ela descreve a impressora de casa, que não muda de um mês para o
-outro, enquanto "com valores" e "só um local" descrevem a folha e, lembrados,
-virariam uma escala errada enviada sem ninguém perceber. Errar na chave custa
-uma reimpressão. Quando ela está ligada, a folha avisa que a caixa de impressão
-precisa combinar — as duas metades da informação são do usuário.
+**Isso é aceito, e foi decisão do dono do app com o problema na mesa.** O iOS
+abre em Vertical, que é o caso que importa e funciona; o único conserto
+possível seria encolher a folha o bastante para sobreviver às duas, e isso
+estragaria a impressão Vertical, que já está calibrada.
 
-Não tente adivinhar isso de novo. Três tentativas caíram antes de a chave
-existir (`height: 96%`, `max-height`, `container-type: size` — esta última
-chegou a zerar o desenho, porque contenção de tamanho sobre altura indefinida
-vale ZERO), e uma quarta, um `@container` medindo a largura real da página, foi
-implementada e testada no aparelho sem mudar nada. O que falta não é uma regra
-de CSS mais esperta, é uma informação que o navegador não dá.
+Nem desligar o giro À MÃO resolve, e isso foi TESTADO no aparelho: chegou a
+existir uma chave "Papel deitado" em que o próprio usuário avisava qual papel
+tinha escolhido, e a folha continuou em branco. Ou seja, o problema não é o
+giro — é que o iOS diagrama a página antes de saber o papel, e o encaixe falha
+de qualquer jeito. A chave foi revertida por não entregar nada.
+
+Quatro tentativas caíram antes de chegar a esta conclusão (`height: 96%`, `max-height`,
+`container-type: size` — esta última chegou a zerar o desenho, porque contenção
+de tamanho sobre altura indefinida vale ZERO). Se alguém voltar aqui: o que
+falta não é uma regra de CSS mais esperta, é uma informação que o navegador não
+dá.
 
 O teto do ramo deitado é um **`max-width` em milímetros**, porque a altura não
 dá para limitar direto: como ela sai da proporção do desenho, limitar a largura

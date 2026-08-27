@@ -28,9 +28,6 @@ export const DEFAULT_SETTINGS: Settings = {
   vacationDate: '2026-10-11',
   vacationEnabled: true,
   lastSeenVersion: null,
-  // Desligado: a caixa de impressão do iOS abre em Vertical, que é o caso
-  // comum, e é para ele que a folha girada está calibrada.
-  printLandscape: false,
   updatedAt: new Date(0).toISOString(),
 }
 

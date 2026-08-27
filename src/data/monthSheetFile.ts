@@ -22,11 +22,9 @@ const PRINT_CLEANUP_MS = 60_000
  * folha de opções, que continua aberta por cima dele enquanto o diálogo de
  * impressão está na tela.
  */
-export function printMonthSheet(svg: string, landscape = false): void {
+export function printMonthSheet(svg: string): void {
   const host = document.createElement('div')
-  // `--landscape` desliga o giro do `@media print`. Quem liga é o usuário, na
-  // folha de compartilhar: o navegador não conta qual papel foi escolhido.
-  host.className = landscape ? 'print-sheet print-sheet--landscape' : 'print-sheet'
+  host.className = 'print-sheet'
   host.innerHTML = svg
   document.body.appendChild(host)
 

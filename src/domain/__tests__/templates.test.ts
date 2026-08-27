@@ -19,7 +19,6 @@ const SETTINGS: Settings = {
   vacationDate: null,
   vacationEnabled: false,
   lastSeenVersion: null,
-  printLandscape: false,
   updatedAt: '2026-01-01T00:00:00.000Z',
 }
 

@@ -13,7 +13,6 @@ export const APP_RELEASE = '1.2'
  */
 export const APP_CHANGES = [
   'Compartilhe a escala do mês: uma folha só, pelo WhatsApp ou impressa.',
-  'Impressora que usa papel deitado? Ligue "Papel deitado" ao compartilhar.',
   'A Agenda abre no Mês, e o cabeçalho do período fica fixo ao rolar.',
   'Filtros da Lista mais enxutos, atrás de um botão só.',
   'Escala "todo primeiro sábado": escolha a posição no mês na hora.',
