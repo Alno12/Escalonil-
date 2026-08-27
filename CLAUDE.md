@@ -244,23 +244,27 @@ GIRA o desenho 90°: assim ele ocupa a página inteira em vez de um terço dela,
 quem lê vira o papel — o mesmo custo já aceito na imagem do WhatsApp. Onde o
 `@page` vale (computador, Android), o papel sai deitado e nada gira.
 
-**NENHUMA medida em milímetros no `@media print`** — foi o que fez a folha sair
-em duas páginas três vezes seguidas. Um desenho mais largo que a página faz o
-Safari paginar PARA O LADO, e o tamanho da página não é conhecido: o iPhone dá
-o que quiser, descontando a faixa que ele reserva ao endereço e ao número da
-página. Então a largura é `100%` e a altura é limitada por `max-height: 170mm`
-— o SVG tem proporção própria, então o navegador encolhe a largura junto e
-nada nunca vaza. São DOIS tetos, em mm e em `vh` (que na impressão vale a
-altura da PÁGINA), e vence o mais apertado. No ramo girado quem ocupa espaço é
-o CONTÊINER (o desenho sai do fluxo), e ele também é `100%`, com `aspect-ratio`
-e as medidas do desenho em porcentagem — com o teto na LARGURA, porque limitar
-a altura de quem tem `aspect-ratio` NÃO encolhe a largura junto e o desenho
-passava por baixo do contêiner.
+**No `@media print`, TUDO é porcentagem da página** — nem milímetros, nem `vh`.
+Os dois foram tentados e os dois falharam:
 
-A folga é generosa de propósito: a faixa que o iPhone reserva ao endereço e ao
-número da página não é conhecida, e faltar poucos milímetros é uma segunda
-folha inteira — aconteceu duas vezes antes de chegar nestes números. Ainda
-ficam 32 mm de coluna, acima dos 26 mm que cortavam "Hospital Regional".
+- Milímetro fixo supõe o tamanho da área útil, que não é conhecido: o iPhone dá
+  o que quiser, descontando a faixa que reserva ao endereço e ao número da
+  página. Errado para menos, o desenho vaza e o Safari pagina PARA O LADO — sai
+  uma segunda folha com a tira que sobrou. Aconteceu três vezes.
+- `vh` na impressão do iPhone NÃO vale a altura do papel; vale bem menos
+  (medido: ~235 mm num A4 de 297). Com o teto amarrado nele a folha saiu numa
+  página só, mas com dois terços do tamanho e letra miúda demais para imprimir.
+
+Então: `width: 88%` no ramo deitado e `82%` no girado, com a altura saindo da
+proporção do desenho. O girado é menor porque a folha DEITADA tem quase a
+proporção da A4 — girada, ela quase preenche o papel sozinha, e o pouco que
+sobra é toda a margem que existe. Os 82% param em 245 mm, e nos testes no
+iPhone a faixa útil termina por volta de 280 mm de 297.
+
+No ramo girado quem ocupa espaço é o CONTÊINER — o desenho sai do fluxo —, com
+`aspect-ratio` e as medidas do desenho em porcentagem dele. O teto ali é na
+LARGURA: limitar a altura de quem tem `aspect-ratio` NÃO encolhe a largura
+junto, e o desenho passava por baixo do contêiner.
 
 Mais duas armadilhas de paginação, cada uma com sua página em branco: a margem
 do `@page` tem de ser ZERO (com margem, o bloco continua com a largura da

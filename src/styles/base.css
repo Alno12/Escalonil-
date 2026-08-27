@@ -237,27 +237,29 @@ svg {
   }
 
   /*
-   * NENHUMA medida fixa em milímetros aqui, e é de propósito.
+   * Tudo aqui é PORCENTAGEM DA PÁGINA. Nem milímetros nem `vh`, e cada um
+   * desses foi tentado antes:
    *
-   * A largura é 100% da página, seja ela qual for: uma folha mais larga que a
-   * página faz o Safari paginar PARA O LADO, e sai uma segunda página com a
-   * tira que sobrou. Com 100% isso é impossível — não há como vazar.
+   * - Milímetros fixos supõem o tamanho da área útil. Errado para menos, o
+   *   desenho vaza e o Safari pagina PARA O LADO: sai uma segunda folha com a
+   *   tira que sobrou.
+   * - `vh` na impressão do iPhone não vale a altura do PAPEL — vale bem menos.
+   *   Com o teto amarrado nele, a folha saiu legítima em uma página, mas com
+   *   dois terços do tamanho e letra miúda demais para imprimir.
    *
-   * A altura é limitada pelo `max-height`. O SVG tem proporção própria, então
-   * o navegador encolhe a largura junto e o desenho nunca fica mais alto que
-   * o teto. São DOIS tetos: um em milímetros e outro em `vh`, que na impressão
-   * vale a altura da PÁGINA — o que estiver mais apertado vence. A folga é
-   * generosa de propósito, porque a faixa que o iPhone reserva ao endereço e
-   * ao número da página não é conhecida: já sobraram poucos milímetros duas
-   * vezes, e poucos milímetros são uma segunda folha. Ainda ficam 32 mm de
-   * coluna, acima dos 26 mm que cortavam "Hospital Regional" (invariante 20).
+   * A porcentagem é a única medida que o navegador conhece de verdade. Os 88%
+   * são a folga: o resto é margem, e a altura sai da proporção do desenho —
+   * numa A4 deitada dá 87% da página.
    */
+  .print-sheet {
+    width: 88%;
+    margin: 0 auto;
+  }
+
   .print-sheet svg {
     display: block;
     width: 100%;
     height: auto;
-    max-height: min(160mm, 74vh);
-    margin: 0 auto;
   }
 
   /*
@@ -275,14 +277,14 @@ svg {
      */
     .print-sheet {
       position: relative;
-      width: 100%;
       /*
-       * O teto é na LARGURA, não na altura: com `aspect-ratio`, limitar a
-       * altura não encolhe a largura junto, e o desenho passava do contêiner.
-       * 52vh de largura dão 74vh de altura (52 × 1119÷786) — o mesmo teto do
-       * ramo deitado, escrito do lado que manda.
+       * Menos que no ramo deitado, e por um motivo medido: girada, a folha
+       * fica ALTA — 82% da largura viram 82% da altura numa A4, porque a
+       * proporção dela é quase a do papel. Foi aqui que ela escorregou para a
+       * segunda página, e o teto sai da evidência: nos testes no iPhone a
+       * faixa útil termina por volta de 280 mm de 297, e 82% param em 245.
        */
-      max-width: min(160mm, 52vh);
+      width: 82%;
       aspect-ratio: 786 / 1119;
       margin: 0 auto;
     }
