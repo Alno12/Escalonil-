@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ShiftFormSheet, type ShiftFormMode } from '@/components/shifts/ShiftFormSheet'
 import { ShiftDetailSheet } from '@/components/shifts/ShiftDetailSheet'
 import { PaymentSheet } from '@/components/shifts/PaymentSheet'
+import { ShareMonthSheet } from '@/components/shifts/ShareMonthSheet'
 import {
   emptyForm,
   formFromDuplicate,
@@ -9,6 +10,7 @@ import {
   type ShiftFormValues,
 } from '@/components/shifts/shiftFormValues'
 import type { LocalDate } from '@/db/types'
+import { monthPartOf } from '@/domain/datetime'
 import { useAppData } from './appDataContext'
 import { ShiftSheetsContext, type ShiftSheetsApi } from './shiftSheetsContext'
 
@@ -34,12 +36,13 @@ interface FormData {
  * qualquer tela possa abri-las com uma chamada — sem duplicar estado.
  */
 export function ShiftSheetsProvider({ children }: { children: ReactNode }) {
-  const { viewById, settings } = useAppData()
+  const { viewById, settings, today } = useAppData()
 
   const nextKey = useRef(1)
   const [form, setForm] = useState<Session<FormData> | null>(null)
   const [detail, setDetail] = useState<Session<string> | null>(null)
   const [payment, setPayment] = useState<Session<string> | null>(null)
+  const [share, setShare] = useState<Session<string> | null>(null)
 
   const openSession = useCallback(
     <T,>(setter: (s: Session<T>) => void, data: T) => {
@@ -51,6 +54,7 @@ export function ShiftSheetsProvider({ children }: { children: ReactNode }) {
   const closeForm = useCallback(() => setForm((s) => (s ? { ...s, open: false } : null)), [])
   const closeDetail = useCallback(() => setDetail((s) => (s ? { ...s, open: false } : null)), [])
   const closePayment = useCallback(() => setPayment((s) => (s ? { ...s, open: false } : null)), [])
+  const closeShare = useCallback(() => setShare((s) => (s ? { ...s, open: false } : null)), [])
 
   const api = useMemo<ShiftSheetsApi>(
     () => ({
@@ -92,8 +96,10 @@ export function ShiftSheetsProvider({ children }: { children: ReactNode }) {
         closeDetail()
         openSession(setPayment, id)
       },
+
+      shareMonth: (month?: string) => openSession(setShare, month ?? monthPartOf(today)),
     }),
-    [viewById, settings, openSession, closeDetail],
+    [viewById, settings, today, openSession, closeDetail],
   )
 
   return (
@@ -129,6 +135,15 @@ export function ShiftSheetsProvider({ children }: { children: ReactNode }) {
           open={payment.open}
           shiftId={payment.data}
           onClose={closePayment}
+        />
+      )}
+
+      {share && (
+        <ShareMonthSheet
+          key={share.key}
+          open={share.open}
+          month={share.data}
+          onClose={closeShare}
         />
       )}
     </ShiftSheetsContext.Provider>

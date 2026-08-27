@@ -13,7 +13,7 @@ import { printMonthSheet, shareMonthSheet } from '@/data/monthSheetFile'
 
 interface ShareMonthSheetProps {
   open: boolean
-  /** Mês que a agenda está mostrando — é o que a folha propõe. */
+  /** Mês que a tela está mostrando — é o que a folha propõe. */
   month: string
   onClose: () => void
 }
@@ -40,14 +40,6 @@ export function ShareMonthSheet({ open, month, onClose }: ShareMonthSheetProps) 
   const [showAmounts, setShowAmounts] = useState(false)
   const [locationId, setLocationId] = useState(ALL)
   const [busy, setBusy] = useState(false)
-
-  // Trocar de mês na agenda com a folha fechada tem de mudar a proposta: sem
-  // isso, abrir em setembro ofereceria o agosto da primeira vez.
-  const [lastMonth, setLastMonth] = useState(month)
-  if (month !== lastMonth) {
-    setLastMonth(month)
-    setChosenMonth(month)
-  }
 
   /** Os meses que têm plantão, mais o de hoje — não faz sentido oferecer o resto. */
   const monthOptions: SheetOption<string>[] = useMemo(() => {

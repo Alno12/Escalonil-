@@ -246,11 +246,24 @@ sobrescrito de quem vira a noite. A cor nunca é a única pista: o nome do local
 vai escrito, para a folha valer em impressora preto e branco.
 
 Compartilhar é o botão CHEIO e imprimir vem embaixo dele: compartilhar se faz
-todo mês, imprimir depende de ter impressora por perto. O ícone no cabeçalho
-da Agenda entra à ESQUERDA do `+` (`ScreenHeader extra`), nunca no lugar dele —
-o `+` é sempre o círculo mais à direita e o único preenchido, senão o canto do
-cabeçalho vira uma fileira de botões com o mesmo peso. O botão do rodapé fica
-só no Mês; na Semana seria repetição do ícone, que já está sempre à vista.
+todo mês, imprimir depende de ter impressora por perto.
+
+O ícone mora no cabeçalho de TODAS as telas, como o `+` — quem quer mandar a
+escala não devia ter de passar pela Agenda antes. Por isso o `ScreenHeader`
+desenha os dois sozinho, a partir do `useShiftSheets()`, e a folha vive no
+`ShiftSheetsProvider` (`shareMonth`), não dentro da Agenda. Ele entra à
+ESQUERDA do `+`, nunca no lugar dele: o `+` é sempre o círculo mais à direita e
+o único preenchido, senão o canto do cabeçalho vira uma fileira de botões com o
+mesmo peso.
+
+A folha propõe o mês que a TELA está mostrando (`ScreenHeader shareMonth`) —
+Agenda e Financeiro passam o deles; onde não existe mês na tela, vale o
+corrente. Quem navegou até dezembro quer dezembro. Como o provedor remonta a
+folha por `key` a cada abertura, ela nasce com o mês certo e não precisa de
+sincronização.
+
+O botão do rodapé fica só no Mês; na Semana seria repetição do ícone, que já
+está sempre à vista.
 Ficou registrado que a folha deitada numa conversa de 390 pt exige pinça ou
 girar o telefone: foi decisão do dono, com o problema na mesa, para ver o mês
 inteiro de uma vez.

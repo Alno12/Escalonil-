@@ -10,13 +10,10 @@ interface ScreenHeaderProps {
   /** Substitui o botão de novo plantão quando a tela precisa de outra ação. */
   action?: ReactNode
   /**
-   * Entra À ESQUERDA do `+`, sem tomar o lugar dele.
-   *
-   * O `+` é sempre o círculo mais à direita e o único preenchido: é o que
-   * impede o canto do cabeçalho de virar uma fileira de botões todos com o
-   * mesmo peso.
+   * Mês que a folha de compartilhar deve propor. Sem ele, o mês corrente —
+   * é o caso das telas que não olham para um mês específico.
    */
-  extra?: ReactNode
+  shareMonth?: string
   /** Esconde o botão de novo plantão (telas onde ele não faz sentido). */
   hideAdd?: boolean
   /** Conteúdo grudado abaixo do título (abas, seletor de período). */
@@ -32,7 +29,7 @@ export function ScreenHeader({
   title,
   subtitle,
   action,
-  extra,
+  shareMonth,
   hideAdd = false,
   below,
 }: ScreenHeaderProps) {
@@ -48,7 +45,17 @@ export function ScreenHeader({
         </div>
 
         <div className="screen-header__actions">
-          {extra}
+          {/* Compartilhar a escala do mês, em TODAS as telas — como o `+`. À
+              esquerda dele e em círculo claro: o `+` continua sendo o único
+              preenchido e a ação principal. */}
+          <button
+            type="button"
+            className="header-icon"
+            onClick={() => sheets.shareMonth(shareMonth)}
+            aria-label="Compartilhar a escala do mês"
+          >
+            <Icon name="share" size={19} strokeWidth={2} />
+          </button>
           {action ??
             (hideAdd ? null : (
               <button
