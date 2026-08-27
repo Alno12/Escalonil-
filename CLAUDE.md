@@ -28,7 +28,7 @@ src/
 │   ├── summary.ts    somas financeiras e recortes de agenda
 │   ├── reports.ts    indicadores, por local, insights, ritmo e recordes
 │   ├── periods.ts    períodos dos relatórios e o período anterior equivalente
-│   ├── monthSheet.ts    o conteúdo da folha do mês (impressão)
+│   ├── monthSheet.ts    o conteúdo da folha do mês (impressão e envio)
 │   └── monthSheetSvg.ts o desenho dessa folha, em SVG
 ├── state/        providers de dados, tema, toasts e folhas de plantão
 ├── components/   ui/ (primitivos) e shifts/ (formulário, detalhe, listas)
@@ -230,8 +230,8 @@ sem entender por quê. NÃO existe filtro de pagamento aqui: quanto falta recebe
 **20. A folha do mês é UMA folha, deitada, e é SVG.**
 `monthSheet.ts` monta o conteúdo e `monthSheetSvg.ts` desenha — separados
 porque o conteúdo é testável em Node e o desenho é só texto. É SVG e não HTML
-porque a MESMA folha tem mais de um destino, e em HTML seriam dois desenhos
-obrigados a concordar para sempre.
+porque a MESMA folha vai para a impressora E vira PNG para o WhatsApp: em HTML
+seriam dois desenhos obrigados a concordar para sempre — e um dia parariam.
 
 A folha é AUTOSSUFICIENTE: as cores estão em hexadecimal e a fonte é a pilha do
 sistema, porque nenhum CSS do app a alcança quando ela é rasterizada. Também
@@ -244,6 +244,16 @@ plantões estica a semana e joga a última linha para a segunda página. O
 quadrado cheio mostra três e resume o resto em "mais 2" — nunca "+2", que é o
 sobrescrito de quem vira a noite. A cor nunca é a única pista: o nome do local
 vai escrito, para a folha valer em impressora preto e branco.
+
+Compartilhar é o botão CHEIO e imprimir vem embaixo dele: compartilhar se faz
+todo mês, imprimir depende de ter impressora por perto. O ícone no cabeçalho
+da Agenda entra à ESQUERDA do `+` (`ScreenHeader extra`), nunca no lugar dele —
+o `+` é sempre o círculo mais à direita e o único preenchido, senão o canto do
+cabeçalho vira uma fileira de botões com o mesmo peso. O botão do rodapé fica
+só no Mês; na Semana seria repetição do ícone, que já está sempre à vista.
+Ficou registrado que a folha deitada numa conversa de 390 pt exige pinça ou
+girar o telefone: foi decisão do dono, com o problema na mesa, para ver o mês
+inteiro de uma vez.
 
 O plantão que atravessa a meia-noite segue o invariante 16 e, no dia seguinte,
 entra como CONTINUAÇÃO ("↳ Hospital Regional, até 19:00") sem valor — repetido

@@ -5,12 +5,13 @@ import { Icon } from '@/components/ui/Icon'
 import { Switch } from '@/components/ui/Field'
 import { OptionSheet, type SheetOption } from '@/components/ui/OptionSheet'
 import { useAppData } from '@/state/appDataContext'
+import { useToast } from '@/state/toastContext'
 import { formatMonthYear, monthPartOf } from '@/domain/datetime'
 import { buildMonthSheet } from '@/domain/monthSheet'
 import { buildMonthSheetSvg } from '@/domain/monthSheetSvg'
-import { printMonthSheet } from '@/data/monthSheetFile'
+import { printMonthSheet, shareMonthSheet } from '@/data/monthSheetFile'
 
-interface PrintMonthSheetProps {
+interface ShareMonthSheetProps {
   open: boolean
   /** Mês que a agenda está mostrando — é o que a folha propõe. */
   month: string
@@ -22,17 +23,23 @@ const ALL = ''
 /**
  * As opções da folha do mês: qual mês, com ou sem valores, e de qual local.
  *
+ * O conteúdo é o MESMO nos dois botões do rodapé — só muda a saída. E o botão
+ * cheio é o de compartilhar porque compartilhar é o que se faz todo mês, para
+ * a família ou a coordenação; imprimir depende de ter impressora por perto.
+ *
  * As escolhas NÃO ficam guardadas: reabriu, é o mês da agenda, sem valores e
- * com todos os locais. Imprimir um local só, ou com valores, é exceção — e uma
- * exceção lembrada vira uma folha errada impressa sem ninguém perceber.
+ * com todos os locais. Mandar um local só, ou com valores, é exceção — e uma
+ * exceção lembrada vira uma folha errada enviada sem ninguém perceber.
  */
-export function PrintMonthSheet({ open, month, onClose }: PrintMonthSheetProps) {
+export function ShareMonthSheet({ open, month, onClose }: ShareMonthSheetProps) {
   const { views, locations, today } = useAppData()
+  const toast = useToast()
 
   const [picking, setPicking] = useState<'month' | 'location' | null>(null)
   const [chosenMonth, setChosenMonth] = useState(month)
   const [showAmounts, setShowAmounts] = useState(false)
   const [locationId, setLocationId] = useState(ALL)
+  const [busy, setBusy] = useState(false)
 
   // Trocar de mês na agenda com a folha fechada tem de mudar a proposta: sem
   // isso, abrir em setembro ofereceria o agosto da primeira vez.
@@ -67,6 +74,18 @@ export function PrintMonthSheet({ open, month, onClose }: PrintMonthSheetProps) 
       }),
     )
 
+  const share = async () => {
+    setBusy(true)
+    try {
+      await shareMonthSheet(svg(), chosenMonth)
+      onClose()
+    } catch {
+      toast.error('Não foi possível gerar a imagem da folha.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   // A folha de opções continua aberta durante a impressão de propósito: o
   // `@media print` esconde o app inteiro, e fechá-la antes deixaria a tela
   // piscar atrás da caixa de impressão.
@@ -76,14 +95,19 @@ export function PrintMonthSheet({ open, month, onClose }: PrintMonthSheetProps) 
     <>
       <Sheet
         open={open}
-        title="Imprimir"
+        title="Compartilhar"
         subtitle="Escala do mês em uma folha"
         onClose={onClose}
         size="auto"
         footer={
-          <Button variant="primary" size="lg" block icon="printer" onClick={print}>
-            Imprimir
-          </Button>
+          <div className="sheet-actions">
+            <Button variant="primary" size="lg" block icon="share" onClick={share} disabled={busy}>
+              {busy ? 'Gerando…' : 'Compartilhar'}
+            </Button>
+            <Button variant="secondary" size="lg" block icon="printer" onClick={print}>
+              Imprimir
+            </Button>
+          </div>
         }
       >
         <div className="form">

@@ -334,7 +334,17 @@ export function csvFileName(): string {
  * Tela de Início; nos demais casos cai no download tradicional.
  */
 export async function saveFile(name: string, content: string, mime: string): Promise<void> {
-  const file = new File([content], name, { type: mime })
+  await shareOrDownload(new File([content], name, { type: mime }))
+}
+
+/**
+ * O caminho de saída de QUALQUER arquivo que o app gera — o backup, o CSV e a
+ * folha do mês em PNG. Separado de `saveFile` porque a folha nasce Blob, não
+ * texto; o tratamento (share sheet no iPhone, download nos demais, cancelar
+ * não é erro) é o mesmo para os três.
+ */
+export async function shareOrDownload(file: File): Promise<void> {
+  const name = file.name
 
   const nav = navigator as Navigator & {
     canShare?: (data: { files: File[] }) => boolean

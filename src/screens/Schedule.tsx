@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
+import { Icon } from '@/components/ui/Icon'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { LoadingScreen } from '@/components/ui/Skeleton'
 import { useAppData } from '@/state/appDataContext'
@@ -16,7 +17,7 @@ import { WeekView } from './schedule/WeekView'
 import { MonthView } from './schedule/MonthView'
 import { ListView } from './schedule/ListView'
 import { PeriodNav } from './schedule/PeriodNav'
-import { PrintMonthSheet } from './schedule/PrintMonthSheet'
+import { ShareMonthSheet } from './schedule/ShareMonthSheet'
 
 type Tab = 'week' | 'month' | 'list'
 
@@ -42,7 +43,7 @@ export function Schedule() {
   const [params] = useSearchParams()
   const [tab, setTab] = useState<Tab>(() => TAB_BY_PARAM[params.get('v') ?? ''] ?? 'month')
   const [reference, setReference] = useState(today)
-  const [printing, setPrinting] = useState(false)
+  const [sharing, setSharing] = useState(false)
 
   /**
    * A navegação do período mora AQUI, e não dentro de cada visão, porque ela
@@ -73,6 +74,21 @@ export function Schedule() {
       <ScreenHeader
         title="Agenda"
         subtitle={`${views.length} ${views.length === 1 ? 'plantão cadastrado' : 'plantões cadastrados'}`}
+        /*
+         * O ícone entra à ESQUERDA do `+`, em círculo claro — o `+` continua
+         * sendo o único preenchido e a ação principal. Com o cabeçalho fixo
+         * (§41), ele fica na tela o tempo todo, em qualquer visão.
+         */
+        extra={
+          <button
+            type="button"
+            className="header-icon"
+            onClick={() => setSharing(true)}
+            aria-label="Compartilhar a escala do mês"
+          >
+            <Icon name="share" size={19} strokeWidth={2} />
+          </button>
+        }
         below={
           <>
             <SegmentedControl
@@ -103,17 +119,17 @@ export function Schedule() {
             <MonthView
               selected={reference}
               onSelect={setReference}
-              onPrint={() => setPrinting(true)}
+              onShare={() => setSharing(true)}
             />
           )}
           {tab === 'list' && <ListView />}
         </div>
       )}
 
-      <PrintMonthSheet
-        open={printing}
+      <ShareMonthSheet
+        open={sharing}
         month={monthPartOf(reference)}
-        onClose={() => setPrinting(false)}
+        onClose={() => setSharing(false)}
       />
     </>
   )

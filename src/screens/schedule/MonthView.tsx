@@ -23,14 +23,14 @@ interface MonthViewProps {
   selected: string
   onSelect: (date: string) => void
   /** Abre a folha do mês. É o fim natural de quem rolou o mês inteiro. */
-  onPrint: () => void
+  onShare: () => void
 }
 
 /** Quatro bolinhas já não cabem na largura da célula sem encostar uma na outra. */
 const MAX_DOTS = 3
 
 /** Calendário mensal: toque num dia para ver os plantões dele (§21). */
-export function MonthView({ selected, onSelect, onPrint }: MonthViewProps) {
+export function MonthView({ selected, onSelect, onShare }: MonthViewProps) {
   const { views, today } = useAppData()
   const sheets = useShiftSheets()
 
@@ -144,9 +144,10 @@ export function MonthView({ selected, onSelect, onPrint }: MonthViewProps) {
       </section>
 
       {/* Só no Mês: é a folha DO MÊS, e o botão cai no fim do fluxo de quem
-          rolou o mês inteiro. */}
-      <Button variant="secondary" block icon="printer" onClick={onPrint}>
-        Imprimir este mês
+          rolou o mês inteiro. Na Semana ele seria repetição do ícone do
+          cabeçalho, que já está sempre à vista. */}
+      <Button variant="secondary" block icon="share" onClick={onShare}>
+        Compartilhar
       </Button>
     </>
   )
