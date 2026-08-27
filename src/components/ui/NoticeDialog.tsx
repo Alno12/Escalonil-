@@ -2,6 +2,7 @@ import { createPortal } from 'react-dom'
 import { useMountTransition } from '@/hooks/useMountTransition'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useSheetHistory } from '@/hooks/useSheetHistory'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
 import { Button } from './Button'
 import { Icon, type IconName } from './Icon'
 
@@ -43,6 +44,7 @@ export function NoticeDialog({
   const { mounted, visible } = useMountTransition(open, 200)
   useBodyScrollLock(mounted)
   useSheetHistory(open, onClose)
+  const trap = useFocusTrap<HTMLDivElement>(mounted, visible)
 
   if (!mounted) return null
 
@@ -50,6 +52,7 @@ export function NoticeDialog({
     <div className={`dialog-root ${visible ? 'is-open' : ''}`}>
       <div className="sheet-backdrop" onClick={onClose} aria-hidden="true" />
       <div
+        ref={trap}
         className={`dialog ${items ? 'dialog--wide' : ''}`}
         role="alertdialog"
         aria-modal="true"

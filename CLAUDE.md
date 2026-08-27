@@ -409,6 +409,18 @@ vez por isso.
   inteiro: a folha do plantão trava (guardando ""), o diálogo de excluir trava
   por cima (guardando "hidden"), os dois fecham juntos e o último a soltar
   repõe o "hidden". Só recarregando a página destravava.
+- `useFocusTrap` prende o foco no modal do topo, com uma PILHA compartilhada
+  como a das travas de rolagem: só o último da pilha responde ao Tab, e todos
+  os outros — mais o `#root` — ficam `inert`, que é o que também os tira do
+  leitor de tela. Duas armadilhas moram aqui. O foco só entra depois da
+  animação (`visible`, não `mounted`): focar no meio dela faz o iPhone rolar a
+  tela sozinho. E "quem abriu" é lido durante o RENDER, não no efeito — os
+  diálogos trazem `autoFocus`, que o React aplica no commit, então lido depois
+  o dono do foco seria o botão do próprio diálogo, que some junto com ele. As
+  folhas nascem abertas (o provedor só as monta quando o usuário pede) e por
+  isso o valor INICIAL do estado faz a mesma leitura; sem ele, fechar a folha
+  largava o foco no `body` em vez de devolvê-lo ao `+`. Trocar de folha não
+  devolve foco nenhum: a folha nova já pegou o dele.
 - Toda cor, espaçamento e sombra vem de `styles/tokens.css`. Não escreva valores
   literais nos componentes, e defina qualquer token novo nos **dois** temas.
 - Campos de texto usam **`--text-input-min` (16px)** — abaixo disso o Safari dá

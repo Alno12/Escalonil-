@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useMountTransition } from '@/hooks/useMountTransition'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useSheetHistory } from '@/hooks/useSheetHistory'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
 
 interface SheetProps {
   open: boolean
@@ -38,6 +39,9 @@ export function Sheet({
   const { mounted, visible } = useMountTransition(open, 240)
   useBodyScrollLock(mounted)
   useSheetHistory(open, onClose)
+  // `visible` só é true depois da animação de entrada — antes disso, focar
+  // faria o iPhone rolar a tela no meio dela.
+  const trap = useFocusTrap<HTMLDivElement>(mounted, visible)
 
   useEffect(() => {
     if (!open) return
@@ -54,6 +58,7 @@ export function Sheet({
     <div className={`sheet-root ${visible ? 'is-open' : ''}`}>
       <div className="sheet-backdrop" onClick={onClose} aria-hidden="true" />
       <div
+        ref={trap}
         className={`sheet sheet--${size}`}
         role="dialog"
         aria-modal="true"

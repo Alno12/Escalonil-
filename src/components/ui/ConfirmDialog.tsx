@@ -2,6 +2,7 @@ import { createPortal } from 'react-dom'
 import { useMountTransition } from '@/hooks/useMountTransition'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useSheetHistory } from '@/hooks/useSheetHistory'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
 import { Button } from './Button'
 
 export interface DialogChoice {
@@ -41,13 +42,14 @@ export function ConfirmDialog({
   const { mounted, visible } = useMountTransition(open, 200)
   useBodyScrollLock(mounted)
   useSheetHistory(open, onCancel)
+  const trap = useFocusTrap<HTMLDivElement>(mounted, visible)
 
   if (!mounted) return null
 
   return createPortal(
     <div className={`dialog-root ${visible ? 'is-open' : ''}`}>
       <div className="sheet-backdrop" onClick={onCancel} aria-hidden="true" />
-      <div className="dialog" role="alertdialog" aria-modal="true" aria-label={title}>
+      <div ref={trap} className="dialog" role="alertdialog" aria-modal="true" aria-label={title}>
         <h2 className="dialog__title">{title}</h2>
         <p className="dialog__message">{message}</p>
         {choices ? (
