@@ -182,8 +182,20 @@ svg {
 }
 
 @media print {
+  /*
+   * O `size` é respeitado no computador e no Android. O SAFARI DO IPHONE
+   * IGNORA: lá quem manda na orientação é a caixa de impressão do iOS, que
+   * abre sempre em pé. É por isso que existe o bloco `orientation: portrait`
+   * lá embaixo — pedir deitado não basta, a folha precisa saber girar.
+   */
   @page {
     size: A4 landscape;
+    /*
+     * Margem ZERO no papel, e a folga por conta do desenho (abaixo). Com uma
+     * margem aqui, o bloco da folha continua com a largura da PÁGINA e vaza
+     * da área útil — o navegador então pagina para o lado e sai uma segunda
+     * página quase em branco.
+     */
     margin: 0;
   }
 
@@ -202,6 +214,14 @@ svg {
     position: static !important;
     top: auto !important;
     overflow: visible !important;
+    /*
+     * O `min-height: 100dvh` do body vale a altura da JANELA, não a do papel.
+     * Numa A4 deitada isso são 225 mm de body para 200 mm de área útil, e a
+     * sobra virava uma segunda página em branco — mesmo com a folha inteira
+     * cabendo na primeira.
+     */
+    min-height: 0 !important;
+    height: auto !important;
   }
 
   /* Some com o app INTEIRO — inclusive a folha de opções, que continua aberta
@@ -210,20 +230,43 @@ svg {
     display: none !important;
   }
 
-  /*
-   * Um pouco menor que a A4 deitada de propósito: com 297×210 exatos, o
-   * arredondamento do navegador empurra uma segunda folha em branco.
-   */
   .print-sheet {
     display: block;
-    width: 296mm;
-    height: 208mm;
-    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
+  /*
+   * O desenho é MENOR que a área útil de propósito. O iPhone reserva uma
+   * faixa própria para o endereço e o número da página, e ignora a margem
+   * pedida acima: com a folha do tamanho exato do papel, o que sobrava
+   * escorregava para uma segunda página — e vinham duas, ambas em branco.
+   * 256 mm ainda dão 36 mm de coluna, longe dos 26 mm que cortavam
+   * "Hospital Regional" (invariante 20).
+   */
   .print-sheet svg {
     display: block;
-    width: 100%;
-    height: 100%;
+    width: 256mm;
+    height: 180mm;
+    margin: 0 auto;
+  }
+
+  /*
+   * Papel em pé — o caso do iPhone, e de quem escolher assim. O desenho gira
+   * e passa a ocupar a página INTEIRA em vez de um terço dela: sem isso a
+   * folha saía espremida no alto, com a letra pequena demais para ler. Quem
+   * recebe vira o papel, que é o mesmo custo já aceito na imagem do WhatsApp.
+   */
+  @media (orientation: portrait) {
+    .print-sheet {
+      width: 180mm;
+      height: 256mm;
+      margin: 0 auto;
+    }
+
+    .print-sheet svg {
+      transform: translateX(180mm) rotate(90deg);
+      transform-origin: top left;
+    }
   }
 }

@@ -133,7 +133,7 @@ export function ShareMonthSheet({ open, month, onClose }: ShareMonthSheetProps) 
           <p className="form-note">
             {location
               ? `A folha sai só com os plantões do ${location.name} — o resto do mês fica em branco.`
-              : 'A folha sai deitada, em uma página só, com a escala inteira do mês.'}
+              : 'A escala inteira do mês em uma página só, para ler de lado.'}
           </p>
         </div>
       </Sheet>

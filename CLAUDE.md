@@ -238,6 +238,21 @@ sistema, porque nenhum CSS do app a alcança quando ela é rasterizada. Também
 não existe quebra de linha automática — `fitText` corta no "…" por uma largura
 ESTIMADA por caractere, o que basta com a folga que os campos têm.
 
+**O iPhone IGNORA o `size` do `@page`** e imprime sempre em pé — pedir deitado
+não basta. Por isso o `@media print` tem um ramo `orientation: portrait` que
+GIRA o desenho 90°: assim ele ocupa a página inteira em vez de um terço dela, e
+quem lê vira o papel — o mesmo custo já aceito na imagem do WhatsApp. Onde o
+`@page` vale (computador, Android), o papel sai deitado e nada gira.
+
+Três armadilhas de paginação moram aí, e cada uma já produziu uma segunda
+página em branco. A margem do `@page` tem de ser ZERO: com margem, o bloco da
+folha continua com a largura da PÁGINA, vaza da área útil e o navegador pagina
+para o LADO. O `min-height: 100dvh` do body vale a altura da JANELA, não a do
+papel, e precisa ser zerado. E o desenho é menor que o papel de propósito
+(256×180 mm) porque o iPhone reserva uma faixa própria para o endereço e o
+número da página: com a folha do tamanho exato, o que sobra escorrega para a
+página seguinte. 256 mm ainda dão 36 mm de coluna.
+
 Em pé a coluna tem 26 mm e "Hospital Regional" é cortado; deitada tem 39 mm e
 cabe. As seis linhas da grade têm altura FIXA: sem isso um dia com três
 plantões estica a semana e joga a última linha para a segunda página. O
