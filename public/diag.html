@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escalonil — diagnóstico de impressão</title>
+<style>
+  body { font: 16px/1.5 -apple-system, system-ui, sans-serif; margin: 16px; color: #111; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.hint { color: #666; font-size: 14px; margin: 0 0 16px; }
+  .row { border-bottom: 1px solid #ddd; padding: 8px 0; font-size: 20px; }
+  .row b { display: block; font-size: 13px; color: #666; font-weight: 600; }
+  .val::after { content: "—"; font-weight: 700; }
+
+  /* Prova 1: a consulta de mídia fala do PAPEL ou do APARELHO? */
+  @media (orientation: portrait)  { .mq::after { content: "EM PE"; } }
+  @media (orientation: landscape) { .mq::after { content: "DEITADA"; } }
+
+  /* Prova 2: a largura da página, em faixas. */
+  @media (min-width: 80mm)  { .pw::after { content: "80+"; } }
+  @media (min-width: 120mm) { .pw::after { content: "120+"; } }
+  @media (min-width: 160mm) { .pw::after { content: "160+"; } }
+  @media (min-width: 180mm) { .pw::after { content: "180+"; } }
+  @media (min-width: 200mm) { .pw::after { content: "200+"; } }
+  @media (min-width: 230mm) { .pw::after { content: "230+"; } }
+  @media (min-width: 260mm) { .pw::after { content: "260+"; } }
+  @media (min-width: 285mm) { .pw::after { content: "285+"; } }
+
+  /* Prova 3: a ALTURA da página, em faixas — é o número que falta. */
+  @media (min-height: 80mm)  { .ph::after { content: "80+"; } }
+  @media (min-height: 120mm) { .ph::after { content: "120+"; } }
+  @media (min-height: 140mm) { .ph::after { content: "140+"; } }
+  @media (min-height: 160mm) { .ph::after { content: "160+"; } }
+  @media (min-height: 190mm) { .ph::after { content: "190+"; } }
+  @media (min-height: 230mm) { .ph::after { content: "230+"; } }
+  @media (min-height: 260mm) { .ph::after { content: "260+"; } }
+  @media (min-height: 285mm) { .ph::after { content: "285+"; } }
+
+  /* Prova 4: porcentagem de ALTURA resolve? A barra só aparece se sim. */
+  html, body { height: 100%; }
+  .pct { height: 25%; background: #007aff; }
+  .pct::after { content: "se esta barra azul tem altura, % de altura funciona"; color: #fff; font-size: 12px; }
+
+  /* Prova 5: `container-type: size` funciona em impressão? */
+  .box { container-type: size; width: 60mm; height: 20mm; background: #eee; }
+  .box .cq::after { content: "contencao ZEROU a caixa"; }
+  @container (min-width: 1px) { .box .cq::after { content: "CONTAINER OK"; } }
+
+  /* Prova 6: `aspect-ratio` dá altura ao bloco? */
+  .ar { width: 40mm; aspect-ratio: 2 / 1; background: #34c759; }
+  .ar::after { content: "aspect-ratio OK"; font-size: 12px; }
+
+  @page { size: A4 landscape; margin: 0; }
+  @media print {
+    body { margin: 8mm; }
+    p.hint, .noprint { display: none; }
+  }
+</style>
+</head>
+<body>
+  <h1>Diagnóstico de impressão</h1>
+  <p class="hint">Toque em Compartilhar → Imprimir. Troque a Orientação e mande um print de cada.</p>
+
+  <div class="row"><b>1. orientation diz</b><span class="val mq"></span></div>
+  <div class="row"><b>2. largura da pagina (mm)</b><span class="val pw"></span></div>
+  <div class="row"><b>3. ALTURA da pagina (mm)</b><span class="val ph"></span></div>
+  <div class="row"><b>4. porcentagem de altura</b><div class="pct"></div></div>
+  <div class="row"><b>5. container-type: size</b><div class="box"><span class="val cq"></span></div></div>
+  <div class="row"><b>6. aspect-ratio</b><div class="ar"></div></div>
+
+  <p class="noprint"><button onclick="print()">Imprimir</button></p>
+</body>
+</html>

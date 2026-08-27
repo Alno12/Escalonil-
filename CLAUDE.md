@@ -244,24 +244,30 @@ GIRA o desenho 90°: assim ele ocupa a página inteira em vez de um terço dela,
 quem lê vira o papel — o mesmo custo já aceito na imagem do WhatsApp. Onde o
 `@page` vale (computador, Android), o papel sai deitado e nada gira.
 
-**E o `orientation`, no iPhone, NÃO fala do papel: fala do APARELHO.** Quem
-está em pé é o telefone na mão de quem imprime, então `orientation: portrait`
-casa nas DUAS orientações da caixa de impressão do iOS. Trocar para Horizontal
-lá não desligava o ramo girado: o contêiner ficava com 273 mm de altura numa
-página de 151, não cabia, e a folha saía EM BRANCO.
+**No `@media print` do iPhone, SÓ A LARGURA é confiável.** Porcentagem de
+largura acerta o papel — é o que calibrou os 92% do ramo girado. Porcentagem de
+ALTURA não, e três tentativas morreram nisso: `height: 96%`, `max-height` e um
+`container-type: size` medindo a página. A terceira foi a pior, porque um
+contêiner com altura indefinida E contenção de tamanho vale ZERO e zera o
+desenho junto — a folha seguiu em branco, agora por outro motivo.
 
-Quem desempata é um **`@container`**, e é para isso que a folha tem dois
-elementos (`printMonthSheet` monta os dois): o de fora vale a página inteira e
-é o contêiner; o de dentro desenha. `@container (min-aspect-ratio: 1/1)` mede a
-CAIXA de verdade, não um recurso de mídia — o mesmo mecanismo que faz
-`width: 92%` acertar os 174 mm que o iPhone entrega —, e desfaz o giro quando a
-página é mais larga que alta. Ele vem DEPOIS do bloco `orientation` de
-propósito: as duas regras têm o mesmo peso, e quem vence é a ordem no arquivo.
+Por isso o teto do ramo deitado é um **`max-width` em milímetros**: como a
+altura sai da proporção do desenho, limitar a largura é a única forma de
+limitar a altura. Os 196 mm dão 138 mm, com folga sobre os ~151 mm que o iPhone
+entrega numa página deitada. Um `@media (min-height: 190mm)` tira o teto onde a
+altura sobra (computador, Android). O padrão é o caso APERTADO de propósito: se
+essa consulta também não valer no iPhone, o que fica é o tamanho que cabe.
 
 **Não existe mais `break-inside: avoid` na folha, e a ausência é de propósito.**
 Ele custou duas páginas em branco: diante de um bloco que não cabe, o Safari
 não corta — tira o bloco INTEIRO do papel. Sem ele, o pior caso é um desenho
 cortado, que dá para ver e entender.
+
+**`public/diag.html` é uma página de diagnóstico temporária** — seis provas de
+CSS (orientação, largura e altura da página em faixas, porcentagem de altura,
+`container-type` e `aspect-ratio`) que se revelam na impressão. Ela existe
+porque a caixa do iOS não é testável daqui e três hipóteses caíram por palpite.
+**Apague antes de mesclar**, junto com esta nota.
 
 **No `@media print`, TUDO é porcentagem da página** — nem milímetros, nem `vh`.
 Os dois foram tentados e os dois falharam:
@@ -274,24 +280,13 @@ Os dois foram tentados e os dois falharam:
   (medido: ~235 mm num A4 de 297). Com o teto amarrado nele a folha saiu numa
   página só, mas com dois terços do tamanho e letra miúda demais para imprimir.
 
-`height: 100%` NÃO é `100vh`, e é a exceção que faz o ramo deitado funcionar.
-Em mídia paginada o bloco que contém tudo é a ÁREA DA PÁGINA, então a
-porcentagem vale o PAPEL — é o mesmo mecanismo que faz `width: 92%` acertar os
-174 mm do iPhone. O `vh` é que continua valendo a janela.
+**No ramo deitado, `88%` com teto de `196mm`.** A largura sozinha já quebrou:
+ela produz 0,70 de altura para cada 1 de largura, e na área útil que o iPhone
+entrega numa A4 DEITADA (261 × 151 mm) isso daria 161 mm de altura para 151
+disponíveis. Com o teto o desenho fica em 196 × 138 mm, e no papel inteiro
+(onde `min-height: 190mm` vale) volta aos 261 × 184 de sempre.
 
-**No ramo deitado, o desenho ganha uma CAIXA, não um tamanho.** `width: 88%`
-sozinho já quebrou: ele produz 0,70 de altura para cada 1 de largura, e na área
-útil que o iPhone entrega numa A4 DEITADA (261 × 151 mm) isso daria 161 mm de
-altura para 151 disponíveis. Agora são `88%` de largura por `96%` de altura, e
-quem encaixa é o
-`preserveAspectRatio="xMidYMid meet"` do SVG: numa página larga quem limita é a
-largura e nada muda (261 × 184 mm no papel inteiro, como sempre foi); numa
-página baixa quem limita é a altura, e o desenho DIMINUI em vez de sumir
-(206 × 145 mm). Os 96%, e não 100%, são a folga de arredondamento.
-
-No ramo girado, `92%` da largura, com a altura saindo da proporção do desenho —
-e um `height: auto` explícito para desfazer o `96%` de cima, senão a conta da
-rotação passa a usar a altura da página no lugar da do contêiner. Ali é a LARGURA que limita — a folha precisa de
+No ramo girado, `92%` da largura, com a altura saindo da proporção do desenho. Ali é a LARGURA que limita — a folha precisa de
 1,42 de altura para cada 1 de largura, e altura sobra —, então a porcentagem é
 escolhida pela ALTURA que ela produz. Medido num iPhone, A4 em pé: **o iOS
 entrega só 174 mm de corpo** (o papel tem 210; os 36 mm restantes são margem

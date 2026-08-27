@@ -23,16 +23,9 @@ const PRINT_CLEANUP_MS = 60_000
  * impressão está na tela.
  */
 export function printMonthSheet(svg: string): void {
-  // São DOIS elementos: o de fora vale a página inteira e existe para o
-  // `@container` de `base.css` ter o que medir — é assim que a folha descobre
-  // se o papel é deitado ou em pé, já que no iPhone o `@media (orientation)`
-  // responde pelo APARELHO, não pelo papel. O de dentro é quem desenha.
   const host = document.createElement('div')
   host.className = 'print-sheet'
-  const inner = document.createElement('div')
-  inner.className = 'print-sheet__inner'
-  inner.innerHTML = svg
-  host.appendChild(inner)
+  host.innerHTML = svg
   document.body.appendChild(host)
 
   let done = false

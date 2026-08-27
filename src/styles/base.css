@@ -221,15 +221,7 @@ svg {
      * cabendo na primeira.
      */
     min-height: 0 !important;
-    /*
-     * `height: 100%` NÃO é a mesma coisa que `100vh`. Em mídia paginada o
-     * bloco que contém tudo é a ÁREA DA PÁGINA, então a porcentagem vale o
-     * papel — é o mesmo mecanismo que faz `width: 92%` acertar os 174 mm que
-     * o iPhone entrega. O `vh`, esse sim, continua valendo a janela e por
-     * isso está proibido aqui. É esta linha que dá ao desenho um teto de
-     * altura para não vazar da página deitada.
-     */
-    height: 100% !important;
+    height: auto !important;
   }
 
   /* Some com o app INTEIRO — inclusive a folha de opções, que continua aberta
@@ -239,19 +231,13 @@ svg {
   }
 
   /*
-   * A folha de fora vale a PÁGINA INTEIRA e não desenha nada: ela existe para
-   * o `@container` lá embaixo ter o que medir. Quem desenha é o `__inner`.
-   *
    * Não existe mais `break-inside: avoid` aqui, e a ausência é de propósito.
-   * Ele já custou duas páginas em branco: diante de um bloco que não cabe, o
-   * Safari não corta — tira o bloco INTEIRO do papel, e some tudo. Sem ele, o
-   * pior caso é um desenho cortado, que dá para ver e entender.
+   * Ele já custou páginas em branco: diante de um bloco que não cabe, o Safari
+   * não corta — tira o bloco INTEIRO do papel, e some tudo. Sem ele, o pior
+   * caso é um desenho cortado, que dá para ver e entender.
    */
   .print-sheet {
     display: block;
-    width: 100%;
-    height: 100%;
-    container-type: size;
   }
 
   /*
@@ -273,24 +259,41 @@ svg {
    * entrega numa A4 deitada (261 × 151 mm) isso daria 161 mm de altura para
    * 151 disponíveis.
    *
-   * Por isso o desenho recebe uma CAIXA — 88% de largura por 96% de altura —
-   * em vez de um tamanho. O `preserveAspectRatio="xMidYMid meet"` do SVG faz
-   * o resto: ele encolhe sozinho até caber, centralizado, mantendo a
-   * proporção. Numa página larga quem limita é a largura e nada muda (261 ×
-   * 184 mm no papel inteiro); numa página baixa quem limita é a altura, e o
-   * desenho diminui em vez de vazar (206 × 145 mm). Os 96%, e não 100%, são a
-   * folga de arredondamento.
+   * **A ALTURA NÃO TEM COMO SER LIMITADA DIRETAMENTE, e isso já custou duas
+   * tentativas.** Porcentagem de LARGURA acerta o papel no Safari do iPhone —
+   * é o que calibrou os 92% do ramo girado. Porcentagem de ALTURA não: nem
+   * `height: 96%`, nem `max-height`, nem um `container-type: size` medindo a
+   * página funcionaram lá. Pior: um contêiner com altura indefinida E
+   * contenção de tamanho vale ZERO, e zerou o desenho junto — a folha
+   * continuou em branco, agora por outro motivo.
+   *
+   * Sobrou o único eixo que o Safari resolve: a LARGURA. Como a altura sai da
+   * proporção, um teto na largura é um teto na altura. Os 196 mm dão 138 mm de
+   * altura, com folga sobre os 151 mm que o iPhone entrega.
    */
-  .print-sheet__inner {
+  .print-sheet {
     width: 88%;
-    height: 96%;
+    max-width: 196mm;
     margin: 0 auto;
   }
 
-  .print-sheet__inner svg {
+  /*
+   * Página deitada com altura de SOBRA — o computador e o Android, onde o
+   * `@page` vale e o papel inteiro é entregue: aí o teto sai e o desenho volta
+   * a usar tudo (261 × 184 mm numa A4). O padrão é o caso APERTADO de
+   * propósito: se esta consulta não valer no iPhone, o que fica é o tamanho
+   * que cabe, não o que vaza.
+   */
+  @media (min-height: 190mm) {
+    .print-sheet {
+      max-width: none;
+    }
+  }
+
+  .print-sheet svg {
     display: block;
     width: 100%;
-    height: 100%;
+    height: auto;
   }
 
   /*
@@ -306,7 +309,7 @@ svg {
      * as medidas do desenho saem dele em porcentagem. Nenhum milímetro fixo,
      * pelo mesmo motivo de cima.
      */
-    .print-sheet__inner {
+    .print-sheet {
       position: relative;
       /*
        * Quem limita aqui é a LARGURA: girada, a folha precisa de 1,42 de altura
@@ -352,7 +355,7 @@ svg {
      * próprio desenho, que dá exatamente a largura do contêiner — é o que traz
      * de volta para dentro da página o que a rotação jogou para a esquerda.
      */
-    .print-sheet__inner svg {
+    .print-sheet svg {
       position: absolute;
       top: 0;
       left: 0;
@@ -365,39 +368,4 @@ svg {
     }
   }
 
-  /*
-   * O DESEMPATE — e o motivo de a folha de fora existir.
-   *
-   * No iPhone, `@media (orientation: portrait)` NÃO fala do papel: fala do
-   * APARELHO, que está em pé nas duas vezes. Então trocar a Orientação para
-   * Horizontal na caixa de impressão do iOS não desliga o ramo girado: o
-   * contêiner continua com 273 mm de altura numa página de 151, não cabe, e
-   * a página saía em branco.
-   *
-   * O `@container` mede a CAIXA de verdade — a folha de fora, que é a área da
-   * página —, e não um recurso de mídia. É o mesmo mecanismo que faz
-   * `width: 92%` acertar os 174 mm que o iPhone entrega: o layout sabe o
-   * tamanho do papel mesmo quando a consulta de mídia não sabe. Página mais
-   * larga que alta, então, desfaz o giro.
-   *
-   * Vem DEPOIS do bloco de cima de propósito: as duas regras têm o mesmo peso,
-   * e quem vence é a ordem no arquivo.
-   */
-  @container (min-aspect-ratio: 1 / 1) {
-    .print-sheet__inner {
-      position: static;
-      width: 88%;
-      max-width: none;
-      height: 96%;
-      aspect-ratio: auto;
-    }
-
-    .print-sheet__inner svg {
-      position: static;
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      transform: none;
-    }
-  }
 }
