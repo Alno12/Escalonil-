@@ -12,9 +12,8 @@ export const APP_RELEASE = '1.2'
  * na próxima. Só a versão nova conhece a própria lista.
  */
 export const APP_CHANGES = [
-  'Compartilhe a escala do mês: uma folha só, pelo WhatsApp ou impressa.',
-  'A Agenda abre no Mês, e o cabeçalho do período fica fixo ao rolar.',
-  'Filtros da Lista mais enxutos, atrás de um botão só.',
-  'Escala "todo primeiro sábado": escolha a posição no mês na hora.',
+  'Compartilhe a escala do mês: pelo WhatsApp ou impressa.',
+  'Melhorias na aba Agenda.',
+  'Melhorias na Frequência / Recorrência das escalas.',
   'Correção de bugs.',
 ]
