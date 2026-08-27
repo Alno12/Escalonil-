@@ -192,6 +192,16 @@ svg {
     margin: 0;
     padding: 0;
     background: #fff;
+    /*
+     * `useBodyScrollLock` fixa o body com um `top` negativo enquanto a folha
+     * de opções está aberta — e ela CONTINUA aberta durante a impressão. Sem
+     * desfazer isso aqui, a folha sai empurrada para fora do papel: quem
+     * mandou imprimir com a tela rolada recebia uma página em branco. O
+     * `!important` é porque a trava escreve no `style` do elemento.
+     */
+    position: static !important;
+    top: auto !important;
+    overflow: visible !important;
   }
 
   /* Some com o app INTEIRO — inclusive a folha de opções, que continua aberta

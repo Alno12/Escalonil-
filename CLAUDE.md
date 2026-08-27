@@ -454,11 +454,22 @@ vez por isso.
   assíncrono, comia a entrada que a folha nova tinha acabado de empurrar. A
   folha seguinte ficava sem entrada e, ao fechar, saía da ROTA: quem desfizesse
   um recebimento no Financeiro era jogado na tela visitada antes.
-- `useBodyScrollLock` conta as travas num contador COMPARTILHADO. Cada
-  instância guardando e repondo o `overflow` por conta própria travava o app
-  inteiro: a folha do plantão trava (guardando ""), o diálogo de excluir trava
-  por cima (guardando "hidden"), os dois fecham juntos e o último a soltar
-  repõe o "hidden". Só recarregando a página destravava.
+- `useBodyScrollLock` tira o body do fluxo com **`position: fixed`**, e não só
+  com `overflow: hidden`. O `overflow` basta no computador, mas NÃO no iPhone:
+  lá o dedo continua rolando a página por baixo da folha, e com a folha baixinha
+  — a de compartilhar, a de filtros — o fundo inteiro fica à vista se mexendo.
+  O `top` negativo guarda a posição: sem ele o body fixado volta ao topo e a
+  tela salta no instante em que a folha abre; ao soltar, o `scrollTo` repõe a
+  posição na MESMA tarefa, senão a tela pisca no topo antes de voltar.
+  Consequência que já quebrou uma vez: a folha de opções continua aberta
+  durante a impressão, então o `@media print` precisa desfazer a trava com
+  `!important` (ela escreve no `style` do elemento). Sem isso, quem mandava
+  imprimir com a tela rolada recebia a folha empurrada para fora do papel.
+  A contagem é COMPARTILHADA por todos que travam ao mesmo tempo. Cada
+  instância guardando e repondo por conta própria travava o app inteiro: a
+  folha do plantão trava, o diálogo de excluir trava por cima, os dois fecham
+  juntos e o último a soltar repõe o estado errado. Só recarregando a página
+  destravava.
 - `useFocusTrap` prende o foco no modal do topo, com uma PILHA compartilhada
   como a das travas de rolagem: só o último da pilha responde ao Tab, e todos
   os outros — mais o `#root` — ficam `inert`, que é o que também os tira do
