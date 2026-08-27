@@ -52,7 +52,15 @@
 
   @page { size: A4 landscape; margin: 0; }
   @media print {
-    body { margin: 8mm; }
+    /* Apertado para os seis itens caberem numa página baixa — a do iPhone
+       deitado tem ~151 mm de área útil. */
+    body { margin: 6mm; }
+    h1 { font-size: 14px; margin-bottom: 2px; }
+    .row { padding: 3px 0; font-size: 17px; }
+    .row b { font-size: 10px; }
+    .pct { height: 12%; }
+    .box { width: 45mm; height: 11mm; }
+    .ar { width: 26mm; }
     p.hint, .noprint { display: none; }
   }
 </style>
