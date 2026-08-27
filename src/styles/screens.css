@@ -1398,7 +1398,6 @@
   color: var(--text-2);
 }
 
-.filter-toggle.is-open,
 .filter-toggle.has-filters {
   background: var(--accent-soft);
   color: var(--accent-text);
@@ -1420,17 +1419,48 @@
   font-weight: 700;
 }
 
-.filters {
+/*
+ * Os filtros APLICADOS, embaixo da busca. Só aparece o que está fora do
+ * padrão, então na tela limpa a fita some inteira e a lista começa logo
+ * abaixo da busca — que é o motivo de os treze chips terem saído daqui.
+ */
+.applied {
   display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
 }
 
-.filters__extra {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-  animation: rise-in var(--dur-mid) var(--ease);
+.applied__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 8px 0 12px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+}
+
+.applied__x {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.applied__clear {
+  margin-left: auto;
+  background: none;
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--accent-text);
 }
 
 /* ---------------- Relatórios ---------------- */

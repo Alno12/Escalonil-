@@ -175,6 +175,17 @@ DATA nunca vem do modelo — é a única coisa que muda de verdade entre um
 plantão e o outro. A linha "Usar um modelo" só existe ao CRIAR: duplicar já
 traz tudo do plantão de origem, e editar não recomeça do zero.
 
+**18. Na aba Lista os filtros são DOIS eixos, e ficam fora da tela.**
+Situação (`próximos`, `realizados`, `cancelados`) e período (`qualquer`, mês
+atual, próximo, anterior, personalizado) são independentes — antes dividiam um
+controle só, e por isso "realizados do mês passado" era impossível de pedir.
+Tudo mora atrás do botão de filtro (`ListFilterSheet`): na tela ficam a busca, a
+fita do que está APLICADO e a lista. A fita só mostra o que está fora do padrão,
+então some inteira na tela limpa. O rodapé da folha conta quantos plantões
+passam pelo filtro AGORA, para ninguém fechar a folha e cair numa lista vazia
+sem entender por quê. NÃO existe filtro de pagamento aqui: quanto falta receber
+é a pergunta que a aba Financeiro responde melhor, com os valores somados.
+
 **12. Recebimento em lote nunca rateia valores.**
 `registerPayments` grava cada plantão pelo próprio `expectedAmount`. Se o
 depósito veio diferente, o ajuste é plantão a plantão — inventar um rateio

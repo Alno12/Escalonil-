@@ -2,128 +2,75 @@ import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Icon } from '@/components/ui/Icon'
-import { ChipGroup, Field, FieldRow, TextInput } from '@/components/ui/Field'
 import { ShiftRow } from '@/components/shifts/ShiftRow'
 import { useAppData } from '@/state/appDataContext'
 import { useShiftSheets } from '@/state/shiftSheetsContext'
-import type { ShiftView } from '@/db/types'
+import { endOfMonth, formatDate, startOfMonth } from '@/domain/datetime'
+import { ListFilterSheet } from './ListFilterSheet'
 import {
-  addMonths,
-  datePartOf,
-  endOfMonth,
-  formatMonthYear,
-  monthPartOf,
-  startOfMonth,
-} from '@/domain/datetime'
-import { filterByRange, sortByStart } from '@/domain/summary'
+  activeCount,
+  applyFilters,
+  defaultFilters,
+  hasAnyFilter,
+  periodLabel,
+  situationLabel,
+  type ListFilters,
+} from './listFilters'
 
-type RangeFilter =
-  | 'upcoming'
-  | 'done'
-  | 'cancelled'
-  | 'thisMonth'
-  | 'nextMonth'
-  | 'lastMonth'
-  | 'custom'
-type StatusFilter = 'all' | 'pending' | 'received'
-
-const RANGE_OPTIONS: { value: RangeFilter; label: string }[] = [
-  // As três primeiras são situações; as demais, períodos. Um plantão
-  // cancelado não é "próximo" nem "realizado", então sem esta opção ele só
-  // aparecia caindo no mês certo — difícil de achar para reativar.
-  { value: 'upcoming', label: 'Próximos' },
-  { value: 'done', label: 'Realizados' },
-  { value: 'cancelled', label: 'Cancelados' },
-  { value: 'thisMonth', label: 'Mês atual' },
-  { value: 'nextMonth', label: 'Próximo mês' },
-  { value: 'lastMonth', label: 'Mês anterior' },
-  { value: 'custom', label: 'Personalizado' },
-]
-
-const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'Todos' },
-  { value: 'pending', label: 'A receber' },
-  { value: 'received', label: 'Recebidos' },
-]
-
-/** Lista cronológica completa com busca e filtros (§22, §50, §51). */
+/**
+ * Lista cronológica completa, com busca e filtros.
+ *
+ * Os filtros moram FORA da tela, atrás do botão. Antes eram treze chips
+ * empilhados acima da lista e sobrava um plantão à vista; agora a tela é a
+ * busca e a lista, e o que está aplicado aparece como pílulas que se tiram
+ * com um toque.
+ */
 export function ListView() {
   const { views, today, locations } = useAppData()
   const sheets = useShiftSheets()
 
-  const [range, setRange] = useState<RangeFilter>('upcoming')
-  const [status, setStatus] = useState<StatusFilter>('all')
-  const [locationId, setLocationId] = useState('')
-  const [search, setSearch] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
-  const [customFrom, setCustomFrom] = useState(startOfMonth(today))
-  const [customTo, setCustomTo] = useState(endOfMonth(today))
+  const [filters, setFilters] = useState<ListFilters>(() =>
+    defaultFilters(startOfMonth(today), endOfMonth(today)),
+  )
+  const [editing, setEditing] = useState(false)
 
-  const filtered = useMemo(() => {
-    let result: ShiftView[] = views
+  const patch = (next: Partial<ListFilters>) => setFilters((prev) => ({ ...prev, ...next }))
+  const clear = () => setFilters(defaultFilters(startOfMonth(today), endOfMonth(today)))
 
-    switch (range) {
-      case 'upcoming':
-        result = sortByStart(
-          result.filter((v) => v.status === 'scheduled' || v.status === 'inProgress'),
-        )
-        break
-      case 'done':
-        result = sortByStart(result.filter((v) => v.status === 'done'), 'desc')
-        break
-      case 'cancelled':
-        result = sortByStart(result.filter((v) => v.status === 'cancelled'), 'desc')
-        break
-      case 'thisMonth':
-        result = sortByStart(
-          result.filter((v) => monthPartOf(v.shift.startDateTime) === monthPartOf(today)),
-          'desc',
-        )
-        break
-      case 'nextMonth':
-        result = sortByStart(
-          result.filter(
-            (v) => monthPartOf(v.shift.startDateTime) === monthPartOf(addMonths(today, 1)),
-          ),
-        )
-        break
-      case 'lastMonth':
-        result = sortByStart(
-          result.filter(
-            (v) => monthPartOf(v.shift.startDateTime) === monthPartOf(addMonths(today, -1)),
-          ),
-          'desc',
-        )
-        break
-      case 'custom':
-        result = sortByStart(filterByRange(result, customFrom, customTo), 'desc')
-        break
-    }
+  const filtered = useMemo(() => applyFilters(views, filters, today), [views, filters, today])
 
-    if (status !== 'all') result = result.filter((v) => v.paymentStatus === status)
-    if (locationId) result = result.filter((v) => v.shift.locationId === locationId)
+  const count = activeCount(filters)
+  const hasFilters = hasAnyFilter(filters)
 
-    const term = search.trim().toLowerCase()
-    if (term) {
-      result = result.filter((v) => {
-        const haystack = [
-          v.location?.name ?? '',
-          v.shift.shiftType,
-          v.shift.notes,
-          datePartOf(v.shift.startDateTime),
-        ]
-          .join(' ')
-          .toLowerCase()
-        return haystack.includes(term)
-      })
-    }
-
-    return result
-  }, [views, range, status, locationId, search, customFrom, customTo, today])
-
-  // Quantos filtros além do período estão ativos — vira o contador do botão.
-  const extraFilters = (status !== 'all' ? 1 : 0) + (locationId !== '' ? 1 : 0)
-  const hasFilters = extraFilters > 0 || search.trim() !== ''
+  /**
+   * Só entra na fita o que está FORA do padrão. Na tela limpa a linha some
+   * inteira — que é o ponto: a lista começa logo abaixo da busca.
+   */
+  const pills: { key: string; label: string; clear: () => void }[] = []
+  if (filters.situation !== 'upcoming') {
+    pills.push({
+      key: 'situation',
+      label: situationLabel(filters.situation),
+      clear: () => patch({ situation: 'upcoming' }),
+    })
+  }
+  if (filters.period !== 'any') {
+    pills.push({
+      key: 'period',
+      label:
+        filters.period === 'custom'
+          ? `${formatDate(filters.customFrom)} — ${formatDate(filters.customTo)}`
+          : periodLabel(filters.period),
+      clear: () => patch({ period: 'any' }),
+    })
+  }
+  if (filters.locationId) {
+    pills.push({
+      key: 'location',
+      label: locations.find((l) => l.id === filters.locationId)?.name ?? 'Local',
+      clear: () => patch({ locationId: '' }),
+    })
+  }
 
   return (
     <>
@@ -133,16 +80,16 @@ export function ListView() {
           <input
             type="search"
             className="search-box__input"
-            value={search}
+            value={filters.search}
             placeholder="Buscar por local, tipo ou observação"
             aria-label="Buscar plantões"
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => patch({ search: e.target.value })}
           />
-          {search && (
+          {filters.search && (
             <button
               type="button"
               className="search-box__clear"
-              onClick={() => setSearch('')}
+              onClick={() => patch({ search: '' })}
               aria-label="Limpar busca"
             >
               <Icon name="close" size={16} />
@@ -151,80 +98,39 @@ export function ListView() {
         </div>
         <button
           type="button"
-          className={`filter-toggle ${showFilters ? 'is-open' : ''} ${extraFilters > 0 ? 'has-filters' : ''}`}
-          aria-expanded={showFilters}
-          aria-label={`Filtros${extraFilters > 0 ? ` (${extraFilters} ativos)` : ''}`}
-          onClick={() => setShowFilters((v) => !v)}
+          className={`filter-toggle ${count > 0 ? 'has-filters' : ''}`}
+          aria-label={`Filtros${count > 0 ? ` (${count} ativos)` : ''}`}
+          onClick={() => setEditing(true)}
         >
           <Icon name="filter" size={18} />
-          {extraFilters > 0 && <span className="filter-toggle__badge">{extraFilters}</span>}
+          {count > 0 && <span className="filter-toggle__badge">{count}</span>}
         </button>
       </div>
 
-      <div className="filters">
-        <ChipGroup
-          ariaLabel="Período"
-          options={RANGE_OPTIONS}
-          value={range}
-          onChange={(v) => {
-            const next = v as RangeFilter
-            setRange(next)
-            // A situação do pagamento não se aplica a cancelado — deixar
-            // "A receber" marcado esvaziaria a lista por construção.
-            if (next === 'cancelled') setStatus('all')
-          }}
-        />
-
-        {range === 'custom' && (
-          <FieldRow>
-            <Field label="De" htmlFor="range-from">
-              <TextInput
-                id="range-from"
-                type="date"
-                value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
-              />
-            </Field>
-            <Field label="Até" htmlFor="range-to">
-              <TextInput
-                id="range-to"
-                type="date"
-                value={customTo}
-                onChange={(e) => setCustomTo(e.target.value)}
-              />
-            </Field>
-          </FieldRow>
-        )}
-
-        {showFilters && (
-          <div className="filters__extra">
-            {range !== 'cancelled' && (
-              <ChipGroup
-                ariaLabel="Situação do pagamento"
-                options={STATUS_OPTIONS}
-                value={status}
-                onChange={(v) => setStatus(v as StatusFilter)}
-              />
-            )}
-
-            {locations.length > 1 && (
-              <ChipGroup
-                ariaLabel="Local"
-                options={[
-                  { value: '', label: 'Todos os locais' },
-                  ...locations.map((l) => ({ value: l.id, label: l.name })),
-                ]}
-                value={locationId}
-                onChange={setLocationId}
-              />
-            )}
-          </div>
-        )}
-      </div>
+      {pills.length > 0 && (
+        <div className="applied">
+          {pills.map((pill) => (
+            <button
+              key={pill.key}
+              type="button"
+              className="applied__pill"
+              onClick={pill.clear}
+              aria-label={`Tirar o filtro ${pill.label}`}
+            >
+              {pill.label}
+              <span className="applied__x" aria-hidden="true">
+                <Icon name="close" size={11} strokeWidth={2.6} />
+              </span>
+            </button>
+          ))}
+          <button type="button" className="applied__clear" onClick={clear}>
+            Limpar
+          </button>
+        </div>
+      )}
 
       <p className="list-count">
         {filtered.length} {filtered.length === 1 ? 'plantão' : 'plantões'}
-        {range === 'custom' && ` · ${formatMonthYear(customFrom)}`}
       </p>
 
       {filtered.length > 0 ? (
@@ -235,32 +141,24 @@ export function ListView() {
         </ul>
       ) : (
         <EmptyState
-          icon={range === 'cancelled' ? 'ban' : hasFilters ? 'filter' : 'calendar'}
+          icon={filters.situation === 'cancelled' ? 'ban' : hasFilters ? 'filter' : 'calendar'}
           title={
-            range === 'cancelled' && !hasFilters
+            filters.situation === 'cancelled' && !hasFilters
               ? 'Nenhum plantão cancelado'
               : hasFilters
                 ? 'Nenhum plantão com esses filtros'
                 : 'Nenhum plantão neste período'
           }
           description={
-            range === 'cancelled' && !hasFilters
+            filters.situation === 'cancelled' && !hasFilters
               ? 'Cancelar um plantão o guarda aqui, com o recebimento intacto. Reativar devolve tudo.'
               : hasFilters
                 ? 'Ajuste a busca ou os filtros para ver mais resultados.'
                 : 'Cadastre um plantão para começar a acompanhar horas e valores.'
           }
           action={
-            range === 'cancelled' && !hasFilters ? undefined : hasFilters ? (
-              <Button
-                variant="secondary"
-                icon="refresh"
-                onClick={() => {
-                  setStatus('all')
-                  setLocationId('')
-                  setSearch('')
-                }}
-              >
+            hasFilters ? (
+              <Button variant="secondary" icon="refresh" onClick={clear}>
                 Limpar filtros
               </Button>
             ) : (
@@ -271,6 +169,17 @@ export function ListView() {
           }
         />
       )}
+
+      <ListFilterSheet
+        open={editing}
+        filters={filters}
+        locations={locations}
+        count={filtered.length}
+        canClear={hasFilters}
+        onChange={patch}
+        onClear={clear}
+        onClose={() => setEditing(false)}
+      />
     </>
   )
 }
