@@ -278,13 +278,22 @@ svg {
     .print-sheet {
       position: relative;
       /*
-       * Menos que no ramo deitado, e por um motivo medido: girada, a folha
-       * fica ALTA — 82% da largura viram 82% da altura numa A4, porque a
-       * proporção dela é quase a do papel. Foi aqui que ela escorregou para a
-       * segunda página, e o teto sai da evidência: nos testes no iPhone a
-       * faixa útil termina por volta de 280 mm de 297, e 82% param em 245.
+       * Quase toda a largura, porque é ELA que limita: girada, a folha precisa
+       * de 1,42 de altura para cada 1 de largura, e sobra altura de sobra.
+       *
+       * Medido num iPhone, A4 em pé: o iOS entrega só 174 mm de corpo (o papel
+       * tem 210 — os 36 mm restantes são margem dele, que não dá para tirar), e
+       * a linha do rodapé fica a 287 mm. Com 98% a folha termina a 260 mm, com
+       * 27 mm de sobra. Com 82%, que era o valor anterior, terminava a 224 e
+       * deixava 63 mm de papel em branco.
+       *
+       * O `max-width` é o freio para o outro caso — quando o navegador entrega
+       * a PÁGINA INTEIRA, sem margem própria. Ali 98% de 210 mm dariam 293 mm
+       * de altura num papel de 297. Não é palpite sobre área útil: é o teto de
+       * quem não tem margem nenhuma.
        */
-      width: 82%;
+      width: 98%;
+      max-width: 196mm;
       aspect-ratio: 786 / 1119;
       margin: 0 auto;
     }
