@@ -278,22 +278,32 @@ svg {
     .print-sheet {
       position: relative;
       /*
-       * Quase toda a largura, porque é ELA que limita: girada, a folha precisa
-       * de 1,42 de altura para cada 1 de largura, e sobra altura de sobra.
+       * Quem limita aqui é a LARGURA: girada, a folha precisa de 1,42 de altura
+       * para cada 1 de largura, e altura sobra. Então a porcentagem é escolhida
+       * pela altura que ela produz.
        *
        * Medido num iPhone, A4 em pé: o iOS entrega só 174 mm de corpo (o papel
-       * tem 210 — os 36 mm restantes são margem dele, que não dá para tirar), e
-       * a linha do rodapé fica a 287 mm. Com 98% a folha termina a 260 mm, com
-       * 27 mm de sobra. Com 82%, que era o valor anterior, terminava a 224 e
-       * deixava 63 mm de papel em branco.
+       * tem 210 — os 36 mm restantes são margem dele, que não dá para tirar), o
+       * desenho começa a 17 mm do alto e a linha do rodapé fica a 287 mm. Mas a
+       * quebra vem ANTES do rodapé, e três valores medidos cercam onde:
        *
-       * O `max-width` é o freio para o outro caso — quando o navegador entrega
-       * a PÁGINA INTEIRA, sem margem própria. Ali 98% de 210 mm dariam 293 mm
-       * de altura num papel de 297. Não é palpite sobre área útil: é o teto de
-       * quem não tem margem nenhuma.
+       *   82% → 143 mm de largura, 203 de altura, termina a 220 — uma página,
+       *         com 63 mm de papel em branco e letra pequena demais.
+       *   92% → 160 × 228, termina a 245 — uma página, com folga.
+       *   98% → 170 × 243, termina a 260 — DUAS páginas, por muito pouco.
+       *
+       * Os 92% ficam no meio com 15 mm de margem para o que quebrou, e são um
+       * quarto de área a mais que os 82%. Não vá atrás dos últimos milímetros:
+       * a segunda página em branco custa mais que eles valem.
+       *
+       * O `max-width` é o freio do OUTRO caso — quando o navegador entrega a
+       * PÁGINA INTEIRA, sem margem própria. O papel mais apertado é a Carta em
+       * pé (216 × 279): a folha só cabe até 279 ÷ 1,42 = 196 mm de largura, e
+       * 92% de 216 dariam 199. Não é palpite sobre área útil: é o teto de quem
+       * não tem margem nenhuma.
        */
-      width: 98%;
-      max-width: 196mm;
+      width: 92%;
+      max-width: 192mm;
       aspect-ratio: 786 / 1119;
       margin: 0 auto;
     }

@@ -255,18 +255,30 @@ Os dois foram tentados e os dois falharam:
   (medido: ~235 mm num A4 de 297). Com o teto amarrado nele a folha saiu numa
   página só, mas com dois terços do tamanho e letra miúda demais para imprimir.
 
-Então: `width: 88%` no ramo deitado e `98%` no girado, com a altura saindo da
+Então: `width: 88%` no ramo deitado e `92%` no girado, com a altura saindo da
 proporção do desenho. No girado é a LARGURA que limita — a folha precisa de
-1,42 de altura para cada 1 de largura, e altura sobra —, por isso ele usa quase
-tudo. Medido num iPhone, A4 em pé: **o iOS entrega só 174 mm de corpo** (o papel
-tem 210; os 36 mm restantes são margem dele, que não dá para tirar) e a linha do
-rodapé fica a 287 mm. Com 98% a folha termina a 260 mm. Com 82%, um valor
-anterior, terminava a 224 e deixava 63 mm de papel em branco.
+1,42 de altura para cada 1 de largura, e altura sobra —, então a porcentagem é
+escolhida pela ALTURA que ela produz. Medido num iPhone, A4 em pé: **o iOS
+entrega só 174 mm de corpo** (o papel tem 210; os 36 mm restantes são margem
+dele, que não dá para tirar), o desenho começa a 17 mm do alto e a linha do
+rodapé fica a 287 mm — mas a quebra vem ANTES do rodapé, e três valores medidos
+cercam onde:
 
-O `max-width: 196mm` do ramo girado é o freio do OUTRO caso: quando o navegador
-entrega a página inteira, sem margem própria, 98% de 210 mm dariam 293 mm de
-altura num papel de 297. Não é palpite sobre área útil — é o teto de quem não
-tem margem nenhuma.
+| largura | desenho | termina | papel |
+| --- | --- | --- | --- |
+| 82% | 143 × 203 mm | 220 mm | uma página, com 63 mm em branco e letra miúda |
+| **92%** | **160 × 228 mm** | **245 mm** | **uma página, com folga** |
+| 98% | 170 × 243 mm | 260 mm | DUAS páginas, por muito pouco |
+
+Os 92% ficam no meio, com 15 mm de margem para o que quebrou e um quarto de
+área a mais que os 82%. **Não vá atrás dos últimos milímetros**: a segunda
+página em branco custa mais do que eles valem.
+
+O `max-width: 192mm` do ramo girado é o freio do OUTRO caso: quando o navegador
+entrega a página inteira, sem margem própria. O papel mais apertado é a Carta em
+pé (216 × 279): a folha só cabe até 279 ÷ 1,42 = 196 mm de largura, e 92% de 216
+dariam 199. Não é palpite sobre área útil — é o teto de quem não tem margem
+nenhuma.
 
 No ramo girado quem ocupa espaço é o CONTÊINER — o desenho sai do fluxo —, com
 `aspect-ratio` e as medidas do desenho em porcentagem dele. O teto ali é na
