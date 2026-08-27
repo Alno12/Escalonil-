@@ -188,11 +188,13 @@ describe('limites', () => {
 describe('catálogo', () => {
   it('oferece os quatro grupos da tela', () => {
     const groups = recurrenceGroups('2026-08-25')
+    // O recorrente vem primeiro: é o caso de quem tem escala fixa. As escalas
+    // por ciclo ficam depois, para não empurrar o comum para baixo de 16 linhas.
     expect(groups.map((g) => g.title)).toEqual([
       undefined,
+      'Escalas Recorrentes',
       'Escalas de Horas',
       'Escalas de Dias',
-      'Escalas Recorrentes',
     ])
   })
 
@@ -211,6 +213,26 @@ describe('catálogo', () => {
     expect(
       selectedOptionId({ kind: 'weekdays', weekdays: [2], everyWeeks: 1 }, '2026-08-25'),
     ).toBe('weekly')
+  })
+
+  it('marcar outros dias não tira a marca de "Todas as semanas"', () => {
+    // O intervalo é que decide a casa; os dias são o ajuste dentro dela.
+    expect(
+      selectedOptionId({ kind: 'weekdays', weekdays: [1, 3, 5], everyWeeks: 1 }, '2026-08-25'),
+    ).toBe('weekly')
+    expect(
+      selectedOptionId({ kind: 'weekdays', weekdays: [0, 6], everyWeeks: 2 }, '2026-08-25'),
+    ).toBe('biweekly')
+    // Segunda a sexta continua tendo casa própria, com nome próprio.
+    expect(
+      selectedOptionId({ kind: 'weekdays', weekdays: [1, 2, 3, 4, 5], everyWeeks: 1 }, '2026-08-25'),
+    ).toBe('weekdays-1-5')
+  })
+
+  it('a linha Frequência mostra os dias escolhidos', () => {
+    expect(
+      recurrenceLabel({ kind: 'weekdays', weekdays: [1, 3], everyWeeks: 1 }, '2026-08-25'),
+    ).toBe('Toda semana · Seg, Qua')
   })
 
   it('cai na linha personalizada quando não há escala pronta', () => {

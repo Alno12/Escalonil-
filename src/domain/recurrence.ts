@@ -262,6 +262,12 @@ export interface RecurrenceOption {
   recurrence: Recurrence
   /** Quando presente, a linha abre um editor em vez de escolher direto. */
   custom?: CustomKind
+  /**
+   * A linha aplica a escala E abre um ajuste embaixo dela, sem fechar a folha.
+   * É o que separa "escolher e pronto" de "escolher e afinar": marcar "Todas
+   * as semanas" sem poder dizer QUAIS dias deixava metade da escolha invisível.
+   */
+  expand?: 'weekdays'
 }
 
 export interface RecurrenceGroup {
@@ -299,6 +305,41 @@ export function recurrenceGroups(startDate: LocalDate): RecurrenceGroup[] {
       options: [{ id: 'none', label: 'Nenhuma', recurrence: NO_RECURRENCE }],
     },
     {
+      id: 'recurrent',
+      title: 'Escalas Recorrentes',
+      options: [
+        {
+          id: 'weekdays-1-5',
+          label: 'Todas as semanas de segunda a sexta',
+          recurrence: { kind: 'weekdays', weekdays: [1, 2, 3, 4, 5], everyWeeks: 1 },
+        },
+        {
+          id: 'biweekly',
+          label: 'A cada 2 semanas',
+          recurrence: { kind: 'weekdays', weekdays: [weekday], everyWeeks: 2 },
+        },
+        { id: 'daily', label: 'Todos os dias', recurrence: { kind: 'daily' } },
+        {
+          id: 'weekly',
+          label: 'Todas as semanas',
+          recurrence: { kind: 'weekdays', weekdays: [weekday], everyWeeks: 1 },
+          expand: 'weekdays',
+        },
+        { id: 'monthly', label: 'Todos os meses', recurrence: { kind: 'monthlyDay' } },
+        {
+          id: 'monthly-weekday',
+          label: `Todos os meses ${nthWeekdayPhrase(startDate)}`,
+          recurrence: { kind: 'monthlyWeekday' },
+        },
+        {
+          id: CUSTOM_IDS.weekdays,
+          label: 'Escala Recorrente Personalizada',
+          recurrence: defaultCustom('weekdays', startDate),
+          custom: 'weekdays',
+        },
+      ],
+    },
+    {
       id: 'hours',
       title: 'Escalas de Horas',
       options: [
@@ -333,40 +374,6 @@ export function recurrenceGroups(startDate: LocalDate): RecurrenceGroup[] {
           label: 'Escala de Dias Personalizada',
           recurrence: defaultCustom('days', startDate),
           custom: 'days',
-        },
-      ],
-    },
-    {
-      id: 'recurrent',
-      title: 'Escalas Recorrentes',
-      options: [
-        {
-          id: 'weekdays-1-5',
-          label: 'Todas as semanas de segunda a sexta',
-          recurrence: { kind: 'weekdays', weekdays: [1, 2, 3, 4, 5], everyWeeks: 1 },
-        },
-        {
-          id: 'biweekly',
-          label: 'A cada 2 semanas',
-          recurrence: { kind: 'weekdays', weekdays: [weekday], everyWeeks: 2 },
-        },
-        { id: 'daily', label: 'Todos os dias', recurrence: { kind: 'daily' } },
-        {
-          id: 'weekly',
-          label: 'Todas as semanas',
-          recurrence: { kind: 'weekdays', weekdays: [weekday], everyWeeks: 1 },
-        },
-        { id: 'monthly', label: 'Todos os meses', recurrence: { kind: 'monthlyDay' } },
-        {
-          id: 'monthly-weekday',
-          label: `Todos os meses ${nthWeekdayPhrase(startDate)}`,
-          recurrence: { kind: 'monthlyWeekday' },
-        },
-        {
-          id: CUSTOM_IDS.weekdays,
-          label: 'Escala Recorrente Personalizada',
-          recurrence: defaultCustom('weekdays', startDate),
-          custom: 'weekdays',
         },
       ],
     },
@@ -417,7 +424,17 @@ export function selectedOptionId(recurrence: Recurrence, startDate: LocalDate): 
   }
   if (recurrence.kind === 'hours') return CUSTOM_IDS.hours
   if (recurrence.kind === 'days') return CUSTOM_IDS.days
-  if (recurrence.kind === 'weekdays') return CUSTOM_IDS.weekdays
+  /*
+   * Escolher outros dias na linha "Todas as semanas" muda a recorrência e ela
+   * deixa de bater com o preset — sem isso a marca pulava para a linha
+   * "Personalizada" no primeiro dia marcado, com o editor aberto logo acima.
+   * O intervalo é que decide a casa; os dias são o ajuste dentro dela.
+   */
+  if (recurrence.kind === 'weekdays') {
+    if (recurrence.everyWeeks === 1) return 'weekly'
+    if (recurrence.everyWeeks === 2) return 'biweekly'
+    return CUSTOM_IDS.weekdays
+  }
   return 'none'
 }
 
@@ -428,8 +445,20 @@ const segmentsLabel = (segments: Segment[]) =>
 
 /** Nome da escala como aparece na linha "Frequência". */
 export function recurrenceLabel(recurrence: Recurrence, startDate: LocalDate): string {
+  /*
+   * "Todas as semanas" e "A cada 2 semanas" nascem com UM dia — o da data — e
+   * o rótulo delas não conta qual. Depois que o usuário marca outros dias, o
+   * nome pronto esconderia justamente o que ele acabou de escolher, então
+   * essas caem no texto com os dias. Já "de segunda a sexta" nomeia os cinco
+   * dias no próprio rótulo e continua valendo.
+   */
   for (const group of recurrenceGroups(startDate)) {
-    const match = group.options.find((o) => !o.custom && sameRecurrence(o.recurrence, recurrence))
+    const match = group.options.find(
+      (o) =>
+        !o.custom &&
+        !(o.recurrence.kind === 'weekdays' && o.recurrence.weekdays.length === 1) &&
+        sameRecurrence(o.recurrence, recurrence),
+    )
     if (match) return match.label
   }
 

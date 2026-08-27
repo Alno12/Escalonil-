@@ -11,6 +11,7 @@ import {
   WEEKDAY_OPTIONS,
   type CustomKind,
   type Recurrence,
+  type RecurrenceOption,
 } from '@/domain/recurrence'
 import type { LocalDate } from '@/db/types'
 
@@ -43,10 +44,14 @@ export function RecurrenceSheet({
   // que os números coincidam com alguma escala pronta.
   const selected = editing ? CUSTOM_IDS[editing] : selectedOptionId(value, startDate)
 
-  const pick = (recurrence: Recurrence) => {
-    onChange(recurrence)
+  /**
+   * Escolher aplica e volta na hora — menos nas linhas que abrem um ajuste
+   * embaixo: fechar a folha ali esconderia justamente a escolha que falta.
+   */
+  const pick = (option: RecurrenceOption) => {
+    onChange(option.recurrence)
     setEditing(null)
-    onClose()
+    if (!option.expand) onClose()
   }
 
   /** Abre o editor mantendo o que já estava escolhido, quando for do mesmo tipo. */
@@ -87,7 +92,7 @@ export function RecurrenceSheet({
                     className="row option"
                     aria-pressed={selected === option.id}
                     onClick={() =>
-                      option.custom ? openEditor(option.custom) : pick(option.recurrence)
+                      option.custom ? openEditor(option.custom) : pick(option)
                     }
                   >
                     <span className="row__label">{option.label}</span>
@@ -106,6 +111,11 @@ export function RecurrenceSheet({
                       onChange={onChange}
                     />
                   )}
+
+                  {/* Ajuste da própria linha, aberto enquanto ela está marcada. */}
+                  {option.expand === 'weekdays' && selected === option.id && (
+                    <WeekdayPicker value={value} startDate={startDate} onChange={onChange} />
+                  )}
                 </Fragment>
               ))}
             </div>
@@ -113,6 +123,50 @@ export function RecurrenceSheet({
         ))}
       </div>
     </Sheet>
+  )
+}
+
+/**
+ * Os dias da semana, sem o intervalo — o intervalo é a própria linha que está
+ * marcada ("Todas as semanas" ou "A cada 2 semanas"). Quem quiser outro
+ * intervalo usa a linha personalizada, que traz o contador junto.
+ */
+function WeekdayPicker({
+  value,
+  startDate,
+  onChange,
+}: {
+  value: Recurrence
+  startDate: LocalDate
+  onChange: (recurrence: Recurrence) => void
+}) {
+  const fallback = toDate(startDate).getDay()
+  const everyWeeks = value.kind === 'weekdays' ? value.everyWeeks : 1
+  const days = normalizeWeekdays(value.kind === 'weekdays' ? value.weekdays : [], fallback)
+
+  /** Desmarcar o último dia não é permitido: a série ficaria sem nenhuma data. */
+  const toggle = (day: number) => {
+    const next = days.includes(day) ? days.filter((d) => d !== day) : [...days, day]
+    onChange({ kind: 'weekdays', weekdays: next.length > 0 ? next : days, everyWeeks })
+  }
+
+  return (
+    <div className="row row--stack">
+      <span className="row__label">Dias da semana</span>
+      <div className="weekday-group" role="group" aria-label="Dias da semana">
+        {WEEKDAY_OPTIONS.map((day) => (
+          <button
+            key={day.value}
+            type="button"
+            aria-pressed={days.includes(day.value)}
+            className={`weekday ${days.includes(day.value) ? 'is-active' : ''}`}
+            onClick={() => toggle(day.value)}
+          >
+            {day.label}
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }
 

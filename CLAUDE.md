@@ -116,6 +116,19 @@ em rodízio. Escolher uma escala de HORAS também define a duração do plantão
 (`recurrenceShiftHours`) — um 12×36 é feito de plantões de 12h. Escalas de dias
 não mexem na duração.
 
+**19. Na folha de escala, quem tem ajuste EXPANDE; quem não tem, aplica e fecha.**
+"Todas as semanas" abria e fechava na hora, e o seletor de dias só aparecia
+depois, dentro do formulário — quem estava na folha não tinha como saber que
+ele existia. Agora a linha marca, abre os dias embaixo dela e espera o
+"Concluir", como as "Personalizadas" sempre fizeram. Quem decide a CASA da
+recorrência semanal é o intervalo, não os dias: `selectedOptionId` manda todo
+`everyWeeks: 1` para "Todas as semanas" e todo `2` para "A cada 2 semanas",
+senão a marca pulava para a linha personalizada no primeiro dia marcado. Os
+presets que nomeiam os dias no próprio rótulo — "de segunda a sexta" — são
+testados antes e continuam com casa própria. Os grupos vêm na ordem
+Recorrentes → Horas → Dias: escala fixa é o caso comum, e ela ficava embaixo
+de dezesseis linhas de ciclo.
+
 **14. `seriesId` amarra os plantões criados pela mesma escala.**
 `createShifts` só gera o identificador a partir de DOIS plantões — um plantão
 sozinho não é série. Editar ou duplicar nunca mexe nele, então um plantão
