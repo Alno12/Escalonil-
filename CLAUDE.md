@@ -255,8 +255,28 @@ Os dois foram tentados e os dois falharam:
   (medido: ~235 mm num A4 de 297). Com o teto amarrado nele a folha saiu numa
   página só, mas com dois terços do tamanho e letra miúda demais para imprimir.
 
-Então: `width: 88%` no ramo deitado e `92%` no girado, com a altura saindo da
-proporção do desenho. No girado é a LARGURA que limita — a folha precisa de
+`height: 100%` NÃO é `100vh`, e é a exceção que faz o ramo deitado funcionar.
+Em mídia paginada o bloco que contém tudo é a ÁREA DA PÁGINA, então a
+porcentagem vale o PAPEL — é o mesmo mecanismo que faz `width: 92%` acertar os
+174 mm do iPhone. O `vh` é que continua valendo a janela.
+
+**No ramo deitado, o desenho ganha uma CAIXA, não um tamanho.** `width: 88%`
+sozinho já quebrou: ele produz 0,70 de altura para cada 1 de largura, e na área
+útil que o iPhone entrega numa A4 DEITADA (261 × 151 mm) isso dá 161 mm de
+altura para 151 disponíveis. Como a folha é `break-inside: avoid`, o Safari não
+a corta ao meio — joga o bloco INTEIRO para fora e imprime a página em branco.
+Foi o que aconteceu com quem trocou a Orientação para Horizontal na caixa do
+iOS. Agora são `88%` de largura por `96%` de altura, e quem encaixa é o
+`preserveAspectRatio="xMidYMid meet"` do SVG: numa página larga quem limita é a
+largura e nada muda (261 × 184 mm no papel inteiro, como sempre foi); numa
+página baixa quem limita é a altura, e o desenho DIMINUI em vez de sumir
+(206 × 145 mm). Os 96%, e não 100%, são a folga: com a altura exata da página o
+bloco não tem margem nenhuma de arredondamento, e meio décimo de milímetro
+devolve a página em branco.
+
+No ramo girado, `92%` da largura, com a altura saindo da proporção do desenho —
+e um `height: auto` explícito para desfazer o `96%` de cima, senão a conta da
+rotação passa a usar a altura da página no lugar da do contêiner. Ali é a LARGURA que limita — a folha precisa de
 1,42 de altura para cada 1 de largura, e altura sobra —, então a porcentagem é
 escolhida pela ALTURA que ela produz. Medido num iPhone, A4 em pé: **o iOS
 entrega só 174 mm de corpo** (o papel tem 210; os 36 mm restantes são margem

@@ -221,7 +221,15 @@ svg {
      * cabendo na primeira.
      */
     min-height: 0 !important;
-    height: auto !important;
+    /*
+     * `height: 100%` NÃO é a mesma coisa que `100vh`. Em mídia paginada o
+     * bloco que contém tudo é a ÁREA DA PÁGINA, então a porcentagem vale o
+     * papel — é o mesmo mecanismo que faz `width: 92%` acertar os 174 mm que
+     * o iPhone entrega. O `vh`, esse sim, continua valendo a janela e por
+     * isso está proibido aqui. É esta linha que dá ao desenho um teto de
+     * altura para não vazar da página deitada.
+     */
+    height: 100% !important;
   }
 
   /* Some com o app INTEIRO — inclusive a folha de opções, que continua aberta
@@ -248,18 +256,38 @@ svg {
    *   dois terços do tamanho e letra miúda demais para imprimir.
    *
    * A porcentagem é a única medida que o navegador conhece de verdade. Os 88%
-   * são a folga: o resto é margem, e a altura sai da proporção do desenho —
-   * numa A4 deitada dá 87% da página.
+   * são a folga na LARGURA: o resto é margem.
+   *
+   * Mas a largura sozinha não basta numa página deitada, e isso já quebrou:
+   * com 88% o desenho sai com 0,70 de altura para cada 1 de largura, e na área
+   * útil que o iPhone entrega numa A4 deitada (261 × 151 mm) isso dá 161 mm de
+   * altura para 151 disponíveis. Vaza 10 mm — e como a folha é
+   * `break-inside: avoid`, o Safari não a corta ao meio: joga o bloco INTEIRO
+   * para fora e imprime uma página em branco. Foi o que aconteceu com quem
+   * trocou a Orientação para Horizontal na caixa do iOS.
+   *
+   * Por isso o desenho recebe uma CAIXA — 88% de largura por 100% de altura —
+   * em vez de um tamanho. O `preserveAspectRatio="xMidYMid meet"` do SVG faz
+   * o resto: ele encolhe sozinho até caber, centralizado, mantendo a
+   * proporção. Numa página larga quem limita é a largura e nada muda; numa
+   * página baixa quem limita é a altura, e o desenho diminui em vez de sumir.
    */
   .print-sheet {
     width: 88%;
+    /*
+     * 96%, não 100%. A folha é `break-inside: avoid`, então um bloco com a
+     * altura EXATA da página não tem folga nenhuma: meio décimo de milímetro
+     * de arredondamento e ela deixa de caber — e o Safari devolve a página em
+     * branco de novo, em vez de cortar. Os 4% são esse respiro.
+     */
+    height: 96%;
     margin: 0 auto;
   }
 
   .print-sheet svg {
     display: block;
     width: 100%;
-    height: auto;
+    height: 100%;
   }
 
   /*
@@ -304,6 +332,13 @@ svg {
        */
       width: 92%;
       max-width: 192mm;
+      /*
+       * Desfaz o `height: 100%` do ramo deitado. Aqui quem dá a altura é o
+       * `aspect-ratio`, e as medidas do desenho são porcentagem DELA — com a
+       * altura da página no lugar, a conta da rotação passa a usar o número
+       * errado e o desenho sai torto para fora do contêiner.
+       */
+      height: auto;
       aspect-ratio: 786 / 1119;
       margin: 0 auto;
     }
