@@ -245,15 +245,18 @@ svg {
    *
    * A altura é limitada pelo `max-height`. O SVG tem proporção própria, então
    * o navegador encolhe a largura junto e o desenho nunca fica mais alto que
-   * o teto. 170 mm deixam folga para a faixa que o iPhone reserva ao endereço
-   * e ao número da página, e ainda dão 34 mm de coluna — longe dos 26 mm que
-   * cortavam "Hospital Regional" (invariante 20).
+   * o teto. São DOIS tetos: um em milímetros e outro em `vh`, que na impressão
+   * vale a altura da PÁGINA — o que estiver mais apertado vence. A folga é
+   * generosa de propósito, porque a faixa que o iPhone reserva ao endereço e
+   * ao número da página não é conhecida: já sobraram poucos milímetros duas
+   * vezes, e poucos milímetros são uma segunda folha. Ainda ficam 32 mm de
+   * coluna, acima dos 26 mm que cortavam "Hospital Regional" (invariante 20).
    */
   .print-sheet svg {
     display: block;
     width: 100%;
     height: auto;
-    max-height: 170mm;
+    max-height: min(160mm, 74vh);
     margin: 0 auto;
   }
 
@@ -273,7 +276,13 @@ svg {
     .print-sheet {
       position: relative;
       width: 100%;
-      max-width: 170mm;
+      /*
+       * O teto é na LARGURA, não na altura: com `aspect-ratio`, limitar a
+       * altura não encolhe a largura junto, e o desenho passava do contêiner.
+       * 52vh de largura dão 74vh de altura (52 × 1119÷786) — o mesmo teto do
+       * ramo deitado, escrito do lado que manda.
+       */
+      max-width: min(160mm, 52vh);
       aspect-ratio: 786 / 1119;
       margin: 0 auto;
     }

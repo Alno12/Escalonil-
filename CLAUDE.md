@@ -250,10 +250,17 @@ Safari paginar PARA O LADO, e o tamanho da página não é conhecido: o iPhone d
 o que quiser, descontando a faixa que ele reserva ao endereço e ao número da
 página. Então a largura é `100%` e a altura é limitada por `max-height: 170mm`
 — o SVG tem proporção própria, então o navegador encolhe a largura junto e
-nada nunca vaza. No ramo girado quem ocupa espaço é o CONTÊINER (o desenho sai
-do fluxo), e ele também é `100%`, com `aspect-ratio` e as medidas do desenho em
-porcentagem. Sobram 34 mm de coluna, longe dos 26 mm que cortavam
-"Hospital Regional".
+nada nunca vaza. São DOIS tetos, em mm e em `vh` (que na impressão vale a
+altura da PÁGINA), e vence o mais apertado. No ramo girado quem ocupa espaço é
+o CONTÊINER (o desenho sai do fluxo), e ele também é `100%`, com `aspect-ratio`
+e as medidas do desenho em porcentagem — com o teto na LARGURA, porque limitar
+a altura de quem tem `aspect-ratio` NÃO encolhe a largura junto e o desenho
+passava por baixo do contêiner.
+
+A folga é generosa de propósito: a faixa que o iPhone reserva ao endereço e ao
+número da página não é conhecida, e faltar poucos milímetros é uma segunda
+folha inteira — aconteceu duas vezes antes de chegar nestes números. Ainda
+ficam 32 mm de coluna, acima dos 26 mm que cortavam "Hospital Regional".
 
 Mais duas armadilhas de paginação, cada uma com sua página em branco: a margem
 do `@page` tem de ser ZERO (com margem, o bloco continua com a largura da
