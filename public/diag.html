@@ -46,6 +46,21 @@
   .box .cq::after { content: "contencao ZEROU a caixa"; }
   @container (min-width: 1px) { .box .cq::after { content: "CONTAINER OK"; } }
 
+  /* Prova 7: o CONTAINER enxerga a largura do PAPEL ou a da janela?
+     É a medida em que a correção da folha se apoia: a mídia responde ~103 mm
+     nas duas orientações, e o layout precisa responder 174 (em pé) ou 261
+     (deitada). */
+  .cbox { container-type: inline-size; width: 100%; }
+  .cw::after { content: "menos de 80"; }
+  @container (min-width: 80mm)  { .cw::after { content: "80+"; } }
+  @container (min-width: 120mm) { .cw::after { content: "120+"; } }
+  @container (min-width: 160mm) { .cw::after { content: "160+"; } }
+  @container (min-width: 180mm) { .cw::after { content: "180+"; } }
+  @container (min-width: 200mm) { .cw::after { content: "200+"; } }
+  @container (min-width: 220mm) { .cw::after { content: "220+ DEITADA"; } }
+  @container (min-width: 260mm) { .cw::after { content: "260+ DEITADA"; } }
+  @container (min-width: 285mm) { .cw::after { content: "285+ DEITADA"; } }
+
   /* Prova 6: `aspect-ratio` dá altura ao bloco? */
   .ar { width: 40mm; aspect-ratio: 2 / 1; background: #34c759; }
   .ar::after { content: "aspect-ratio OK"; font-size: 12px; }
@@ -58,7 +73,7 @@
     h1 { font-size: 14px; margin-bottom: 2px; }
     .row { padding: 3px 0; font-size: 17px; }
     .row b { font-size: 10px; }
-    .pct { height: 12%; }
+    .pct { height: 10%; }
     .box { width: 45mm; height: 11mm; }
     .ar { width: 26mm; }
     p.hint, .noprint { display: none; }
@@ -75,6 +90,7 @@
   <div class="row"><b>4. porcentagem de altura</b><div class="pct"></div></div>
   <div class="row"><b>5. container-type: size</b><div class="box"><span class="val cq"></span></div></div>
   <div class="row"><b>6. aspect-ratio</b><div class="ar"></div></div>
+  <div class="row"><b>7. largura do CONTAINER (mm)</b><div class="cbox"><span class="val cw"></span></div></div>
 
   <p class="noprint"><button onclick="print()">Imprimir</button></p>
 </body>

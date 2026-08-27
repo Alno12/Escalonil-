@@ -244,30 +244,55 @@ GIRA o desenho 90°: assim ele ocupa a página inteira em vez de um terço dela,
 quem lê vira o papel — o mesmo custo já aceito na imagem do WhatsApp. Onde o
 `@page` vale (computador, Android), o papel sai deitado e nada gira.
 
-**No `@media print` do iPhone, SÓ A LARGURA é confiável.** Porcentagem de
-largura acerta o papel — é o que calibrou os 92% do ramo girado. Porcentagem de
-ALTURA não, e três tentativas morreram nisso: `height: 96%`, `max-height` e um
-`container-type: size` medindo a página. A terceira foi a pior, porque um
-contêiner com altura indefinida E contenção de tamanho vale ZERO e zera o
-desenho junto — a folha seguiu em branco, agora por outro motivo.
+**No iPhone, a consulta de MÍDIA na impressão fala da JANELA DO TELEFONE, não
+do papel — e o LAYOUT fala do papel.** Isso foi MEDIDO com `public/diag.html`:
+nas duas orientações da caixa de impressão do iOS, `@media print` responde
+`orientation: portrait` e ~103 × 175 mm. Já o layout conhece a página de
+verdade — é o que faz `width: 92%` acertar os 174 mm de corpo.
 
-Por isso o teto do ramo deitado é um **`max-width` em milímetros**: como a
-altura sai da proporção do desenho, limitar a largura é a única forma de
-limitar a altura. Os 196 mm dão 138 mm, com folga sobre os ~151 mm que o iPhone
-entrega numa página deitada. Um `@media (min-height: 190mm)` tira o teto onde a
-altura sobra (computador, Android). O padrão é o caso APERTADO de propósito: se
-essa consulta também não valer no iPhone, o que fica é o tamanho que cabe.
+A consequência é dura: **`@media (orientation)` não serve para saber se o papel
+é deitado.** Foi por isso que trocar para Horizontal não desligava o ramo
+girado, o contêiner ficava com 273 mm de altura numa página de 151, e a folha
+saía EM BRANCO.
+
+Quem desempata é um **`@container (min-width: 220mm)`**, e é para isso que a
+folha tem dois elementos (`printMonthSheet` monta os dois): o de fora é um
+`container-type: inline-size` e mede a largura REAL da página; o de dentro
+desenha. Página com mais de 220 mm é papel deitado, e o giro sai. Os 220 mm
+separam os dois grupos com folga: em pé, o mais largo é a Carta do computador
+(216); deitada, a mais estreita é a A4 do iPhone (261).
+
+Três detalhes desse desempate custaram uma rodada cada:
+
+- **`inline-size`, nunca `size`.** `size` contém também o eixo de bloco, e um
+  contêiner com altura indefinida mais contenção de tamanho vale ZERO — zerou o
+  desenho junto, e a folha seguiu em branco por outro motivo.
+- **`min-width`, nunca `aspect-ratio`.** `aspect-ratio` seria a pergunta
+  natural, mas o Safari ainda não a suporta em `@container`, e uma regra com
+  condição desconhecida é descartada INTEIRA.
+- **O alívio do teto vem por último.** O desempate reaplica o `max-width` ao
+  desfazer o giro; sem essa ordem, o computador imprimia no tamanho apertado do
+  iPhone.
+
+O teto do ramo deitado é um **`max-width` em milímetros**, porque a altura não
+dá para limitar direto: como ela sai da proporção do desenho, limitar a largura
+é limitá-la. Os 196 mm dão 138 mm, com folga sobre os ~151 mm que o iPhone
+entrega numa página deitada. Um `@media (orientation: landscape) and
+(min-height: 190mm)` tira o teto onde a mídia fala do papel de verdade
+(computador, Android) e o desenho volta aos 261 × 184. No iPhone essa consulta
+nunca casa, e o teto fica de pé — que é o comportamento seguro.
 
 **Não existe mais `break-inside: avoid` na folha, e a ausência é de propósito.**
 Ele custou duas páginas em branco: diante de um bloco que não cabe, o Safari
 não corta — tira o bloco INTEIRO do papel. Sem ele, o pior caso é um desenho
 cortado, que dá para ver e entender.
 
-**`public/diag.html` é uma página de diagnóstico temporária** — seis provas de
-CSS (orientação, largura e altura da página em faixas, porcentagem de altura,
-`container-type` e `aspect-ratio`) que se revelam na impressão. Ela existe
-porque a caixa do iOS não é testável daqui e três hipóteses caíram por palpite.
-**Apague antes de mesclar**, junto com esta nota.
+**`public/diag.html` é uma página de diagnóstico temporária** — sete provas de
+CSS que se revelam na impressão: orientação, largura e altura da PÁGINA em
+faixas, porcentagem de altura, `container-type`, `aspect-ratio` e a largura do
+CONTAINER em faixas. Foi ela que revelou a diferença entre o que a mídia diz e
+o que o layout sabe, depois de três hipóteses caírem por palpite. **Apague
+antes de mesclar**, junto com esta nota.
 
 **No `@media print`, TUDO é porcentagem da página** — nem milímetros, nem `vh`.
 Os dois foram tentados e os dois falharam:

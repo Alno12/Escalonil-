@@ -238,6 +238,17 @@ svg {
    */
   .print-sheet {
     display: block;
+    /*
+     * A folha de fora não desenha nada: ela é um CONTÊINER, e existe só para o
+     * `@container` lá embaixo medir a LARGURA REAL da página.
+     *
+     * É `inline-size`, não `size`, de propósito. `size` contém também o eixo
+     * de bloco, e um contêiner com altura indefinida mais contenção de tamanho
+     * vale ZERO — foi assim que uma tentativa anterior zerou o desenho junto.
+     * `inline-size` mede a largura sem tocar na altura, e não tem esse risco.
+     */
+    width: 100%;
+    container-type: inline-size;
   }
 
   /*
@@ -259,38 +270,19 @@ svg {
    * entrega numa A4 deitada (261 × 151 mm) isso daria 161 mm de altura para
    * 151 disponíveis.
    *
-   * **A ALTURA NÃO TEM COMO SER LIMITADA DIRETAMENTE, e isso já custou duas
-   * tentativas.** Porcentagem de LARGURA acerta o papel no Safari do iPhone —
-   * é o que calibrou os 92% do ramo girado. Porcentagem de ALTURA não: nem
-   * `height: 96%`, nem `max-height`, nem um `container-type: size` medindo a
-   * página funcionaram lá. Pior: um contêiner com altura indefinida E
-   * contenção de tamanho vale ZERO, e zerou o desenho junto — a folha
-   * continuou em branco, agora por outro motivo.
-   *
-   * Sobrou o único eixo que o Safari resolve: a LARGURA. Como a altura sai da
-   * proporção, um teto na largura é um teto na altura. Os 196 mm dão 138 mm de
-   * altura, com folga sobre os 151 mm que o iPhone entrega.
+   * O teto de 196 mm é o freio da ALTURA, que não dá para limitar direto: como
+   * ela sai da proporção do desenho, limitar a largura é limitá-la. Ele dá
+   * 138 mm de altura, com folga sobre os ~151 mm que o iPhone entrega numa
+   * página deitada.
    */
-  .print-sheet {
+  .print-sheet__inner {
     width: 88%;
     max-width: 196mm;
     margin: 0 auto;
   }
 
-  /*
-   * Página deitada com altura de SOBRA — o computador e o Android, onde o
-   * `@page` vale e o papel inteiro é entregue: aí o teto sai e o desenho volta
-   * a usar tudo (261 × 184 mm numa A4). O padrão é o caso APERTADO de
-   * propósito: se esta consulta não valer no iPhone, o que fica é o tamanho
-   * que cabe, não o que vaza.
-   */
-  @media (min-height: 190mm) {
-    .print-sheet {
-      max-width: none;
-    }
-  }
 
-  .print-sheet svg {
+  .print-sheet__inner svg {
     display: block;
     width: 100%;
     height: auto;
@@ -309,7 +301,7 @@ svg {
      * as medidas do desenho saem dele em porcentagem. Nenhum milímetro fixo,
      * pelo mesmo motivo de cima.
      */
-    .print-sheet {
+    .print-sheet__inner {
       position: relative;
       /*
        * Quem limita aqui é a LARGURA: girada, a folha precisa de 1,42 de altura
@@ -355,7 +347,7 @@ svg {
      * próprio desenho, que dá exatamente a largura do contêiner — é o que traz
      * de volta para dentro da página o que a rotação jogou para a esquerda.
      */
-    .print-sheet svg {
+    .print-sheet__inner svg {
       position: absolute;
       top: 0;
       left: 0;
@@ -368,4 +360,63 @@ svg {
     }
   }
 
+  /*
+   * O DESEMPATE — e o motivo de a folha de fora existir.
+   *
+   * MEDIDO no iPhone, com uma página de provas de CSS: na impressão, a consulta
+   * de MÍDIA do Safari fala da JANELA DO TELEFONE, não do papel. Ela responde
+   * `orientation: portrait` e ~103 × 175 mm nas DUAS orientações da caixa de
+   * impressão do iOS. Por isso trocar para Horizontal não desligava o ramo
+   * girado: o contêiner ficava com 273 mm de altura numa página de 151, não
+   * cabia, e a folha saía em branco.
+   *
+   * O LAYOUT, esse, conhece o papel — é o que faz `width: 92%` acertar os
+   * 174 mm de corpo do iPhone. E `@container` mede layout, não mídia. Daí a
+   * regra: página com mais de 220 mm de largura é papel DEITADO, e o giro sai.
+   * Os 220 mm separam os dois grupos com folga: em pé, o mais largo é a Carta
+   * do computador (216); deitada, a mais estreita é a A4 do iPhone (261).
+   *
+   * A consulta é por `min-width` de propósito. `aspect-ratio` em `@container`
+   * seria a pergunta natural, mas o Safari ainda não a suporta — e uma regra
+   * com condição desconhecida é descartada INTEIRA, que foi como esta correção
+   * falhou na primeira vez. `min-width` vale desde o Safari 16, e a mesma
+   * página de provas confirmou que `container-type` funciona na impressão do
+   * iPhone.
+   *
+   * Vem DEPOIS do bloco `orientation` de propósito: as duas regras têm o mesmo
+   * peso, e quem vence é a ordem no arquivo.
+   */
+  @container (min-width: 220mm) {
+    .print-sheet__inner {
+      position: static;
+      width: 88%;
+      max-width: 196mm;
+      aspect-ratio: auto;
+    }
+
+    .print-sheet__inner svg {
+      position: static;
+      width: 100%;
+      height: auto;
+      margin: 0;
+      transform: none;
+    }
+  }
+
+  /*
+   * O alívio do teto, e ele vem por ÚLTIMO porque o desempate acima reaplica o
+   * `max-width` ao desfazer o giro — sem esta ordem, o computador imprimia a
+   * folha do tamanho apertado do iPhone.
+   *
+   * A condição é dupla de propósito: página deitada E com altura de sobra. Só
+   * casa onde a consulta de mídia fala do PAPEL de verdade — computador e
+   * Android —, e ali o desenho volta a usar tudo (261 × 184 mm numa A4). No
+   * iPhone a mídia vale a JANELA (~103 × 175 mm, medido), então ela nunca casa
+   * e o teto fica de pé, que é o comportamento seguro.
+   */
+  @media (orientation: landscape) and (min-height: 190mm) {
+    .print-sheet__inner {
+      max-width: none;
+    }
+  }
 }

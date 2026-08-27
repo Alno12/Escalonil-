@@ -23,9 +23,16 @@ const PRINT_CLEANUP_MS = 60_000
  * impressão está na tela.
  */
 export function printMonthSheet(svg: string): void {
+  // São DOIS elementos. O de fora é um `container-type: inline-size` e não
+  // desenha nada: ele existe para o `@container` de `base.css` medir a LARGURA
+  // REAL da página. É a única forma de saber se o papel é deitado — no iPhone,
+  // a consulta de MÍDIA responde pela janela do telefone, não pelo papel.
   const host = document.createElement('div')
   host.className = 'print-sheet'
-  host.innerHTML = svg
+  const inner = document.createElement('div')
+  inner.className = 'print-sheet__inner'
+  inner.innerHTML = svg
+  host.appendChild(inner)
   document.body.appendChild(host)
 
   let done = false
