@@ -259,10 +259,24 @@ ligado, o bloco precisa de 1,42 de altura para cada 1 de largura, deixa de
 caber na caixa em que foi diagramado, e o Safari **remove o bloco inteiro** —
 sai uma folha em branco.
 
-**Isso é aceito, e foi decisão do dono do app com o problema na mesa.** O iOS
-abre em Vertical, que é o caso que importa e funciona; o único conserto
-possível seria encolher a folha o bastante para sobreviver às duas, e isso
-estragaria a impressão Vertical, que já está calibrada.
+**A saída não foi consertar o CSS, foi trocar de caminho.** No iPhone o botão
+Imprimir NÃO imprime a página: ele entrega a IMAGEM ao sistema
+(`printsViaShareSheet` em `data/monthSheetFile.ts`), e quem toca em "Imprimir"
+na lista é o usuário. Imagem o iOS encaixa em qualquer papel — nenhuma das
+regras que quebraram participa desse caminho, e o Horizontal passa a sair
+certo. A pista que faltava estava na própria página de provas: ela imprimia bem
+nas DUAS orientações, porque é um documento simples; a folha do app, no mesmo
+aparelho e no mesmo papel, saía em branco. O problema nunca foi o iOS em
+Horizontal — era a impressão da PÁGINA DO APP.
+
+No computador e no Android nada disso vale: lá a impressão da página funciona,
+está calibrada, e continua sendo o caminho. O ramo girado abaixo é para eles e
+para quem usa o app pelo navegador de um telefone que não seja iPhone.
+
+**O que segue impossível é imprimir a PÁGINA em papel deitado no iPhone.** O
+iOS abre em Vertical, que é o caso calibrado; o único conserto pelo CSS seria
+encolher a folha o bastante para sobreviver às duas orientações, e isso
+estragaria a impressão Vertical.
 
 Nem desligar o giro À MÃO resolve, e isso foi TESTADO no aparelho: chegou a
 existir uma chave "Papel deitado" em que o próprio usuário avisava qual papel

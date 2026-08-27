@@ -5,6 +5,10 @@
  * jeito de entregar, e é justamente para isso que a folha é SVG: para imprimir
  * basta pendurá-la no documento e chamar `print()`; para virar imagem basta
  * carregá-la num `<img>` e pintar num canvas.
+ *
+ * São dois destinos, mas TRÊS caminhos: no iPhone, imprimir também sai pela
+ * imagem, porque a impressão da página lá não obedece ao papel escolhido. Veja
+ * `printsViaShareSheet`.
  */
 import { SHEET_HEIGHT, SHEET_WIDTH } from '@/domain/monthSheetSvg'
 import { shareOrDownload } from './backup'
@@ -16,13 +20,43 @@ const SCALE = 2
 const PRINT_CLEANUP_MS = 60_000
 
 /**
+ * No iPhone, IMPRIMIR NÃO PASSA PELA PÁGINA — passa pela imagem.
+ *
+ * A impressão da página web não obedece ao papel lá: medido no aparelho, a
+ * consulta de mídia responde pela JANELA DO TELEFONE nas duas orientações da
+ * caixa do iOS, e com o papel deitado a folha sai EM BRANCO (invariante 20).
+ * Quatro tentativas de contornar isso pelo CSS falharam.
+ *
+ * Imagem, o iOS encaixa em qualquer papel — nenhuma das regras que quebraram
+ * participa desse caminho. Então lá o Imprimir entrega a IMAGEM ao sistema, e
+ * quem toca em "Imprimir" na lista é o usuário. Em todo o resto (computador,
+ * Android) a impressão da página funciona e está calibrada, e continua igual.
+ */
+export function printsViaShareSheet(): boolean {
+  const ua = navigator.userAgent
+  // O iPad moderno se apresenta como Mac; o toque é o que o denuncia.
+  return (
+    /iPad|iPhone|iPod/.test(ua) || (ua.includes('Macintosh') && navigator.maxTouchPoints > 1)
+  )
+}
+
+/** Manda a folha para a impressora, pelo caminho que o aparelho aceita. */
+export async function printMonthSheet(svg: string, month: string): Promise<void> {
+  if (printsViaShareSheet()) {
+    await shareMonthSheet(svg, month)
+    return
+  }
+  printPage(svg)
+}
+
+/**
  * Pendura a folha no documento e manda imprimir.
  *
  * Quem esconde o app inteiro é o `@media print` de `base.css` — inclusive a
  * folha de opções, que continua aberta por cima dele enquanto o diálogo de
  * impressão está na tela.
  */
-export function printMonthSheet(svg: string): void {
+function printPage(svg: string): void {
   const host = document.createElement('div')
   host.className = 'print-sheet'
   host.innerHTML = svg
