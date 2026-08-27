@@ -73,6 +73,17 @@ describe('a grade da folha', () => {
     expect(dayOf(sheet, '2026-08-02').weekend).toBe(true)
     expect(dayOf(sheet, '2026-08-03').weekend).toBe(false)
   })
+
+  it('nomeia o mês vizinho só na abertura de cada bloco de fora', () => {
+    const sheet = build([])
+    expect(dayOf(sheet, '2026-07-26').monthLabel).toBe('JUL')
+    expect(dayOf(sheet, '2026-09-01').monthLabel).toBe('SET')
+    // No meio do bloco o rótulo se repetiria ao lado de cada número.
+    expect(dayOf(sheet, '2026-07-27').monthLabel).toBeNull()
+    expect(dayOf(sheet, '2026-09-02').monthLabel).toBeNull()
+    expect(dayOf(sheet, '2026-08-01').monthLabel).toBeNull()
+    expect(sheet.weeks.flat().filter((d) => d.monthLabel).length).toBe(2)
+  })
 })
 
 describe('o plantão que vira a noite', () => {
@@ -235,6 +246,36 @@ describe('o desenho', () => {
       build([view('2026-08-10T07:00', '2026-08-10T19:00', { name: 'PS Norte' })]),
     )
     expect(svg).toContain('PS Norte')
+  })
+
+  it('o tingido é do fim de semana DESTE mês, não do dia de fora', () => {
+    const svg = buildMonthSheetSvg(build([]))
+    // Agosto de 2026 tem cinco sábados e cinco domingos. O domingo 26/07 e o
+    // sábado 05/09, que estão na grade mas fora do mês, ficam brancos.
+    const tingidos = svg.match(/fill="#f4f4f7"/g) ?? []
+    expect(tingidos).toHaveLength(10)
+  })
+
+  it('apaga o plantão do dia que não é deste mês', () => {
+    const svg = buildMonthSheetSvg(
+      build([
+        view('2026-08-04T07:00', '2026-08-04T19:00', { name: 'Deste mês' }),
+        view('2026-09-02T07:00', '2026-09-02T19:00', { name: 'Do mês que vem' }),
+      ]),
+    )
+    const barra = (nome: string) =>
+      svg.slice(0, svg.indexOf(`>${nome}<`)).lastIndexOf('<rect x=')
+    expect(svg.slice(barra('Deste mês')).startsWith('<rect')).toBe(true)
+    // A barra colorida do vizinho sai apagada; a do mês, em cor cheia.
+    const trecho = (nome: string) => svg.slice(barra(nome), svg.indexOf(`>${nome}<`))
+    expect(trecho('Do mês que vem')).toContain('opacity="0.45"')
+    expect(trecho('Deste mês')).not.toContain('opacity="0.45"')
+  })
+
+  it('escreve o nome do mês vizinho ao lado do número', () => {
+    const svg = buildMonthSheetSvg(build([]))
+    expect(svg).toContain('>JUL<')
+    expect(svg).toContain('>SET<')
   })
 
   it('corta o texto que não cabe', () => {

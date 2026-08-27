@@ -131,25 +131,47 @@ function grid(sheet: MonthSheet): string {
 function cell(day: SheetDay, x: number, y: number): string {
   const out: string[] = []
 
-  // Fora do mês e fim de semana ganham o mesmo tingido: o que a folha precisa
-  // dizer é "este quadrado não é dia útil deste mês".
-  if (!day.inMonth || day.weekend) {
+  /*
+   * O tingido é do FIM DE SEMANA, e só dele. Fora do mês já teve o mesmo cinza,
+   * e as duas coisas viravam uma mancha só: a primeira linha inteira parecia
+   * fim de semana e o sábado do dia 1 se perdia no meio dela.
+   *
+   * O dia de fora do mês faz o que o calendário do app faz — RECUA: fundo
+   * branco, número claro e os plantões apagados. Assim o cinza passa a
+   * significar uma coisa só, e a faixa do fim de semana existe apenas dentro
+   * do mês, que é o único lugar onde ela ajuda a planejar.
+   */
+  if (day.weekend && day.inMonth) {
     out.push(
       `<rect x="${r(x)}" y="${r(y)}" width="${r(COL_W)}" height="${r(ROW_H)}" fill="${TINT}"/>`,
     )
   }
 
+  const numberSize = 11
   out.push(
     text(String(day.number), x + CELL_PAD, y + CELL_PAD + 10, {
-      size: 11,
+      size: numberSize,
       weight: day.inMonth ? 700 : 400,
       fill: day.inMonth ? INK : INK_3,
     }),
   )
 
+  if (day.monthLabel) {
+    out.push(
+      text(
+        day.monthLabel,
+        x + CELL_PAD + width(String(day.number), numberSize) + 4,
+        y + CELL_PAD + 10,
+        { size: 7.5, weight: 600, fill: INK_3, spacing: 0.5 },
+      ),
+    )
+  }
+
   const entryWidth = COL_W - CELL_PAD * 2
   day.entries.forEach((entry, i) => {
-    out.push(entryBlock(entry, x + CELL_PAD, y + CELL_PAD + 18 + ENTRY_H * i, entryWidth))
+    out.push(
+      entryBlock(entry, x + CELL_PAD, y + CELL_PAD + 18 + ENTRY_H * i, entryWidth, !day.inMonth),
+    )
   })
 
   if (day.hidden > 0) {
@@ -167,22 +189,30 @@ function cell(day: SheetDay, x: number, y: number): string {
   return out.join('')
 }
 
-function entryBlock(entry: SheetEntry, x: number, y: number, width: number): string {
+/** `muted` é o plantão de um dia de fora do mês: aparece, mas não compete. */
+function entryBlock(
+  entry: SheetEntry,
+  x: number,
+  y: number,
+  width: number,
+  muted = false,
+): string {
   const color = COLORS[entry.color] ?? COLORS.blue
   const textX = x + 6
   const textW = width - 6
   const continuation = entry.kind === 'continuation'
+  const faded = continuation || muted
 
   const out = [
     // A cor NUNCA é a única pista: o nome do local vai escrito no quadrado,
     // para a folha continuar legível em impressora preto e branco.
     `<rect x="${r(x)}" y="${r(y)}" width="2.5" height="19" rx="1.25" fill="${color}"${
-      continuation ? ' opacity="0.45"' : ''
+      faded ? ' opacity="0.45"' : ''
     }/>`,
     text(continuation ? `↳ ${entry.location}` : entry.location, textX, y + 8, {
       size: 8.6,
       weight: continuation ? 400 : 700,
-      fill: continuation ? INK_2 : INK,
+      fill: faded ? INK_2 : INK,
       max: textW,
       italic: continuation,
     }),
@@ -190,7 +220,7 @@ function entryBlock(entry: SheetEntry, x: number, y: number, width: number): str
 
   const time = entry.amount ? `${entry.time} ${entry.amount}` : entry.time
   out.push(
-    timeLine(time, entry.overnight, entry.amount, textX, y + 18, textW, continuation ? INK_3 : INK_2),
+    timeLine(time, entry.overnight, entry.amount, textX, y + 18, textW, faded ? INK_3 : INK_2),
   )
   return out.join('')
 }

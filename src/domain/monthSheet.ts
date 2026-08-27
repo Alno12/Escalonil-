@@ -18,6 +18,7 @@ import {
   formatDate,
   formatMonthYear,
   formatTime,
+  monthNamesShort,
   monthPartOf,
   startOfMonth,
   startOfWeek,
@@ -54,6 +55,14 @@ export interface SheetDay {
   entries: SheetEntry[]
   /** Quantos plantões não couberam no quadrado. */
   hidden: number
+  /**
+   * "JUL" no primeiro dia de cada bloco de fora do mês, `null` no resto.
+   *
+   * Recuar o quadrado diz que ele não é deste mês; o rótulo diz de QUAL mês
+   * ele é, e é a única pista que sobrevive numa impressora preto e branco sem
+   * depender de comparar dois cinzas.
+   */
+  monthLabel: string | null
 }
 
 export interface SheetLegendItem {
@@ -114,6 +123,9 @@ export function buildMonthSheet(
   }
 
   const weeks: SheetDay[][] = []
+  // O rótulo do mês vizinho vai só na ABERTURA de cada bloco de fora — em todos
+  // os dias ele viraria uma coluna de ruído ao lado dos números.
+  let prevInMonth = true
   for (let w = 0; w < WEEKS; w += 1) {
     const days: SheetDay[] = []
     for (let d = 0; d < 7; d += 1) {
@@ -125,14 +137,20 @@ export function buildMonthSheet(
         ...carried.map((v) => entryOf(v, 'continuation', showAmounts)),
         ...own.map((v) => entryOf(v, 'shift', showAmounts)),
       ]
+      const inMonth = monthPartOf(date) === month
       days.push({
         date,
         number: toDate(date).getDate(),
-        inMonth: monthPartOf(date) === month,
+        inMonth,
         weekend: d === 0 || d === 6,
         entries: all.slice(0, MAX_ENTRIES_PER_DAY),
         hidden: Math.max(0, all.length - MAX_ENTRIES_PER_DAY),
+        monthLabel:
+          !inMonth && prevInMonth
+            ? monthNamesShort[toDate(date).getMonth()].toUpperCase()
+            : null,
       })
+      prevInMonth = inMonth
     }
     weeks.push(days)
   }

@@ -297,6 +297,18 @@ quadrado cheio mostra três e resume o resto em "mais 2" — nunca "+2", que é 
 sobrescrito de quem vira a noite. A cor nunca é a única pista: o nome do local
 vai escrito, para a folha valer em impressora preto e branco.
 
+**O tingido é do FIM DE SEMANA, e só dele.** O dia de fora do mês já teve o
+mesmo cinza, e as duas coisas viravam uma mancha só: a primeira linha inteira
+parecia fim de semana e o sábado do dia 1 se perdia dentro dela. Fora do mês
+agora RECUA, como no calendário do app (`.calendar__day.is-outside`): fundo
+branco, número claro e os plantões apagados — eles continuam à vista, mas não
+competem. Assim o cinza quer dizer uma coisa só, e a faixa existe apenas dentro
+do mês, que é o único lugar onde ela ajuda a planejar. Quem diz de QUAL mês é o
+quadrado vizinho é o rótulo `monthLabel` — "26 JUL", "1 SET" —, escrito só na
+ABERTURA de cada bloco de fora: em todos os dias ele viraria uma coluna de ruído
+ao lado dos números, e é ele, não o cinza, que sobrevive à impressora preto e
+branco.
+
 Compartilhar é o botão CHEIO e imprimir vem embaixo dele: compartilhar se faz
 todo mês, imprimir depende de ter impressora por perto.
 
