@@ -244,14 +244,21 @@ GIRA o desenho 90°: assim ele ocupa a página inteira em vez de um terço dela,
 quem lê vira o papel — o mesmo custo já aceito na imagem do WhatsApp. Onde o
 `@page` vale (computador, Android), o papel sai deitado e nada gira.
 
-Três armadilhas de paginação moram aí, e cada uma já produziu uma segunda
-página em branco. A margem do `@page` tem de ser ZERO: com margem, o bloco da
-folha continua com a largura da PÁGINA, vaza da área útil e o navegador pagina
-para o LADO. O `min-height: 100dvh` do body vale a altura da JANELA, não a do
-papel, e precisa ser zerado. E o desenho é menor que o papel de propósito
-(256×180 mm) porque o iPhone reserva uma faixa própria para o endereço e o
-número da página: com a folha do tamanho exato, o que sobra escorrega para a
-página seguinte. 256 mm ainda dão 36 mm de coluna.
+**NENHUMA medida em milímetros no `@media print`** — foi o que fez a folha sair
+em duas páginas três vezes seguidas. Um desenho mais largo que a página faz o
+Safari paginar PARA O LADO, e o tamanho da página não é conhecido: o iPhone dá
+o que quiser, descontando a faixa que ele reserva ao endereço e ao número da
+página. Então a largura é `100%` e a altura é limitada por `max-height: 170mm`
+— o SVG tem proporção própria, então o navegador encolhe a largura junto e
+nada nunca vaza. No ramo girado quem ocupa espaço é o CONTÊINER (o desenho sai
+do fluxo), e ele também é `100%`, com `aspect-ratio` e as medidas do desenho em
+porcentagem. Sobram 34 mm de coluna, longe dos 26 mm que cortavam
+"Hospital Regional".
+
+Mais duas armadilhas de paginação, cada uma com sua página em branco: a margem
+do `@page` tem de ser ZERO (com margem, o bloco continua com a largura da
+PÁGINA e vaza da área útil), e o `min-height: 100dvh` do body vale a altura da
+JANELA, não a do papel — precisa ser zerado.
 
 Em pé a coluna tem 26 mm e "Hospital Regional" é cortado; deitada tem 39 mm e
 cabe. As seis linhas da grade têm altura FIXA: sem isso um dia com três

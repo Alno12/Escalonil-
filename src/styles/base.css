@@ -237,17 +237,23 @@ svg {
   }
 
   /*
-   * O desenho é MENOR que a área útil de propósito. O iPhone reserva uma
-   * faixa própria para o endereço e o número da página, e ignora a margem
-   * pedida acima: com a folha do tamanho exato do papel, o que sobrava
-   * escorregava para uma segunda página — e vinham duas, ambas em branco.
-   * 256 mm ainda dão 36 mm de coluna, longe dos 26 mm que cortavam
-   * "Hospital Regional" (invariante 20).
+   * NENHUMA medida fixa em milímetros aqui, e é de propósito.
+   *
+   * A largura é 100% da página, seja ela qual for: uma folha mais larga que a
+   * página faz o Safari paginar PARA O LADO, e sai uma segunda página com a
+   * tira que sobrou. Com 100% isso é impossível — não há como vazar.
+   *
+   * A altura é limitada pelo `max-height`. O SVG tem proporção própria, então
+   * o navegador encolhe a largura junto e o desenho nunca fica mais alto que
+   * o teto. 170 mm deixam folga para a faixa que o iPhone reserva ao endereço
+   * e ao número da página, e ainda dão 34 mm de coluna — longe dos 26 mm que
+   * cortavam "Hospital Regional" (invariante 20).
    */
   .print-sheet svg {
     display: block;
-    width: 256mm;
-    height: 180mm;
+    width: 100%;
+    height: auto;
+    max-height: 170mm;
     margin: 0 auto;
   }
 
@@ -258,14 +264,35 @@ svg {
    * recebe vira o papel, que é o mesmo custo já aceito na imagem do WhatsApp.
    */
   @media (orientation: portrait) {
+    /*
+     * Girado, o desenho sai do fluxo — quem ocupa espaço é o contêiner. Ele
+     * também é 100% da página, com a proporção DEITADA de lado (786÷1119), e
+     * as medidas do desenho saem dele em porcentagem. Nenhum milímetro fixo,
+     * pelo mesmo motivo de cima.
+     */
     .print-sheet {
-      width: 180mm;
-      height: 256mm;
+      position: relative;
+      width: 100%;
+      max-width: 170mm;
+      aspect-ratio: 786 / 1119;
       margin: 0 auto;
     }
 
+    /*
+     * 142,37% = 1119÷786: a largura do desenho é o lado LONGO da folha, que
+     * aqui vira a altura do contêiner. O translate é 70,24% da largura do
+     * próprio desenho, que dá exatamente a largura do contêiner — é o que traz
+     * de volta para dentro da página o que a rotação jogou para a esquerda.
+     */
     .print-sheet svg {
-      transform: translateX(180mm) rotate(90deg);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 142.366%;
+      height: 70.244%;
+      max-height: none;
+      margin: 0;
+      transform: translateX(70.244%) rotate(90deg);
       transform-origin: top left;
     }
   }
