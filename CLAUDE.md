@@ -258,7 +258,10 @@ O app segue a linguagem do Apple Saúde:
   "R$ 21.400,00" não cabia e era cortado no meio.
 - Os resumos "Esta semana" e "Este mês" do Início são recortes da AGENDA, não
   dos relatórios: cada um abre `#/agenda?v=semana` ou `?v=mes` e cai na
-  visualização certa. `Schedule` lê esse parâmetro uma vez, na montagem.
+  visualização certa. `Schedule` lê esse parâmetro uma vez, na montagem. SEM
+  parâmetro — tocar na aba do rodapé — a Agenda abre no MÊS, que é o recorte
+  mais olhado; o parâmetro tem precedência, então os atalhos do Início
+  continuam caindo onde prometem.
 - O Início cabe numa tela até o começo de "Próximos plantões". Os dois resumos
   são DUAS LINHAS de um cartão só, e o cartão Financeiro não repete o previsto
   do mês (que já está na linha "Este mês"). Ao acrescentar qualquer coisa ali,
