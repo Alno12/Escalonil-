@@ -244,35 +244,30 @@ GIRA o desenho 90°: assim ele ocupa a página inteira em vez de um terço dela,
 quem lê vira o papel — o mesmo custo já aceito na imagem do WhatsApp. Onde o
 `@page` vale (computador, Android), o papel sai deitado e nada gira.
 
-**No iPhone, a consulta de MÍDIA na impressão fala da JANELA DO TELEFONE, não
-do papel — e o LAYOUT fala do papel.** Isso foi MEDIDO com `public/diag.html`:
-nas duas orientações da caixa de impressão do iOS, `@media print` responde
-`orientation: portrait` e ~103 × 175 mm. Já o layout conhece a página de
-verdade — é o que faz `width: 92%` acertar os 174 mm de corpo.
+**No iPhone, NADA no CSS enxerga a orientação do papel. Não insista.**
 
-A consequência é dura: **`@media (orientation)` não serve para saber se o papel
-é deitado.** Foi por isso que trocar para Horizontal não desligava o ramo
-girado, o contêiner ficava com 273 mm de altura numa página de 151, e a folha
-saía EM BRANCO.
+Isso foi MEDIDO com uma página de provas impressa no aparelho: nas DUAS
+orientações da caixa de impressão do iOS, `@media print` responde
+`orientation: portrait` e ~103 × 175 mm — ou seja, a consulta de mídia vale a
+JANELA DO TELEFONE, não o papel. Um `@container` medindo o layout, que seria a
+saída óbvia, também não alcança: foi implementado, testado no aparelho e não
+mudou nada. A escolha de Orientação acontece DEPOIS, quando o iOS já diagramou
+a página e só a encaixa no papel.
 
-Quem desempata é um **`@container (min-width: 220mm)`**, e é para isso que a
-folha tem dois elementos (`printMonthSheet` monta os dois): o de fora é um
-`container-type: inline-size` e mede a largura REAL da página; o de dentro
-desenha. Página com mais de 220 mm é papel deitado, e o giro sai. Os 220 mm
-separam os dois grupos com folga: em pé, o mais largo é a Carta do computador
-(216); deitada, a mais estreita é a A4 do iPhone (261).
+A consequência: com a Orientação em **Horizontal**, o ramo girado continua
+ligado, o bloco precisa de 1,42 de altura para cada 1 de largura, deixa de
+caber na caixa em que foi diagramado, e o Safari **remove o bloco inteiro** —
+sai uma folha em branco.
 
-Três detalhes desse desempate custaram uma rodada cada:
-
-- **`inline-size`, nunca `size`.** `size` contém também o eixo de bloco, e um
-  contêiner com altura indefinida mais contenção de tamanho vale ZERO — zerou o
-  desenho junto, e a folha seguiu em branco por outro motivo.
-- **`min-width`, nunca `aspect-ratio`.** `aspect-ratio` seria a pergunta
-  natural, mas o Safari ainda não a suporta em `@container`, e uma regra com
-  condição desconhecida é descartada INTEIRA.
-- **O alívio do teto vem por último.** O desempate reaplica o `max-width` ao
-  desfazer o giro; sem essa ordem, o computador imprimia no tamanho apertado do
-  iPhone.
+**Isso é aceito, e foi decisão do dono do app com o problema na mesa.** O iOS
+abre em Vertical, que é o caso que importa e funciona; o único conserto
+possível seria encolher a folha o bastante para sobreviver às duas, e isso
+estragaria a impressão Vertical, que já está calibrada. Três tentativas caíram
+antes de chegar a esta conclusão (`height: 96%`, `max-height`,
+`container-type: size` — esta última chegou a zerar o desenho, porque contenção
+de tamanho sobre altura indefinida vale ZERO). Se alguém voltar aqui: o que
+falta não é uma regra de CSS mais esperta, é uma informação que o navegador não
+dá.
 
 O teto do ramo deitado é um **`max-width` em milímetros**, porque a altura não
 dá para limitar direto: como ela sai da proporção do desenho, limitar a largura
@@ -286,13 +281,6 @@ nunca casa, e o teto fica de pé — que é o comportamento seguro.
 Ele custou duas páginas em branco: diante de um bloco que não cabe, o Safari
 não corta — tira o bloco INTEIRO do papel. Sem ele, o pior caso é um desenho
 cortado, que dá para ver e entender.
-
-**`public/diag.html` é uma página de diagnóstico temporária** — sete provas de
-CSS que se revelam na impressão: orientação, largura e altura da PÁGINA em
-faixas, porcentagem de altura, `container-type`, `aspect-ratio` e a largura do
-CONTAINER em faixas. Foi ela que revelou a diferença entre o que a mídia diz e
-o que o layout sabe, depois de três hipóteses caírem por palpite. **Apague
-antes de mesclar**, junto com esta nota.
 
 **No `@media print`, TUDO é porcentagem da página** — nem milímetros, nem `vh`.
 Os dois foram tentados e os dois falharam:
