@@ -282,6 +282,12 @@ svg {
    * e passa a ocupar a página INTEIRA em vez de um terço dela: sem isso a
    * folha saía espremida no alto, com a letra pequena demais para ler. Quem
    * recebe vira o papel, que é o mesmo custo já aceito na imagem do WhatsApp.
+   *
+   * O `:not(--landscape)` é a saída para quem imprime em papel DEITADO. Como
+   * o navegador não conta qual papel foi escolhido (a consulta de mídia do
+   * iPhone responde pela janela do telefone), quem conta é o usuário, pela
+   * chave "Papel deitado" da folha de compartilhar. Com ela ligada o giro
+   * some e vale o ramo de cima, que é o certo para esse papel.
    */
   @media (orientation: portrait) {
     /*
@@ -290,7 +296,7 @@ svg {
      * as medidas do desenho saem dele em porcentagem. Nenhum milímetro fixo,
      * pelo mesmo motivo de cima.
      */
-    .print-sheet {
+    .print-sheet:not(.print-sheet--landscape) {
       position: relative;
       /*
        * Quem limita aqui é a LARGURA: girada, a folha precisa de 1,42 de altura
@@ -336,7 +342,7 @@ svg {
      * próprio desenho, que dá exatamente a largura do contêiner — é o que traz
      * de volta para dentro da página o que a rotação jogou para a esquerda.
      */
-    .print-sheet svg {
+    .print-sheet:not(.print-sheet--landscape) svg {
       position: absolute;
       top: 0;
       left: 0;

@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/Field'
 import { OptionSheet, type SheetOption } from '@/components/ui/OptionSheet'
 import { useAppData } from '@/state/appDataContext'
 import { useToast } from '@/state/toastContext'
+import { saveSettings } from '@/data/repository'
 import { formatMonthYear, monthPartOf } from '@/domain/datetime'
 import { buildMonthSheet } from '@/domain/monthSheet'
 import { buildMonthSheetSvg } from '@/domain/monthSheetSvg'
@@ -27,12 +28,17 @@ const ALL = ''
  * cheio é o de compartilhar porque compartilhar é o que se faz todo mês, para
  * a família ou a coordenação; imprimir depende de ter impressora por perto.
  *
- * As escolhas NÃO ficam guardadas: reabriu, é o mês da agenda, sem valores e
- * com todos os locais. Mandar um local só, ou com valores, é exceção — e uma
- * exceção lembrada vira uma folha errada enviada sem ninguém perceber.
+ * As escolhas de CONTEÚDO não ficam guardadas: reabriu, é o mês da agenda, sem
+ * valores e com todos os locais. Mandar um local só, ou com valores, é exceção
+ * — e uma exceção lembrada vira uma folha errada enviada sem ninguém perceber.
+ *
+ * "Papel deitado" é a única que fica, e por ser de outra natureza: ela não
+ * descreve a folha, descreve a IMPRESSORA de casa, que não muda de um mês para
+ * o outro. Errar nela custa uma reimpressão, não uma escala errada na mão de
+ * outra pessoa.
  */
 export function ShareMonthSheet({ open, month, onClose }: ShareMonthSheetProps) {
-  const { views, locations, today } = useAppData()
+  const { views, locations, today, settings } = useAppData()
   const toast = useToast()
 
   const [picking, setPicking] = useState<'month' | 'location' | null>(null)
@@ -81,7 +87,7 @@ export function ShareMonthSheet({ open, month, onClose }: ShareMonthSheetProps) 
   // A folha de opções continua aberta durante a impressão de propósito: o
   // `@media print` esconde o app inteiro, e fechá-la antes deixaria a tela
   // piscar atrás da caixa de impressão.
-  const print = () => printMonthSheet(svg())
+  const print = () => printMonthSheet(svg(), settings.printLandscape)
 
   return (
     <>
@@ -128,6 +134,15 @@ export function ShareMonthSheet({ open, month, onClose }: ShareMonthSheetProps) 
                 <Icon name="chevronRight" size={17} className="row__chevron" />
               </button>
             )}
+
+            <div className="row">
+              <span className="row__label">Papel deitado</span>
+              <Switch
+                checked={settings.printLandscape}
+                onChange={(printLandscape) => void saveSettings({ printLandscape })}
+                ariaLabel="Imprimir em papel deitado"
+              />
+            </div>
           </div>
 
           <p className="form-note">
@@ -135,6 +150,13 @@ export function ShareMonthSheet({ open, month, onClose }: ShareMonthSheetProps) 
               ? `A folha sai só com os plantões do ${location.name} — o resto do mês fica em branco.`
               : 'A escala inteira do mês em uma página só, para ler de lado.'}
           </p>
+
+          {settings.printLandscape && (
+            <p className="form-note">
+              Escolha <strong>Horizontal</strong> também na caixa de impressão — as duas
+              precisam combinar.
+            </p>
+          )}
         </div>
       </Sheet>
 
