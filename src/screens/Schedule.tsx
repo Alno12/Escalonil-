@@ -16,6 +16,7 @@ import { WeekView } from './schedule/WeekView'
 import { MonthView } from './schedule/MonthView'
 import { ListView } from './schedule/ListView'
 import { PeriodNav } from './schedule/PeriodNav'
+import { PrintMonthSheet } from './schedule/PrintMonthSheet'
 
 type Tab = 'week' | 'month' | 'list'
 
@@ -41,6 +42,7 @@ export function Schedule() {
   const [params] = useSearchParams()
   const [tab, setTab] = useState<Tab>(() => TAB_BY_PARAM[params.get('v') ?? ''] ?? 'month')
   const [reference, setReference] = useState(today)
+  const [printing, setPrinting] = useState(false)
 
   /**
    * A navegação do período mora AQUI, e não dentro de cada visão, porque ela
@@ -97,10 +99,22 @@ export function Schedule() {
       ) : (
         <div className="screen">
           {tab === 'week' && <WeekView reference={reference} />}
-          {tab === 'month' && <MonthView selected={reference} onSelect={setReference} />}
+          {tab === 'month' && (
+            <MonthView
+              selected={reference}
+              onSelect={setReference}
+              onPrint={() => setPrinting(true)}
+            />
+          )}
           {tab === 'list' && <ListView />}
         </div>
       )}
+
+      <PrintMonthSheet
+        open={printing}
+        month={monthPartOf(reference)}
+        onClose={() => setPrinting(false)}
+      />
     </>
   )
 }

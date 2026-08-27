@@ -27,7 +27,9 @@ src/
 │   ├── vacation.ts   a contagem das férias (easter egg)
 │   ├── summary.ts    somas financeiras e recortes de agenda
 │   ├── reports.ts    indicadores, por local, insights, ritmo e recordes
-│   └── periods.ts    períodos dos relatórios e o período anterior equivalente
+│   ├── periods.ts    períodos dos relatórios e o período anterior equivalente
+│   ├── monthSheet.ts    o conteúdo da folha do mês (impressão)
+│   └── monthSheetSvg.ts o desenho dessa folha, em SVG
 ├── state/        providers de dados, tema, toasts e folhas de plantão
 ├── components/   ui/ (primitivos) e shifts/ (formulário, detalhe, listas)
 ├── screens/      Home, Schedule, Finance, Reports, Settings
@@ -224,6 +226,31 @@ então some inteira na tela limpa. O rodapé da folha conta quantos plantões
 passam pelo filtro AGORA, para ninguém fechar a folha e cair numa lista vazia
 sem entender por quê. NÃO existe filtro de pagamento aqui: quanto falta receber
 é a pergunta que a aba Financeiro responde melhor, com os valores somados.
+
+**20. A folha do mês é UMA folha, deitada, e é SVG.**
+`monthSheet.ts` monta o conteúdo e `monthSheetSvg.ts` desenha — separados
+porque o conteúdo é testável em Node e o desenho é só texto. É SVG e não HTML
+porque a MESMA folha tem mais de um destino, e em HTML seriam dois desenhos
+obrigados a concordar para sempre.
+
+A folha é AUTOSSUFICIENTE: as cores estão em hexadecimal e a fonte é a pilha do
+sistema, porque nenhum CSS do app a alcança quando ela é rasterizada. Também
+não existe quebra de linha automática — `fitText` corta no "…" por uma largura
+ESTIMADA por caractere, o que basta com a folga que os campos têm.
+
+Em pé a coluna tem 26 mm e "Hospital Regional" é cortado; deitada tem 39 mm e
+cabe. As seis linhas da grade têm altura FIXA: sem isso um dia com três
+plantões estica a semana e joga a última linha para a segunda página. O
+quadrado cheio mostra três e resume o resto em "mais 2" — nunca "+2", que é o
+sobrescrito de quem vira a noite. A cor nunca é a única pista: o nome do local
+vai escrito, para a folha valer em impressora preto e branco.
+
+O plantão que atravessa a meia-noite segue o invariante 16 e, no dia seguinte,
+entra como CONTINUAÇÃO ("↳ Hospital Regional, até 19:00") sem valor — repetido
+com valor, a folha pareceria somar duas vezes. Cancelado não vai: quem recebe a
+escala precisa saber onde o médico ESTARÁ. O filtro de local não fica guardado
+e, com um local escolhido, o nome entra abaixo do mês, o resumo reconta e a
+legenda some.
 
 **12. Recebimento em lote nunca rateia valores.**
 `registerPayments` grava cada plantão pelo próprio `expectedAmount`. Se o

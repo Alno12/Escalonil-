@@ -9,6 +9,14 @@ interface ScreenHeaderProps {
   subtitle?: string
   /** Substitui o botão de novo plantão quando a tela precisa de outra ação. */
   action?: ReactNode
+  /**
+   * Entra À ESQUERDA do `+`, sem tomar o lugar dele.
+   *
+   * O `+` é sempre o círculo mais à direita e o único preenchido: é o que
+   * impede o canto do cabeçalho de virar uma fileira de botões todos com o
+   * mesmo peso.
+   */
+  extra?: ReactNode
   /** Esconde o botão de novo plantão (telas onde ele não faz sentido). */
   hideAdd?: boolean
   /** Conteúdo grudado abaixo do título (abas, seletor de período). */
@@ -24,6 +32,7 @@ export function ScreenHeader({
   title,
   subtitle,
   action,
+  extra,
   hideAdd = false,
   below,
 }: ScreenHeaderProps) {
@@ -38,17 +47,20 @@ export function ScreenHeader({
           {subtitle && <p className="screen-header__subtitle">{subtitle}</p>}
         </div>
 
-        {action ??
-          (hideAdd ? null : (
-            <button
-              type="button"
-              className="header-add"
-              onClick={() => sheets.newShift()}
-              aria-label="Novo plantão"
-            >
-              <Icon name="plus" size={22} strokeWidth={2.2} />
-            </button>
-          ))}
+        <div className="screen-header__actions">
+          {extra}
+          {action ??
+            (hideAdd ? null : (
+              <button
+                type="button"
+                className="header-add"
+                onClick={() => sheets.newShift()}
+                aria-label="Novo plantão"
+              >
+                <Icon name="plus" size={22} strokeWidth={2.2} />
+              </button>
+            ))}
+        </div>
       </div>
       {below && <div className="screen-header__below">{below}</div>}
     </header>

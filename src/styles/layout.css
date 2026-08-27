@@ -102,6 +102,17 @@
   margin-bottom: 0;
 }
 
+/*
+ * O canto das ações. O `+` é sempre o último e o único preenchido; qualquer
+ * ação nova entra à esquerda dele, em círculo claro (`.header-icon`).
+ */
+.screen-header__actions {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  flex: none;
+}
+
 /* Botão de novo plantão, no canto superior direito. */
 .header-add {
   display: grid;

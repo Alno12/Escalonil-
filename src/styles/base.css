@@ -169,3 +169,51 @@ svg {
     background-position: -200% 0;
   }
 }
+
+/* ---------------- A folha do mês, na impressora ---------------- */
+
+/*
+ * Na tela ela não existe: quem a mostra é o `@media print`, e o mesmo desenho
+ * vira PNG pelo canvas sem passar por aqui. Ela é pendurada no `body` só
+ * enquanto o diálogo de impressão está aberto (`data/monthSheetFile.ts`).
+ */
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  /* Some com o app INTEIRO — inclusive a folha de opções, que continua aberta
+     por cima dele enquanto o usuário decide na caixa de impressão. */
+  body > *:not(.print-sheet) {
+    display: none !important;
+  }
+
+  /*
+   * Um pouco menor que a A4 deitada de propósito: com 297×210 exatos, o
+   * arredondamento do navegador empurra uma segunda folha em branco.
+   */
+  .print-sheet {
+    display: block;
+    width: 296mm;
+    height: 208mm;
+    overflow: hidden;
+  }
+
+  .print-sheet svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
