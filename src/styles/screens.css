@@ -1095,17 +1095,28 @@
 }
 
 /* ---------------- Semana e calendário ---------------- */
-.week-summary {
+/*
+ * Resumo do período. Número e rótulo na MESMA linha, sem riscos entre eles —
+ * ver o comentário de PeriodSummary.tsx.
+ */
+.period-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-3);
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
 }
 
-.week-summary__divider {
-  width: 1px;
-  height: 26px;
-  background: var(--separator);
+.period-summary__item {
+  font-size: var(--text-subhead);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.period-summary__item b {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
 }
 
 .week-days {

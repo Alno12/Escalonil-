@@ -1,6 +1,4 @@
 import { useMemo } from 'react'
-import { Card } from '@/components/ui/Card'
-import { Stat } from '@/components/ui/KpiCard'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ShiftRow } from '@/components/shifts/ShiftRow'
@@ -17,10 +15,10 @@ import {
   toDate,
   weekdayNamesMin,
 } from '@/domain/datetime'
-import { formatMoneyCompact, formatNumber } from '@/domain/money'
 import { filterByMonth, occupiedDays, periodSummary, shiftsOnDay } from '@/domain/summary'
 import type { LocationColor } from '@/db/types'
 import { PeriodNav } from './PeriodNav'
+import { PeriodSummary } from './PeriodSummary'
 
 interface MonthViewProps {
   selected: string
@@ -73,15 +71,7 @@ export function MonthView({ selected, onSelect }: MonthViewProps) {
         showToday={monthPartOf(today) !== month}
       />
 
-      <Card>
-        <div className="week-summary">
-          <Stat value={summary.shifts} label={summary.shifts === 1 ? 'plantão' : 'plantões'} />
-          <span className="week-summary__divider" aria-hidden="true" />
-          <Stat value={formatNumber(summary.hours)} label="horas" />
-          <span className="week-summary__divider" aria-hidden="true" />
-          <Stat value={formatMoneyCompact(summary.expected)} label="previstos" />
-        </div>
-      </Card>
+      <PeriodSummary summary={summary} />
 
       <Card padded={false} className="calendar">
         <div className="calendar__weekdays" aria-hidden="true">
