@@ -308,25 +308,31 @@ export function ShiftFormSheet({
       >
         <div className="form">
           {/* ---- Modelos ---- */}
-          {/* Cartão próprio, acima de tudo: é uma AÇÃO que preenche o resto,
-              não mais um campo do plantão. Some quando ainda não existe
-              nenhuma rotina no histórico — abrir uma folha vazia é pior do
-              que não oferecer a linha. */}
-          {templates.length > 0 && (
-            <div className="card rows">
-              <button
-                type="button"
-                className="row row--action"
-                onClick={() => setPickingTemplate(true)}
-              >
-                <span className="row__icon row__icon--soft" aria-hidden="true">
-                  <Icon name="copy" size={18} />
-                </span>
-                <span className="row__label">Usar um modelo</span>
-                <Icon name="chevronRight" size={17} className="row__chevron" />
-              </button>
-            </div>
-          )}
+          {/*
+            Cartão próprio, acima de tudo: é uma AÇÃO que preenche o resto, não
+            mais um campo do plantão.
+
+            A linha aparece SEMPRE ao criar, inclusive sem nenhum modelo ainda.
+            Ela já sumiu nesse caso, pela ideia de que folha vazia é pior que
+            linha nenhuma — só que quem instala o app hoje nunca a via, e por
+            isso nunca ficava sabendo que o recurso existe. Some para sempre é
+            pior que vazia uma vez: a folha vazia explica em uma frase o que
+            fazer para os modelos aparecerem, e some sozinha no primeiro
+            plantão cadastrado.
+          */}
+          <div className="card rows">
+            <button
+              type="button"
+              className="row row--action"
+              onClick={() => setPickingTemplate(true)}
+            >
+              <span className="row__icon row__icon--soft" aria-hidden="true">
+                <Icon name="copy" size={18} />
+              </span>
+              <span className="row__label">Usar um modelo</span>
+              <Icon name="chevronRight" size={17} className="row__chevron" />
+            </button>
+          </div>
 
           {/* ---- Identificação ---- */}
           <div className="card rows">

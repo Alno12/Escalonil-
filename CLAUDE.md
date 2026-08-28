@@ -230,6 +230,13 @@ DATA nunca vem do modelo — é a única coisa que muda de verdade entre um
 plantão e o outro. A linha "Usar um modelo" só existe ao CRIAR: duplicar já
 traz tudo do plantão de origem, e editar não recomeça do zero.
 
+**Ao criar ela aparece SEMPRE, mesmo sem nenhum modelo ainda.** Já sumiu nesse
+caso, pela regra de que folha vazia é pior que linha nenhuma — mas quem instala
+o app hoje nunca a via e, portanto, nunca ficava sabendo que o recurso existe.
+Sumir para sempre é pior que aparecer vazia uma vez: a folha vazia explica numa
+frase o que fazer para os modelos surgirem, e some sozinha no primeiro plantão
+cadastrado.
+
 **18. Na aba Lista os filtros são DOIS eixos, e ficam fora da tela.**
 Situação (`próximos`, `realizados`, `cancelados`) e período (`qualquer`, mês
 atual, próximo, anterior, personalizado) são independentes — antes dividiam um
