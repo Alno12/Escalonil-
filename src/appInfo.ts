@@ -1,8 +1,8 @@
 /** Versão exibida em Configurações → Sobre. Mantenha em sincronia com o package.json. */
-export const APP_VERSION = '1.2.0'
+export const APP_VERSION = '1.3.0'
 
 /** Como a versão aparece na frase para o usuário — "1.1", não "1.1.0". */
-export const APP_RELEASE = '1.2'
+export const APP_RELEASE = '1.3'
 
 /**
  * O que mudou nesta versão, na ordem em que o usuário vai notar.
@@ -12,8 +12,6 @@ export const APP_RELEASE = '1.2'
  * na próxima. Só a versão nova conhece a própria lista.
  */
 export const APP_CHANGES = [
-  'Compartilhe a escala do mês: pelo WhatsApp ou impressa.',
-  'Melhorias na aba Agenda.',
-  'Melhorias na Frequência / Recorrência das escalas.',
-  'Correção de bugs.',
+  'Um plantão só já vira modelo — antes era preciso repetir o mesmo plantão.',
+  '"Usar um modelo" fica sempre à vista, e explica como funciona.',
 ]

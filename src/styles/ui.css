@@ -704,6 +704,48 @@ input[type='time'] {
   margin-top: var(--sp-3);
 }
 
+/*
+ * O passo a passo embaixo de um estado vazio — hoje só na folha de modelos.
+ *
+ * Fica alinhado à ESQUERDA, ao contrário do texto do `.empty`, que é
+ * centralizado: instrução em três passos centralizada vira um losango e o
+ * olho perde onde cada linha começa. O número é discreto de propósito — quem
+ * carrega o sentido é a frase.
+ */
+.empty-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 0 var(--sp-5) var(--sp-2);
+  counter-reset: passo;
+}
+
+.empty-steps li {
+  position: relative;
+  padding-left: var(--sp-8);
+  font-size: var(--text-subhead);
+  color: var(--text-2);
+}
+
+.empty-steps li::before {
+  counter-increment: passo;
+  content: counter(passo);
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--text-3);
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+
 /* ---------------- Folhas e diálogos ---------------- */
 .sheet-root,
 .dialog-root {

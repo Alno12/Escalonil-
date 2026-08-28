@@ -233,9 +233,10 @@ traz tudo do plantão de origem, e editar não recomeça do zero.
 **Ao criar ela aparece SEMPRE, mesmo sem nenhum modelo ainda.** Já sumiu nesse
 caso, pela regra de que folha vazia é pior que linha nenhuma — mas quem instala
 o app hoje nunca a via e, portanto, nunca ficava sabendo que o recurso existe.
-Sumir para sempre é pior que aparecer vazia uma vez: a folha vazia explica numa
-frase o que fazer para os modelos surgirem, e some sozinha no primeiro plantão
-cadastrado.
+Sumir para sempre é pior que aparecer vazia uma vez: a folha vazia explica em
+três passos como os modelos surgem, e some sozinha no primeiro plantão
+cadastrado. Ela é o ÚNICO lugar onde o recurso se explica, e é vista uma vez na
+vida do usuário — daí caber um passo a passo ali, e não uma frase solta.
 
 **18. Na aba Lista os filtros são DOIS eixos, e ficam fora da tela.**
 Situação (`próximos`, `realizados`, `cancelados`) e período (`qualquer`, mês

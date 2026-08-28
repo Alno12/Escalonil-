@@ -35,11 +35,33 @@ export function ShiftTemplateSheet({
     <Sheet open={open} title="Modelos" onClose={onClose} closeLabel="Voltar">
       <div className="form">
         {templates.length === 0 ? (
-          <EmptyState
-            icon="copy"
-            title="Ainda sem modelos"
-            description="Depois do primeiro plantão cadastrado, ele aparece aqui para você preencher o próximo em um toque."
-          />
+          /*
+            Vazia, esta folha é a ÚNICA chance de explicar o recurso: a linha
+            "Usar um modelo" agora aparece desde o começo, e quem toca nela sem
+            ter modelo nenhum precisa sair sabendo como eles surgem. Depois do
+            primeiro plantão a lista nunca mais fica vazia, então este texto é
+            visto uma vez na vida do usuário — e por isso pode ser um passo a
+            passo em vez de uma frase solta.
+          */
+          <>
+            <EmptyState
+              icon="copy"
+              title="Ainda sem modelos"
+              description="Modelo é um plantão que você já cadastrou, guardado para preencher o próximo."
+            />
+            <ol className="empty-steps">
+              <li>Cadastre um plantão como sempre.</li>
+              <li>Ele passa a aparecer nesta lista, com local, horário, tipo e valor.</li>
+              <li>
+                Tocar nele preenche tudo de uma vez — só a data continua sendo a que você
+                escolheu.
+              </li>
+            </ol>
+            <p className="form-note">
+              Nada para configurar: os modelos se formam sozinhos conforme você usa o app, e
+              os mais repetidos ficam no topo.
+            </p>
+          </>
         ) : (
           <>
             {/*
