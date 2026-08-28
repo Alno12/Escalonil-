@@ -578,6 +578,14 @@ O app segue a linguagem do Apple Saúde:
   que tinha — seria a mesma ação duas vezes, e ele caía fora da tela enquanto a
   pílula aparecia. Na Semana não existe nada disso: são sete dias na tela ao
   mesmo tempo, e sete botões seriam mais ruído que ajuda.
+- **O `+` do cabeçalho some SÓ na visão Mês** (`hideAdd` em `Schedule`), e é a
+  única tela do app fora dos Ajustes onde ele não aparece. Ali existe um dia
+  SELECIONADO, e o "Adicionar" do cabeçalho do dia abre NELE — enquanto o `+`
+  abre em HOJE. Dois botões parecidos, um acima do outro, com destinos
+  diferentes, é armadilha: quem está olhando o dia 21 toca no `+` e ganha um
+  plantão hoje sem perceber. Na Semana e na Lista ele FICA, e não é detalhe:
+  nenhuma das duas tem dia selecionado nem botão próprio, então sem o `+`
+  ficariam sem caminho nenhum para criar plantão.
 - No calendário do mês, o dia com plantão ganha um ANEL em volta do número E
   bolinhas embaixo dele. Os dois dizem coisas diferentes: o anel diz que TEM
   plantão e engrossa a partir de dois; as bolinhas dizem QUANTOS e de QUAL

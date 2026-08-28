@@ -76,6 +76,20 @@ export function Schedule() {
         /* A folha do mês abre no mês que a Agenda está mostrando, não no
            corrente: quem navegou até dezembro quer dezembro. */
         shareMonth={monthPartOf(reference)}
+        /*
+         * O `+` some SÓ no Mês, e é a única tela do app onde ele some.
+         *
+         * Ali existe um dia SELECIONADO na tela, e o "Adicionar" do cabeçalho
+         * do dia abre nele — enquanto o `+` abre em HOJE. Dois botões
+         * parecidos com destinos diferentes, um em cima do outro, é armadilha:
+         * quem está olhando o dia 21 toca no `+` e recebe um plantão no dia de
+         * hoje sem perceber.
+         *
+         * Na Semana e na Lista ele FICA, e isso não é detalhe: nenhuma das
+         * duas tem dia selecionado nem botão próprio, então sem o `+` elas
+         * ficariam sem nenhum caminho para criar plantão.
+         */
+        hideAdd={tab === 'month'}
         below={
           <>
             <SegmentedControl
