@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Location, Settings, Shift } from '@/db/types'
-import { buildShiftTemplates } from '../templates'
+import { MAX_TEMPLATES, buildShiftTemplates } from '../templates'
 import { applyTemplate, emptyForm } from '@/components/shifts/shiftFormValues'
 
 const LOCATIONS: Location[] = [
@@ -54,10 +54,16 @@ const doze = (id: string, date: string, nextDate: string, extra: Partial<Shift> 
   shift(id, `${date}T19:00`, `${nextDate}T07:00`, 1800, extra)
 
 describe('modelos de plantão', () => {
-  it('só vira modelo o que se repete', () => {
-    const avulso = [doze('a', '2026-08-03', '2026-08-04')]
-    expect(buildShiftTemplates(avulso, LOCATIONS)).toEqual([])
+  it('um plantão só já vira modelo', () => {
+    // Já exigiu repetição. Passou a bastar um: quem varia valor e horário
+    // nunca formava grupo, e o modelo serve para PREENCHER o formulário —
+    // o que um plantão avulso também faz.
+    const avulso = buildShiftTemplates([doze('a', '2026-08-03', '2026-08-04')], LOCATIONS)
+    expect(avulso).toHaveLength(1)
+    expect(avulso[0].uses).toBe(1)
+  })
 
+  it('conta os usos de quem se repete', () => {
     const repetido = [
       doze('a', '2026-08-03', '2026-08-04'),
       doze('b', '2026-08-10', '2026-08-11'),
@@ -132,7 +138,34 @@ describe('modelos de plantão', () => {
       ],
       LOCATIONS,
     )
-    expect(modelos).toEqual([])
+    // Sobra só o 'a': o cancelado não é rotina e o local sumido não teria
+    // nome nem cor para mostrar.
+    expect(modelos).toHaveLength(1)
+    expect(modelos[0]).toMatchObject({ uses: 1, lastUsed: '2026-08-03T19:00' })
+  })
+
+  it(`a lista para em ${MAX_TEMPLATES} — o teto que substituiu o mínimo`, () => {
+    // Um plantão distinto por semana, todos avulsos: sem teto, a folha teria
+    // uma linha por plantão do histórico.
+    const muitos = Array.from({ length: MAX_TEMPLATES + 6 }, (_, i) =>
+      shift(`s${i}`, `2026-08-03T${String(6 + i).padStart(2, '0')}:00`, `2026-08-03T23:00`, 900 + i),
+    )
+    expect(buildShiftTemplates(muitos, LOCATIONS)).toHaveLength(MAX_TEMPLATES)
+  })
+
+  it('o teto corta a cauda, não a rotina', () => {
+    const repetido = [
+      doze('r1', '2026-01-05', '2026-01-06'),
+      doze('r2', '2026-01-12', '2026-01-13'),
+    ]
+    // Avulsos MAIS RECENTES que a rotina: sem a ordenação por uso, eles a
+    // empurrariam para fora do teto.
+    const avulsos = Array.from({ length: MAX_TEMPLATES + 4 }, (_, i) =>
+      shift(`a${i}`, `2026-09-03T${String(6 + i).padStart(2, '0')}:00`, `2026-09-03T23:00`, 900 + i),
+    )
+    const modelos = buildShiftTemplates([...repetido, ...avulsos], LOCATIONS)
+    expect(modelos).toHaveLength(MAX_TEMPLATES)
+    expect(modelos[0]).toMatchObject({ uses: 2, startTime: '19:00' })
   })
 
   it('guarda o valor por hora quando o plantão foi cadastrado por hora', () => {

@@ -14,7 +14,7 @@ interface ShiftTemplateSheetProps {
 }
 
 /**
- * Os plantões que já viraram rotina, prontos para preencher o formulário.
+ * Os plantões que o médico já fez, prontos para preencher o formulário.
  *
  * A anatomia é a mesma linha de plantão da agenda de propósito: o médico
  * reconhece o plantão pelo formato que já conhece, não por um cartão novo.
@@ -38,13 +38,20 @@ export function ShiftTemplateSheet({
           <EmptyState
             icon="copy"
             title="Ainda sem modelos"
-            description="Quando um plantão se repetir, ele aparece aqui para você preencher em um toque."
+            description="Depois do primeiro plantão cadastrado, ele aparece aqui para você preencher o próximo em um toque."
           />
         ) : (
           <>
+            {/*
+              "Mais usados" só é verdade quando ALGUM se repetiu. Com o mínimo
+              em 1, quem varia horário e valor vê uma lista inteira de plantões
+              de uma vez só — e chamá-la de "mais usados" seria mentira.
+            */}
             <div className="section-header">
               <div>
-                <h2 className="section-header__title">Mais usados</h2>
+                <h2 className="section-header__title">
+                  {templates.some((t) => t.uses > 1) ? 'Mais usados' : 'Recentes'}
+                </h2>
                 <p className="section-header__hint">Toque para preencher o plantão</p>
               </div>
             </div>
