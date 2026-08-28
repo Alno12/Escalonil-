@@ -207,24 +207,10 @@ discordarem da lista que aparece embaixo dele.
 
 **17. Modelo de plantão é deduzido, nunca cadastrado.**
 `buildShiftTemplates` agrupa o histórico por local + título + tipo + hora de
-início + duração + valor. Não existe tela de gerenciar modelos, e não deve
-existir: o modelo se forma sozinho conforme o médico trabalha.
-
-**O mínimo era 2 e virou 1 — quem segura a lista agora é o TETO.** A regra
-antiga dizia que modelo é o que virou rotina, e a chave exige que os SEIS
-campos batam. Na prática isso desligava o recurso inteiro para quem varia
-valor e horário: cada plantão caía num grupo de um, nenhum chegava a dois, e a
-linha "Usar um modelo" nunca aparecia — foi um relato de uso, não teoria. E o
-argumento de que "com 1 seria o histórico de novo, que já está na agenda"
-mede a coisa errada: o valor do modelo não é a informação, é PREENCHER O
-FORMULÁRIO, e a agenda não preenche nada.
-
-O risco que o mínimo evitava era o tamanho, e quem trata disso agora é
-`MAX_TEMPLATES` (8). Como a ordem é uso e depois recência, o teto corta a
-cauda — a rotina de quem tem rotina continua no topo, e quem não tem vê os
-oito plantões distintos mais recentes. O título da folha acompanha: "Mais
-usados" só quando algum passou de um uso, senão "Recentes", que é o que a
-lista de fato é. As ANOTAÇÕES ficam fora da
+início + duração + valor, e só devolve o que se repetiu pelo menos
+`MIN_TEMPLATE_USES` vezes — com 1, "modelo" seria o histórico de novo, que já
+está na agenda. Não existe tela de gerenciar modelos, e não deve existir: o
+modelo se forma sozinho conforme o médico trabalha. As ANOTAÇÕES ficam fora da
 chave e fora do modelo, porque são o pedaço realmente avulso do plantão. A
 DATA nunca vem do modelo — é a única coisa que muda de verdade entre um
 plantão e o outro. A linha "Usar um modelo" só existe ao CRIAR: duplicar já
@@ -233,10 +219,12 @@ traz tudo do plantão de origem, e editar não recomeça do zero.
 **Ao criar ela aparece SEMPRE, mesmo sem nenhum modelo ainda.** Já sumiu nesse
 caso, pela regra de que folha vazia é pior que linha nenhuma — mas quem instala
 o app hoje nunca a via e, portanto, nunca ficava sabendo que o recurso existe.
-Sumir para sempre é pior que aparecer vazia uma vez: a folha vazia explica em
-três passos como os modelos surgem, e some sozinha no primeiro plantão
-cadastrado. Ela é o ÚNICO lugar onde o recurso se explica, e é vista uma vez na
-vida do usuário — daí caber um passo a passo ali, e não uma frase solta.
+Sumir para sempre é pior que aparecer vazia: a folha vazia explica em TRÊS
+PASSOS como os modelos surgem, e é o único lugar do app onde o recurso se
+explica. O passo a passo — em vez de uma frase — existe porque o modelo exige
+REPETIÇÃO: quem varia local, horário ou valor a cada plantão pode abrir esta
+folha muitas vezes sem nunca ver uma lista, e ela precisa dizer POR QUE está
+vazia, não só que está.
 
 **18. Na aba Lista os filtros são DOIS eixos, e ficam fora da tela.**
 Situação (`próximos`, `realizados`, `cancelados`) e período (`qualquer`, mês

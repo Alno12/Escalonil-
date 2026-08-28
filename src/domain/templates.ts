@@ -15,26 +15,10 @@ import { durationInHours, timePartOf } from './datetime'
 /**
  * Quantas vezes uma combinação precisa aparecer para virar modelo.
  *
- * Já foi 2, pela ideia de que modelo é o que VIRA ROTINA. Caiu para 1 por um
- * relato de uso: quem varia valor e horário entre plantões nunca formava
- * grupo nenhum, e o recurso simplesmente não existia para essa pessoa —
- * enquanto o benefício real do modelo não é a informação (essa está na
- * agenda), é PREENCHER O FORMULÁRIO. Preencher a partir de um plantão avulso
- * também poupa digitação.
- *
- * O que segurava a lista era este mínimo; agora quem segura é `MAX_TEMPLATES`.
+ * Com 1, todo plantão avulso viraria "modelo" e a lista seria só o histórico
+ * de novo — que já está na agenda. Modelo é o que se repete.
  */
-export const MIN_TEMPLATE_USES = 1
-
-/**
- * Teto da lista.
- *
- * Com o mínimo em 1, "modelos" passa a ser todo plantão distinto do histórico:
- * quem tem 228 plantões abriria uma folha de mais de cem linhas para escolher
- * uma. Como a ordem é uso e depois recência, cortar a cauda tira justamente o
- * que ninguém repetiu nem fez por último.
- */
-export const MAX_TEMPLATES = 8
+export const MIN_TEMPLATE_USES = 2
 
 export interface ShiftTemplate {
   /** A própria chave de agrupamento — estável entre renderizações. */
@@ -126,5 +110,4 @@ export function buildShiftTemplates(shifts: Shift[], locations: Location[]): Shi
   return [...groups.values()]
     .filter((t) => t.uses >= MIN_TEMPLATE_USES)
     .sort((a, b) => b.uses - a.uses || b.lastUsed.localeCompare(a.lastUsed))
-    .slice(0, MAX_TEMPLATES)
 }

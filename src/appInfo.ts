@@ -12,6 +12,6 @@ export const APP_RELEASE = '1.3'
  * na próxima. Só a versão nova conhece a própria lista.
  */
 export const APP_CHANGES = [
-  'Um plantão só já vira modelo — antes era preciso repetir o mesmo plantão.',
   '"Usar um modelo" fica sempre à vista, e explica como funciona.',
+  'Na Agenda, o "Adicionar" do dia sobe para o topo, sem precisar rolar.',
 ]

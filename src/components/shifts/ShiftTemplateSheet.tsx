@@ -14,7 +14,7 @@ interface ShiftTemplateSheetProps {
 }
 
 /**
- * Os plantões que o médico já fez, prontos para preencher o formulário.
+ * Os plantões que já viraram rotina, prontos para preencher o formulário.
  *
  * A anatomia é a mesma linha de plantão da agenda de propósito: o médico
  * reconhece o plantão pelo formato que já conhece, não por um cartão novo.
@@ -37,21 +37,27 @@ export function ShiftTemplateSheet({
         {templates.length === 0 ? (
           /*
             Vazia, esta folha é a ÚNICA chance de explicar o recurso: a linha
-            "Usar um modelo" agora aparece desde o começo, e quem toca nela sem
-            ter modelo nenhum precisa sair sabendo como eles surgem. Depois do
-            primeiro plantão a lista nunca mais fica vazia, então este texto é
-            visto uma vez na vida do usuário — e por isso pode ser um passo a
-            passo em vez de uma frase solta.
+            "Usar um modelo" aparece desde o começo, e quem toca nela sem ter
+            modelo nenhum precisa sair sabendo como eles surgem.
+
+            E aqui o passo a passo ganha ainda mais razão de existir do que uma
+            frase solta: como o modelo exige REPETIÇÃO, quem varia local,
+            horário ou valor a cada plantão pode abrir esta folha muitas vezes
+            sem nunca ver uma lista. Ela precisa explicar POR QUE está vazia,
+            não só dizer que está.
           */
           <>
             <EmptyState
               icon="copy"
               title="Ainda sem modelos"
-              description="Modelo é um plantão que você já cadastrou, guardado para preencher o próximo."
+              description="Modelo é um plantão que você já fez mais de uma vez, guardado para preencher o próximo."
             />
             <ol className="empty-steps">
               <li>Cadastre um plantão como sempre.</li>
-              <li>Ele passa a aparecer nesta lista, com local, horário, tipo e valor.</li>
+              <li>
+                Quando você repetir esse mesmo plantão — mesmo local, horário, duração e
+                valor —, ele vira modelo e aparece nesta lista.
+              </li>
               <li>
                 Tocar nele preenche tudo de uma vez — só a data continua sendo a que você
                 escolheu.
@@ -59,21 +65,14 @@ export function ShiftTemplateSheet({
             </ol>
             <p className="form-note">
               Nada para configurar: os modelos se formam sozinhos conforme você usa o app, e
-              os mais repetidos ficam no topo.
+              os mais usados ficam no topo.
             </p>
           </>
         ) : (
           <>
-            {/*
-              "Mais usados" só é verdade quando ALGUM se repetiu. Com o mínimo
-              em 1, quem varia horário e valor vê uma lista inteira de plantões
-              de uma vez só — e chamá-la de "mais usados" seria mentira.
-            */}
             <div className="section-header">
               <div>
-                <h2 className="section-header__title">
-                  {templates.some((t) => t.uses > 1) ? 'Mais usados' : 'Recentes'}
-                </h2>
+                <h2 className="section-header__title">Mais usados</h2>
                 <p className="section-header__hint">Toque para preencher o plantão</p>
               </div>
             </div>
