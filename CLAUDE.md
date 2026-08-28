@@ -268,49 +268,65 @@ ou seja **pouco mais da metade da área de hoje**, bem abaixo dos 82% que já
 foram medidos como letra pequena demais para imprimir. Não existe porcentagem
 que sirva às duas orientações, e o navegador não diz em qual delas está.
 
+**A saída não foi consertar o CSS, foi trocar de caminho.** No iPhone o botão
+Imprimir NÃO imprime a página: ele entrega um **PDF** ao sistema
+(`printsViaShareSheet` em `data/monthSheetFile.ts`), e quem toca em "Imprimir"
+na lista é o usuário. A pista que faltava estava na própria página de provas:
+ela imprimia bem nas DUAS orientações, porque é um documento simples; a folha
+do app, no mesmo aparelho e no mesmo papel, saía em branco. O problema nunca
+foi o iOS em Horizontal — era a impressão da PÁGINA DO APP.
+
+**PDF, e não a imagem do compartilhamento — isso também foi medido.** O iOS
+escolhe o papel padrão pelo TIPO do arquivo: imagem ele trata como FOTO e abre
+a caixa em **4×6 polegadas**; PDF ele trata como documento, e aí o papel é A4 e
+a orientação vem do próprio arquivo. Foi por isso que mandar o PNG não bastou.
+
+`data/monthSheetPdf.ts` escreve esse PDF à mão, sem dependência: são cinco
+objetos e um JPEG embutido cru por `/DCTDecode`. Ele **não redesenha nada** —
+recebe a mesma imagem que o compartilhamento gera, a 3× (287 DPI), e só a
+coloca numa página A4 deitada. Dois desenhos obrigados a concordar para sempre
+é o que este mesmo invariante proíbe. A parte frágil do formato é a tabela
+`xref`, que indexa os BYTES de cada objeto: um byte a mais em qualquer lugar e
+o arquivo abre quebrado — por isso ela tem teste próprio.
+
+No computador e no Android nada disso vale: lá a impressão da página funciona,
+está calibrada, e continua sendo o caminho. O ramo girado abaixo é para eles e
+para quem usa o app pelo navegador de um telefone que não seja iPhone.
+
+**O que segue impossível é imprimir a PÁGINA em papel deitado no iPhone.** O
+iOS abre em Vertical, que é o caso calibrado; o único conserto pelo CSS seria
+encolher a folha o bastante para sobreviver às duas orientações, e isso
+estragaria a impressão Vertical.
+
 Tirar o `landscape` do `@page` — a única linha do CSS que fala de orientação —
 foi cogitado e NÃO resolve: o iPhone ignora o `size` inteiro (é o que abre esta
 seção), e no computador é justamente essa palavra que faz o papel sair deitado
 por padrão. Trocá-la seria perder o caso que funciona para não ganhar nada no
 que não funciona.
 
-**Como o navegador não conta, quem conta é o USUÁRIO.** A folha de compartilhar
-tem uma chave **"Papel deitado"** (`Settings.printLandscape`) que põe
-`print-sheet--landscape` no elemento impresso, e o ramo girado é um `:not()`
-dela: ligada, o giro some e vale o ramo deitado, que é o certo para esse papel.
-**O que ela NÃO faz é aumentar a folha — pelo contrário.** No iPhone, papel
-deitado dá uma folha MENOR, e a conta é do próprio aparelho: ele come uma faixa
-fixa de ~55 mm de página (endereço e número), que numa A4 em pé sai de 297 mm e
-numa deitada sai de 210. Sobram 174 × 245 em pé contra 261 × 151 deitada. Como
-o desenho é 1,42 de largura para cada 1 de altura, em pé ele pode ir a 245 mm
-de largura (usamos 228), e deitado o limite é 151 × 1,42 = **215 mm**. Com o
-teto de 196 que fica valendo, são 196 contra os 228 de hoje: **86% do tamanho
-linear**, abaixo até dos 203 mm que já foram reprovados por letra pequena
-demais. Ou seja: em pé, girado, é o MAIOR que essa folha consegue ser num
-iPhone, e nenhuma porcentagem muda isso — quem manda é a faixa do iOS.
+**A chave "Papel deitado" foi tentada DUAS vezes e caiu nas duas.** Ela avisava
+ao CSS qual papel o usuário tinha escolhido, desligando o giro. Da primeira vez
+saiu em branco no aparelho; da segunda — já com o preview atualizando de
+verdade, e com o estouro reproduzido e corrigido no Chromium — também não
+entregou o que precisava. Não volte a ela: o caminho do iPhone é o PDF, e lá
+nenhuma dessas regras participa.
 
-É a única escolha dessa folha que fica GUARDADA, e por ser de outra natureza:
-descreve a impressora de casa, que não muda de um mês para o outro, enquanto
-"com valores" e "só um local" descrevem a folha e, lembrados, virariam uma
-escala errada enviada sem ninguém perceber. Errar na chave custa uma
-reimpressão. Ligada, a folha avisa que a caixa de impressão precisa combinar —
-as duas metades da informação são do usuário.
+**E ela não teria ajudado nem funcionando, porque papel deitado no iPhone dá
+uma folha MENOR.** O iOS come uma faixa fixa de ~55 mm de página, que numa A4
+em pé sai de 297 mm e numa deitada sai de 210: sobram 174 × 245 em pé contra
+261 × 151 deitada. Como o desenho é 1,42 de largura para cada 1 de altura, em
+pé ele chega a 245 mm de largura (usamos 228) e deitado o teto físico é
+151 × 1,42 = **215 mm**. Ou seja: pela PÁGINA, em pé e girado é o maior que
+essa folha consegue ser num iPhone, e nenhuma porcentagem muda isso — quem
+manda é a faixa do iOS. É mais um motivo para o PDF, que não passa por nada
+disso.
 
-**A chave já foi dada por morta uma vez, por um teste que não valia.** Ela
-nasceu, foi testada no aparelho, saiu em branco e foi revertida — tudo no dia
-27, ANTES de descobrirmos que o service worker do preview servia build velha (o
-`selfDestroying` do `vite.config.ts` é do dia 28). Aquele teste não diz nada
-sobre o código dela, e a conta diz o contrário: sem o giro a folha pede 0,70 de
-altura para cada 1 de largura, o que cabe com folga numa página deitada. Foi
-por isso que ela voltou. Se ela cair de novo, que seja por um teste feito em
-cima de uma build que o aparelho realmente baixou.
-
-Não tente adivinhar a orientação de novo. Quatro tentativas caíram antes de a
-chave existir: `height: 96%`, `max-height`, `container-type: size` — esta
-última chegou a zerar o desenho, porque contenção de tamanho sobre altura
-indefinida vale ZERO — e um `@container` medindo a largura real da página,
-implementado e testado no aparelho sem mudar nada. O que falta não é uma regra
-de CSS mais esperta, é uma informação que o navegador não dá.
+Não tente adivinhar a orientação de novo. Quatro tentativas caíram antes do
+PDF: `height: 96%`, `max-height`, `container-type: size` — esta última chegou a
+zerar o desenho, porque contenção de tamanho sobre altura indefinida vale
+ZERO — e um `@container` medindo a largura real da página, implementado e
+testado no aparelho sem mudar nada. O que falta não é uma regra de CSS mais
+esperta, é uma informação que o navegador não dá.
 
 O teto do ramo deitado é um **`max-width` em milímetros**, porque a altura não
 dá para limitar direto: como ela sai da proporção do desenho, limitar a largura
@@ -318,11 +334,7 @@ dá para limitar direto: como ela sai da proporção do desenho, limitar a largu
 entrega numa página deitada. Um `@media (orientation: landscape) and
 (min-height: 190mm)` tira o teto onde a mídia fala do papel de verdade
 (computador, Android) e o desenho volta aos 261 × 184. No iPhone essa consulta
-nunca casa, e o teto fica de pé — que é o comportamento seguro. A chave "Papel
-deitado" NÃO tira o teto: ela desliga o giro e mais nada. Numa A4 deitada os
-88% dariam 230 × 161 mm para 151 mm de altura disponível, que é o estouro de
-sempre — e o modo de falha é justamente a página em branco que a chave existe
-para consertar.
+nunca casa, e o teto fica de pé — que é o comportamento seguro.
 
 **Não existe mais `break-inside: avoid` na folha, e a ausência é de propósito.**
 Ele custou duas páginas em branco: diante de um bloco que não cabe, o Safari
