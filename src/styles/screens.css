@@ -1337,7 +1337,9 @@
   flex: none;
   align-items: center;
   gap: var(--sp-1);
-  padding: var(--sp-1) var(--sp-3);
+  /* Apertado de propósito: são 8px que o rótulo "Adicionar plantão" precisa
+     para caber ao lado da data — ver `.day-head .day-title`. */
+  padding: var(--sp-1) var(--sp-2);
   border-radius: var(--radius-md);
   background: var(--accent-soft);
   color: var(--accent-text);
@@ -1350,8 +1352,22 @@
   opacity: 0.6;
 }
 
+/*
+ * Dentro do cabeçalho do dia a data perde a CAIXA ALTA e cai para 12px.
+ *
+ * Não é gosto, é medida: com "Adicionar plantão" no botão, a pior data do
+ * calendário ("Segunda-feira, 28 de fevereiro") precisava de 403px numa linha
+ * de 353. A caixa alta sozinha custava 45 desses — é a economia que faz a data
+ * caber inteira ao lado do rótulo inteiro, sem abreviar nem truncar nada.
+ *
+ * Sobra 7px no pior caso de um iPhone SE (375) e 22px num 393. Abaixo de 375 a
+ * linha volta a quebrar em duas, que é o comportamento seguro e já existia.
+ */
 .day-head .day-title {
   padding: 0;
+  font-size: var(--text-caption);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .day-title {

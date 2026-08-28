@@ -571,6 +571,12 @@ O app segue a linguagem do Apple Saúde:
   ACIMA da lista — a posição para de depender do conteúdo do dia, que era o
   problema. E não custa altura: entra num espaço que já estava vazio à direita
   da data.
+  O rótulo é "Adicionar plantão" INTEIRO, e cabe ao lado da data por uma
+  medida, não por gosto: a pior data do calendário ("Segunda-feira, 28 de
+  fevereiro") pedia 403px numa linha de 353, e a CAIXA ALTA da data sozinha
+  custava 45 desses. Sem ela, e com a data a 12px, sobram 22px num iPhone de
+  393 e 7px num de 375 — inteira, sem abreviar nem truncar. Abaixo de 375 a
+  linha volta a quebrar em duas, que é o comportamento seguro e já existia.
   O botão é TINGIDO, nunca preenchido: o `+` do `ScreenHeader` é o único cheio
   da tela. E tem canto de 12px, não de pílula: aqui a pílula totalmente redonda
   quer dizer SITUAÇÃO — "A receber", "Agora", "Recebido" são todas pílulas, e

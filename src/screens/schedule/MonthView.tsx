@@ -140,7 +140,7 @@ export function MonthView({ selected, onSelect, onShare }: MonthViewProps) {
           <h3 className="day-title">{formatLongDate(selected)}</h3>
           <button type="button" className="day-add" onClick={() => sheets.newShift(selected)}>
             <Icon name="plus" size={15} strokeWidth={2.4} />
-            Adicionar
+            Adicionar plantão
           </button>
         </div>
         {daysShifts.length > 0 ? (
