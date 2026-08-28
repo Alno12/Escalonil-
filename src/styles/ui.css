@@ -829,6 +829,13 @@ input[type='time'] {
   border-top: 1px solid var(--separator);
 }
 
+/* Duas ações empilhadas no rodapé da folha: a cheia manda, a clara acompanha. */
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
 .dialog {
   position: relative;
   width: 100%;

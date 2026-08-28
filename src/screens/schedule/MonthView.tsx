@@ -1,14 +1,13 @@
 import { useMemo } from 'react'
 import { Card } from '@/components/ui/Card'
-import { Stat } from '@/components/ui/KpiCard'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Icon } from '@/components/ui/Icon'
 import { ShiftRow } from '@/components/shifts/ShiftRow'
 import { useAppData } from '@/state/appDataContext'
 import { useShiftSheets } from '@/state/shiftSheetsContext'
 import {
   addDays,
-  addMonths,
   formatLongDate,
   formatMonthYear,
   monthPartOf,
@@ -17,21 +16,22 @@ import {
   toDate,
   weekdayNamesMin,
 } from '@/domain/datetime'
-import { formatMoneyCompact, formatNumber } from '@/domain/money'
 import { filterByMonth, occupiedDays, periodSummary, shiftsOnDay } from '@/domain/summary'
 import type { LocationColor } from '@/db/types'
-import { PeriodNav } from './PeriodNav'
+import { PeriodSummary } from './PeriodSummary'
 
 interface MonthViewProps {
   selected: string
   onSelect: (date: string) => void
+  /** Abre a folha do mês. É o fim natural de quem rolou o mês inteiro. */
+  onShare: () => void
 }
 
 /** Quatro bolinhas já não cabem na largura da célula sem encostar uma na outra. */
 const MAX_DOTS = 3
 
 /** Calendário mensal: toque num dia para ver os plantões dele (§21). */
-export function MonthView({ selected, onSelect }: MonthViewProps) {
+export function MonthView({ selected, onSelect, onShare }: MonthViewProps) {
   const { views, today } = useAppData()
   const sheets = useShiftSheets()
 
@@ -65,23 +65,7 @@ export function MonthView({ selected, onSelect }: MonthViewProps) {
 
   return (
     <>
-      <PeriodNav
-        label={formatMonthYear(selected)}
-        onPrev={() => onSelect(addMonths(selected, -1))}
-        onNext={() => onSelect(addMonths(selected, 1))}
-        onToday={() => onSelect(today)}
-        showToday={monthPartOf(today) !== month}
-      />
-
-      <Card>
-        <div className="week-summary">
-          <Stat value={summary.shifts} label={summary.shifts === 1 ? 'plantão' : 'plantões'} />
-          <span className="week-summary__divider" aria-hidden="true" />
-          <Stat value={formatNumber(summary.hours)} label="horas" />
-          <span className="week-summary__divider" aria-hidden="true" />
-          <Stat value={formatMoneyCompact(summary.expected)} label="previstos" />
-        </div>
-      </Card>
+      <PeriodSummary summary={summary} />
 
       <Card padded={false} className="calendar">
         <div className="calendar__weekdays" aria-hidden="true">
@@ -144,6 +128,27 @@ export function MonthView({ selected, onSelect }: MonthViewProps) {
             {daysShifts.map((view) => (
               <ShiftRow key={view.shift.id} view={view} onClick={sheets.openShift} />
             ))}
+            {/*
+              A mesma porta do "Dia livre", para o dia que JÁ tem plantão: sem
+              ela, quem quisesse somar um plantão noturno a um dia de diurno
+              tinha de usar o `+` do cabeçalho, que abre na data de HOJE e
+              obrigava a corrigir o dia à mão. O dia selecionado já está na
+              tela — é ele que a folha deve propor.
+
+              Vai como última LINHA do cartão, não como o botão cheio do vazio:
+              ali o botão é a única coisa da tela, aqui ele competiria com os
+              plantões e repetiria o roxo do `+` em todo dia ocupado.
+            */}
+            <li>
+              <button
+                type="button"
+                className="shift-add"
+                onClick={() => sheets.newShift(selected)}
+              >
+                <Icon name="plus" size={15} className="shift-add__icon" />
+                <span>Adicionar plantão</span>
+              </button>
+            </li>
           </ul>
         ) : (
           <EmptyState
@@ -159,6 +164,13 @@ export function MonthView({ selected, onSelect }: MonthViewProps) {
           />
         )}
       </section>
+
+      {/* Só no Mês: é a folha DO MÊS, e o botão cai no fim do fluxo de quem
+          rolou o mês inteiro. Na Semana ele seria repetição do ícone do
+          cabeçalho, que já está sempre à vista. */}
+      <Button variant="secondary" block icon="share" onClick={onShare}>
+        Compartilhar
+      </Button>
     </>
   )
 }

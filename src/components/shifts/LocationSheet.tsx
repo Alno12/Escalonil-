@@ -79,7 +79,7 @@ export function LocationSheet({ open, value, locations, onChange, onClose }: Loc
                 className="input"
                 type="text"
                 value={value}
-                placeholder="UPA Centro"
+                placeholder="Nome do local"
                 autoComplete="off"
                 autoFocus
                 aria-label="Nome do local"

@@ -9,6 +9,10 @@
  * que esse dia já tenha passado. Nas escalas por dias da semana isso vale para
  * a semana inteira do início: marcar segunda com início na quarta inclui a
  * segunda daquela mesma semana.
+ *
+ * A POSIÇÃO NO MÊS é a exceção, de propósito: ali a posição é escolhida à mão,
+ * não deduzida da data, então a série PULA para a primeira data que satisfaz
+ * `{nth, weekday}` a partir da data digitada. Ver o invariante 9c do CLAUDE.md.
  */
 import type { LocalDate, LocalDateTime } from '@/db/types'
 import {
@@ -32,6 +36,18 @@ export const MAX_OCCURRENCES = 120
 /** Dias da semana, na ordem brasileira (domingo primeiro). */
 export const WEEKDAY_OPTIONS = weekdayNamesShort.map((label, value) => ({ value, label }))
 
+/** Posição de um dia dentro do mês: "a 1ª segunda", "o 5º domingo". */
+export interface MonthPosition {
+  nth: number
+  weekday: number
+}
+
+/** As cinco posições possíveis — o mês nunca tem uma sexta ocorrência. */
+export const MONTH_POSITION_OPTIONS = [1, 2, 3, 4, 5].map((value) => ({
+  value,
+  label: `${value}ª`,
+}))
+
 /** Um trecho de escala: trabalha `work`, folga `off`. Horas ou dias, conforme a escala. */
 export interface Segment {
   work: number
@@ -49,8 +65,11 @@ export type Recurrence =
   | { kind: 'weekdays'; weekdays: number[]; everyWeeks: number }
   /** Mesmo dia do mês. */
   | { kind: 'monthlyDay' }
-  /** Mesma posição no mês — "no primeiro sábado". */
-  | { kind: 'monthlyWeekday' }
+  /**
+   * Mesma posição no mês — "no primeiro sábado". A posição é escolhida na
+   * folha de escala, não deduzida da data; a data só decide o padrão inicial.
+   */
+  | { kind: 'monthlyWeekday'; nth: number; weekday: number }
 
 export const NO_RECURRENCE: Recurrence = { kind: 'none' }
 
@@ -105,7 +124,7 @@ function generate(
     case 'monthlyDay':
       return monthlyDayStarts(first, until, limit)
     case 'monthlyWeekday':
-      return monthlyWeekdayStarts(first, until, limit)
+      return monthlyWeekdayStarts(first, recurrence.nth, recurrence.weekday, until, limit)
   }
 }
 
@@ -192,11 +211,12 @@ function monthlyDayStarts(first: LocalDateTime, until: LocalDate, limit: number)
 
 function monthlyWeekdayStarts(
   first: LocalDateTime,
+  nth: number,
+  weekday: number,
   until: LocalDate,
   limit: number,
 ): LocalDateTime[] {
   const start = datePartOf(first)
-  const { nth, weekday } = nthWeekdayOf(start)
   const time = timePartOf(first)
   const base = toDate(start)
   const out: LocalDateTime[] = []
@@ -207,6 +227,9 @@ function monthlyWeekdayStarts(
     const date = nthWeekdayDate(month.getFullYear(), month.getMonth(), weekday, nth)
     // Meses sem a 5ª ocorrência do dia simplesmente não têm plantão.
     if (!date) continue
+    // A posição escolhida pode já ter passado no mês do início — a série PULA
+    // para a próxima. É a exceção deliberada à regra central (invariante 9c).
+    if (date < start) continue
     if (date > until) break
     out.push(joinDateTime(date, time))
   }
@@ -228,7 +251,7 @@ export function normalizeWeekdays(weekdays: number[], fallback: number): number[
 }
 
 /** Posição do dia dentro do mês: 15/08 numa sexta é a "3ª sexta". */
-export function nthWeekdayOf(date: LocalDate): { nth: number; weekday: number } {
+export function nthWeekdayOf(date: LocalDate): MonthPosition {
   const d = toDate(date)
   return { nth: Math.floor((d.getDate() - 1) / 7) + 1, weekday: d.getDay() }
 }
@@ -262,6 +285,12 @@ export interface RecurrenceOption {
   recurrence: Recurrence
   /** Quando presente, a linha abre um editor em vez de escolher direto. */
   custom?: CustomKind
+  /**
+   * A linha aplica a escala E abre um ajuste embaixo dela, sem fechar a folha.
+   * É o que separa "escolher e pronto" de "escolher e afinar": marcar "Todas
+   * as semanas" sem poder dizer QUAIS dias deixava metade da escolha invisível.
+   */
+  expand?: 'weekdays' | 'monthlyWeekday'
 }
 
 export interface RecurrenceGroup {
@@ -297,6 +326,42 @@ export function recurrenceGroups(startDate: LocalDate): RecurrenceGroup[] {
     {
       id: 'none',
       options: [{ id: 'none', label: 'Nenhuma', recurrence: NO_RECURRENCE }],
+    },
+    {
+      id: 'recurrent',
+      title: 'Escalas Recorrentes',
+      options: [
+        {
+          id: 'weekdays-1-5',
+          label: 'Todas as semanas de segunda a sexta',
+          recurrence: { kind: 'weekdays', weekdays: [1, 2, 3, 4, 5], everyWeeks: 1 },
+        },
+        {
+          id: 'biweekly',
+          label: 'A cada 2 semanas',
+          recurrence: { kind: 'weekdays', weekdays: [weekday], everyWeeks: 2 },
+        },
+        { id: 'daily', label: 'Todos os dias', recurrence: { kind: 'daily' } },
+        {
+          id: 'weekly',
+          label: 'Todas as semanas',
+          recurrence: { kind: 'weekdays', weekdays: [weekday], everyWeeks: 1 },
+          expand: 'weekdays',
+        },
+        { id: 'monthly', label: 'Todos os meses', recurrence: { kind: 'monthlyDay' } },
+        {
+          id: 'monthly-weekday',
+          label: monthlyWeekdayLabel(nthWeekdayOf(startDate)),
+          recurrence: { kind: 'monthlyWeekday', ...nthWeekdayOf(startDate) },
+          expand: 'monthlyWeekday',
+        },
+        {
+          id: CUSTOM_IDS.weekdays,
+          label: 'Escala Recorrente Personalizada',
+          recurrence: defaultCustom('weekdays', startDate),
+          custom: 'weekdays',
+        },
+      ],
     },
     {
       id: 'hours',
@@ -336,40 +401,6 @@ export function recurrenceGroups(startDate: LocalDate): RecurrenceGroup[] {
         },
       ],
     },
-    {
-      id: 'recurrent',
-      title: 'Escalas Recorrentes',
-      options: [
-        {
-          id: 'weekdays-1-5',
-          label: 'Todas as semanas de segunda a sexta',
-          recurrence: { kind: 'weekdays', weekdays: [1, 2, 3, 4, 5], everyWeeks: 1 },
-        },
-        {
-          id: 'biweekly',
-          label: 'A cada 2 semanas',
-          recurrence: { kind: 'weekdays', weekdays: [weekday], everyWeeks: 2 },
-        },
-        { id: 'daily', label: 'Todos os dias', recurrence: { kind: 'daily' } },
-        {
-          id: 'weekly',
-          label: 'Todas as semanas',
-          recurrence: { kind: 'weekdays', weekdays: [weekday], everyWeeks: 1 },
-        },
-        { id: 'monthly', label: 'Todos os meses', recurrence: { kind: 'monthlyDay' } },
-        {
-          id: 'monthly-weekday',
-          label: `Todos os meses ${nthWeekdayPhrase(startDate)}`,
-          recurrence: { kind: 'monthlyWeekday' },
-        },
-        {
-          id: CUSTOM_IDS.weekdays,
-          label: 'Escala Recorrente Personalizada',
-          recurrence: defaultCustom('weekdays', startDate),
-          custom: 'weekdays',
-        },
-      ],
-    },
   ]
 }
 
@@ -377,12 +408,16 @@ const ORDINALS_M = ['primeiro', 'segundo', 'terceiro', 'quarto', 'quinto']
 const ORDINALS_F = ['primeira', 'segunda', 'terceira', 'quarta', 'quinta']
 
 /** "no primeiro sábado" / "na primeira segunda-feira" — o gênero acompanha o dia. */
-export function nthWeekdayPhrase(date: LocalDate): string {
-  const { nth, weekday } = nthWeekdayOf(date)
+export function nthWeekdayPhrase({ nth, weekday }: MonthPosition): string {
   const name = weekdayNames[weekday]
   const feminine = name.endsWith('-feira')
   const ordinals = feminine ? ORDINALS_F : ORDINALS_M
   return `${feminine ? 'na' : 'no'} ${ordinals[nth - 1] ?? ordinals[0]} ${name}`
+}
+
+/** O rótulo da linha "Todos os meses…", já com a posição escolhida. */
+export function monthlyWeekdayLabel(position: MonthPosition): string {
+  return `Todos os meses ${nthWeekdayPhrase(position)}`
 }
 
 export function sameRecurrence(a: Recurrence, b: Recurrence): boolean {
@@ -406,6 +441,10 @@ export function sameRecurrence(a: Recurrence, b: Recurrence): boolean {
       mine.every((d, i) => d === theirs[i])
     )
   }
+  if (a.kind === 'monthlyWeekday') {
+    const other = b as Extract<Recurrence, { kind: 'monthlyWeekday' }>
+    return a.nth === other.nth && a.weekday === other.weekday
+  }
   return true
 }
 
@@ -417,7 +456,20 @@ export function selectedOptionId(recurrence: Recurrence, startDate: LocalDate): 
   }
   if (recurrence.kind === 'hours') return CUSTOM_IDS.hours
   if (recurrence.kind === 'days') return CUSTOM_IDS.days
-  if (recurrence.kind === 'weekdays') return CUSTOM_IDS.weekdays
+  /*
+   * Escolher outros dias na linha "Todas as semanas" muda a recorrência e ela
+   * deixa de bater com o preset — sem isso a marca pulava para a linha
+   * "Personalizada" no primeiro dia marcado, com o editor aberto logo acima.
+   * O intervalo é que decide a casa; os dias são o ajuste dentro dela.
+   */
+  if (recurrence.kind === 'weekdays') {
+    if (recurrence.everyWeeks === 1) return 'weekly'
+    if (recurrence.everyWeeks === 2) return 'biweekly'
+    return CUSTOM_IDS.weekdays
+  }
+  // Mesma ideia: a posição no mês é o ajuste DENTRO da linha, então mexer nela
+  // não pode desmarcar a linha.
+  if (recurrence.kind === 'monthlyWeekday') return 'monthly-weekday'
   return 'none'
 }
 
@@ -428,8 +480,20 @@ const segmentsLabel = (segments: Segment[]) =>
 
 /** Nome da escala como aparece na linha "Frequência". */
 export function recurrenceLabel(recurrence: Recurrence, startDate: LocalDate): string {
+  /*
+   * "Todas as semanas" e "A cada 2 semanas" nascem com UM dia — o da data — e
+   * o rótulo delas não conta qual. Depois que o usuário marca outros dias, o
+   * nome pronto esconderia justamente o que ele acabou de escolher, então
+   * essas caem no texto com os dias. Já "de segunda a sexta" nomeia os cinco
+   * dias no próprio rótulo e continua valendo.
+   */
   for (const group of recurrenceGroups(startDate)) {
-    const match = group.options.find((o) => !o.custom && sameRecurrence(o.recurrence, recurrence))
+    const match = group.options.find(
+      (o) =>
+        !o.custom &&
+        !(o.recurrence.kind === 'weekdays' && o.recurrence.weekdays.length === 1) &&
+        sameRecurrence(o.recurrence, recurrence),
+    )
     if (match) return match.label
   }
 
@@ -438,6 +502,8 @@ export function recurrenceLabel(recurrence: Recurrence, startDate: LocalDate): s
       return segmentsLabel(recurrence.segments)
     case 'days':
       return `${segmentsLabel(recurrence.segments)} dias`
+    case 'monthlyWeekday':
+      return monthlyWeekdayLabel(recurrence)
     case 'weekdays': {
       const days = normalizeWeekdays(recurrence.weekdays, toDate(startDate).getDay())
         .map((d) => weekdayNamesShort[d])

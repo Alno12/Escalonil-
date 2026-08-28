@@ -169,3 +169,197 @@ svg {
     background-position: -200% 0;
   }
 }
+
+/* ---------------- A folha do mês, na impressora ---------------- */
+
+/*
+ * Na tela ela não existe: quem a mostra é o `@media print`, e o mesmo desenho
+ * vira PNG pelo canvas sem passar por aqui. Ela é pendurada no `body` só
+ * enquanto o diálogo de impressão está aberto (`data/monthSheetFile.ts`).
+ */
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  /*
+   * O `size` é respeitado no computador e no Android. O SAFARI DO IPHONE
+   * IGNORA: lá quem manda na orientação é a caixa de impressão do iOS, que
+   * abre sempre em pé. É por isso que existe o bloco `orientation: portrait`
+   * lá embaixo — pedir deitado não basta, a folha precisa saber girar.
+   */
+  @page {
+    size: A4 landscape;
+    /*
+     * Margem ZERO no papel, e a folga por conta do desenho (abaixo). Com uma
+     * margem aqui, o bloco da folha continua com a largura da PÁGINA e vaza
+     * da área útil — o navegador então pagina para o lado e sai uma segunda
+     * página quase em branco.
+     */
+    margin: 0;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    /*
+     * `useBodyScrollLock` fixa o body com um `top` negativo enquanto a folha
+     * de opções está aberta — e ela CONTINUA aberta durante a impressão. Sem
+     * desfazer isso aqui, a folha sai empurrada para fora do papel: quem
+     * mandou imprimir com a tela rolada recebia uma página em branco. O
+     * `!important` é porque a trava escreve no `style` do elemento.
+     */
+    position: static !important;
+    top: auto !important;
+    overflow: visible !important;
+    /*
+     * O `min-height: 100dvh` do body vale a altura da JANELA, não a do papel.
+     * Numa A4 deitada isso são 225 mm de body para 200 mm de área útil, e a
+     * sobra virava uma segunda página em branco — mesmo com a folha inteira
+     * cabendo na primeira.
+     */
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  /* Some com o app INTEIRO — inclusive a folha de opções, que continua aberta
+     por cima dele enquanto o usuário decide na caixa de impressão. */
+  body > *:not(.print-sheet) {
+    display: none !important;
+  }
+
+  /*
+   * Não existe mais `break-inside: avoid` aqui, e a ausência é de propósito.
+   * Ele já custou páginas em branco: diante de um bloco que não cabe, o Safari
+   * não corta — tira o bloco INTEIRO do papel, e some tudo. Sem ele, o pior
+   * caso é um desenho cortado, que dá para ver e entender.
+   */
+  .print-sheet {
+    display: block;
+  }
+
+  /*
+   * Tudo aqui é PORCENTAGEM DA PÁGINA. Nem milímetros nem `vh`, e cada um
+   * desses foi tentado antes:
+   *
+   * - Milímetros fixos supõem o tamanho da área útil. Errado para menos, o
+   *   desenho vaza e o Safari pagina PARA O LADO: sai uma segunda folha com a
+   *   tira que sobrou.
+   * - `vh` na impressão do iPhone não vale a altura do PAPEL — vale bem menos.
+   *   Com o teto amarrado nele, a folha saiu legítima em uma página, mas com
+   *   dois terços do tamanho e letra miúda demais para imprimir.
+   *
+   * A porcentagem é a única medida que o navegador conhece de verdade. Os 88%
+   * são a folga na LARGURA: o resto é margem.
+   *
+   * Mas a largura sozinha não basta numa página deitada: com 88% o desenho sai
+   * com 0,70 de altura para cada 1 de largura, e na área útil que o iPhone
+   * entrega numa A4 deitada (261 × 151 mm) isso daria 161 mm de altura para
+   * 151 disponíveis.
+   *
+   * O teto de 196 mm é o freio da ALTURA, que não dá para limitar direto: como
+   * ela sai da proporção do desenho, limitar a largura é limitá-la. Ele dá
+   * 138 mm de altura, com folga sobre os ~151 mm que o iPhone entrega numa
+   * página deitada.
+   */
+  .print-sheet {
+    width: 88%;
+    max-width: 196mm;
+    margin: 0 auto;
+  }
+
+
+  .print-sheet svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /*
+   * Papel em pé — o caso do iPhone, e de quem escolher assim. O desenho gira
+   * e passa a ocupar a página INTEIRA em vez de um terço dela: sem isso a
+   * folha saía espremida no alto, com a letra pequena demais para ler. Quem
+   * recebe vira o papel, que é o mesmo custo já aceito na imagem do WhatsApp.
+   */
+  @media (orientation: portrait) {
+    /*
+     * Girado, o desenho sai do fluxo — quem ocupa espaço é o contêiner. Ele
+     * também é 100% da página, com a proporção DEITADA de lado (786÷1119), e
+     * as medidas do desenho saem dele em porcentagem. Nenhum milímetro fixo,
+     * pelo mesmo motivo de cima.
+     */
+    .print-sheet {
+      position: relative;
+      /*
+       * Quem limita aqui é a LARGURA: girada, a folha precisa de 1,42 de altura
+       * para cada 1 de largura, e altura sobra. Então a porcentagem é escolhida
+       * pela altura que ela produz.
+       *
+       * Medido num iPhone, A4 em pé: o iOS entrega só 174 mm de corpo (o papel
+       * tem 210 — os 36 mm restantes são margem dele, que não dá para tirar), o
+       * desenho começa a 17 mm do alto e a linha do rodapé fica a 287 mm. Mas a
+       * quebra vem ANTES do rodapé, e três valores medidos cercam onde:
+       *
+       *   82% → 143 mm de largura, 203 de altura, termina a 220 — uma página,
+       *         com 63 mm de papel em branco e letra pequena demais.
+       *   92% → 160 × 228, termina a 245 — uma página, com folga.
+       *   98% → 170 × 243, termina a 260 — DUAS páginas, por muito pouco.
+       *
+       * Os 92% ficam no meio com 15 mm de margem para o que quebrou, e são um
+       * quarto de área a mais que os 82%. Não vá atrás dos últimos milímetros:
+       * a segunda página em branco custa mais que eles valem.
+       *
+       * O `max-width` é o freio do OUTRO caso — quando o navegador entrega a
+       * PÁGINA INTEIRA, sem margem própria. O papel mais apertado é a Carta em
+       * pé (216 × 279): a folha só cabe até 279 ÷ 1,42 = 196 mm de largura, e
+       * 92% de 216 dariam 199. Não é palpite sobre área útil: é o teto de quem
+       * não tem margem nenhuma.
+       */
+      width: 92%;
+      max-width: 192mm;
+      /*
+       * Desfaz o `height: 100%` do ramo deitado. Aqui quem dá a altura é o
+       * `aspect-ratio`, e as medidas do desenho são porcentagem DELA — com a
+       * altura da página no lugar, a conta da rotação passa a usar o número
+       * errado e o desenho sai torto para fora do contêiner.
+       */
+      height: auto;
+      aspect-ratio: 786 / 1119;
+      margin: 0 auto;
+    }
+
+    /*
+     * 142,37% = 1119÷786: a largura do desenho é o lado LONGO da folha, que
+     * aqui vira a altura do contêiner. O translate é 70,24% da largura do
+     * próprio desenho, que dá exatamente a largura do contêiner — é o que traz
+     * de volta para dentro da página o que a rotação jogou para a esquerda.
+     */
+    .print-sheet svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 142.366%;
+      height: 70.244%;
+      max-height: none;
+      margin: 0;
+      transform: translateX(70.244%) rotate(90deg);
+      transform-origin: top left;
+    }
+  }
+
+  /*
+   * O alívio do teto. A condição é dupla de propósito: página deitada E com
+   * altura de sobra. Só casa onde a consulta de mídia fala do PAPEL de verdade
+   * — computador e Android —, e ali o desenho volta a usar tudo (261 × 184 mm
+   * numa A4). No iPhone a mídia vale a JANELA (~103 × 175 mm, medido), então
+   * ela nunca casa e o teto fica de pé, que é o comportamento seguro numa
+   * página baixa.
+   */
+  @media (orientation: landscape) and (min-height: 190mm) {
+    .print-sheet {
+      max-width: none;
+    }
+  }
+}

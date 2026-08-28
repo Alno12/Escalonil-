@@ -387,6 +387,40 @@
   transition: background-color var(--dur-fast) var(--ease);
 }
 
+/*
+ * Última linha do cartão do dia: a porta para somar um plantão à data que já
+ * está na tela. Mesma altura e mesmo recuo das linhas de plantão — o `+` ocupa
+ * a coluna da bolinha do local, então o texto alinha com os nomes de cima.
+ *
+ * Discreta de propósito: o botão cheio do "Dia livre" existe porque ali ele é
+ * a única coisa do cartão. Aqui ele competiria com os plantões, e repetiria o
+ * roxo do `+` do cabeçalho em todo dia ocupado da agenda.
+ */
+.shift-add {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3) var(--row-pad);
+  text-align: left;
+  color: var(--accent-text);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+/*
+ * O ícone ocupa a largura da bolinha do local (10px) para o texto alinhar com
+ * os nomes das linhas de cima. O `scale` engrossa só o DESENHO: a 10px o `+`
+ * ficava franzino ao lado de um texto de 17px, e mexer na largura da caixa
+ * empurraria o rótulo para fora do alinhamento.
+ */
+.shift-add__icon {
+  width: 10px;
+  margin-inline: 2px;
+  transform: scale(1.4);
+}
+
+.shift-list li + li .shift-add::before,
 .shift-list li + li .shift-row::before {
   content: '';
   position: absolute;
@@ -397,7 +431,8 @@
   background: var(--separator);
 }
 
-.shift-row:active {
+.shift-row:active,
+.shift-add:active {
   background: var(--fill);
 }
 
@@ -1095,17 +1130,28 @@
 }
 
 /* ---------------- Semana e calendário ---------------- */
-.week-summary {
+/*
+ * Resumo do período. Número e rótulo na MESMA linha, sem riscos entre eles —
+ * ver o comentário de PeriodSummary.tsx.
+ */
+.period-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-3);
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
 }
 
-.week-summary__divider {
-  width: 1px;
-  height: 26px;
-  background: var(--separator);
+.period-summary__item {
+  font-size: var(--text-subhead);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.period-summary__item b {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
 }
 
 .week-days {
@@ -1387,7 +1433,6 @@
   color: var(--text-2);
 }
 
-.filter-toggle.is-open,
 .filter-toggle.has-filters {
   background: var(--accent-soft);
   color: var(--accent-text);
@@ -1409,17 +1454,48 @@
   font-weight: 700;
 }
 
-.filters {
+/*
+ * Os filtros APLICADOS, embaixo da busca. Só aparece o que está fora do
+ * padrão, então na tela limpa a fita some inteira e a lista começa logo
+ * abaixo da busca — que é o motivo de os treze chips terem saído daqui.
+ */
+.applied {
   display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
 }
 
-.filters__extra {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-  animation: rise-in var(--dur-mid) var(--ease);
+.applied__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 8px 0 12px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+}
+
+.applied__x {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.applied__clear {
+  margin-left: auto;
+  background: none;
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--accent-text);
 }
 
 /* ---------------- Relatórios ---------------- */

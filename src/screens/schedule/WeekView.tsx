@@ -1,28 +1,18 @@
 import { useMemo } from 'react'
-import { Card } from '@/components/ui/Card'
-import { Stat } from '@/components/ui/KpiCard'
 import { Button } from '@/components/ui/Button'
 import { ShiftRow } from '@/components/shifts/ShiftRow'
 import { useAppData } from '@/state/appDataContext'
 import { useShiftSheets } from '@/state/shiftSheetsContext'
-import {
-  addDays,
-  formatDayMonth,
-  startOfWeek,
-  toDate,
-  weekdayNamesShort,
-} from '@/domain/datetime'
-import { formatMoneyCompact, formatNumber } from '@/domain/money'
+import { addDays, startOfWeek, toDate, weekdayNamesShort } from '@/domain/datetime'
 import { periodSummary, shiftsOnDay } from '@/domain/summary'
-import { PeriodNav } from './PeriodNav'
+import { PeriodSummary } from './PeriodSummary'
 
 interface WeekViewProps {
   reference: string
-  onReferenceChange: (date: string) => void
 }
 
 /** Semana de domingo a sábado, um bloco por dia. */
-export function WeekView({ reference, onReferenceChange }: WeekViewProps) {
+export function WeekView({ reference }: WeekViewProps) {
   const { views, today } = useAppData()
   const sheets = useShiftSheets()
 
@@ -42,23 +32,7 @@ export function WeekView({ reference, onReferenceChange }: WeekViewProps) {
 
   return (
     <>
-      <PeriodNav
-        label={`${formatDayMonth(start)} — ${formatDayMonth(addDays(start, 6))}`}
-        onPrev={() => onReferenceChange(addDays(start, -7))}
-        onNext={() => onReferenceChange(addDays(start, 7))}
-        onToday={() => onReferenceChange(today)}
-        showToday={startOfWeek(today) !== start}
-      />
-
-      <Card>
-        <div className="week-summary">
-          <Stat value={summary.shifts} label={summary.shifts === 1 ? 'plantão' : 'plantões'} />
-          <span className="week-summary__divider" aria-hidden="true" />
-          <Stat value={formatNumber(summary.hours)} label="horas" />
-          <span className="week-summary__divider" aria-hidden="true" />
-          <Stat value={formatMoneyCompact(summary.expected)} label="previstos" />
-        </div>
-      </Card>
+      <PeriodSummary summary={summary} />
 
       <div className="week-days">
         {days.map((day, index) => {

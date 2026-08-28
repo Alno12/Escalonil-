@@ -296,17 +296,26 @@ export async function registerPayments(
 
   return db.transaction('rw', db.shifts, db.payments, async () => {
     const stamp = nowStamp()
-    const created: Payment[] = []
 
-    for (const shiftId of shiftIds) {
-      const shift = await db.shifts.get(shiftId)
+    // Duas consultas para a lista inteira, não duas por plantão: receber
+    // cinquenta plantões de uma vez são cem idas ao banco dentro da mesma
+    // transação, e cada uma delas custa uma volta no laço de eventos.
+    const shifts = await db.shifts.bulkGet(shiftIds)
+    const paid = new Set(
+      (await db.payments.where('shiftId').anyOf(shiftIds).toArray()).map((p) => p.shiftId),
+    )
+
+    const created: Payment[] = []
+    for (const shift of shifts) {
       if (!shift || shift.cancelled) continue
-      const existing = await db.payments.where('shiftId').equals(shiftId).first()
-      if (existing) continue
+      if (paid.has(shift.id)) continue
+      // Um mesmo plantão repetido na lista entraria duas vezes: a marca vale
+      // para o que já estava gravado E para o que acabou de entrar aqui.
+      paid.add(shift.id)
 
       created.push({
         id: newId(),
-        shiftId,
+        shiftId: shift.id,
         expectedAmount: shift.expectedAmount,
         receivedAmount: shift.expectedAmount,
         receivedDate,

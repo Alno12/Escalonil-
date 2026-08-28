@@ -12,6 +12,14 @@ export interface ShiftSheetsApi {
   openShift: (id: string) => void
   /** Abre o registro de recebimento. */
   openPayment: (id: string) => void
+  /**
+   * Abre a folha do mês (compartilhar ou imprimir).
+   *
+   * Mora aqui, e não na Agenda, porque o ícone está no cabeçalho de TODAS as
+   * telas — como o `+`. Sem o mês, propõe o mês corrente; a Agenda e o
+   * Financeiro passam o que está na tela.
+   */
+  shareMonth: (month?: string) => void
 }
 
 export const ShiftSheetsContext = createContext<ShiftSheetsApi | null>(null)

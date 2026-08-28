@@ -80,6 +80,7 @@ export function Finance() {
     <>
       <ScreenHeader
         title="Financeiro"
+        shareMonth={month}
         subtitle={
           globalTotals.outstanding > 0
             ? `${formatMoney(globalTotals.outstanding)} ainda para receber`
