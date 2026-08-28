@@ -12,6 +12,24 @@ import { fileURLToPath, URL } from 'node:url'
  */
 const base = process.env.BASE_PATH ?? '/Escalonil-/'
 
+/**
+ * Nos previews de pull request o service worker se AUTODESTRÓI.
+ *
+ * O app atualiza sob demanda (`registerType: 'prompt'`), que é o certo para
+ * quem usa: ninguém é interrompido no meio de um plantão. Só que todos os
+ * previews de uma PR moram no MESMO endereço, e o service worker da build
+ * anterior continua servindo o cache antigo até alguém tocar em "Atualizar" —
+ * e recarregar a página não adianta. Isso já custou rodadas inteiras de teste
+ * num aparelho, com correções que nunca chegaram a rodar.
+ *
+ * `selfDestroying` publica um service worker que se desregistra e limpa os
+ * caches. Daí em diante o preview é sempre a build de agora.
+ *
+ * A publicação de verdade — o `main` do Netlify e o GitHub Pages — não passa
+ * por aqui: o `CONTEXT` do Netlify só vale "deploy-preview" nas PRs.
+ */
+const isDeployPreview = process.env.CONTEXT === 'deploy-preview'
+
 export default defineConfig({
   base,
   resolve: {
@@ -22,6 +40,7 @@ export default defineConfig({
     VitePWA({
       // "prompt": o usuário decide quando atualizar (ver UpdatePrompt.tsx).
       registerType: 'prompt',
+      selfDestroying: isDeployPreview,
       injectRegister: null,
       includeAssets: ['favicon-32.png', 'apple-touch-icon.png', 'icons/*.png'],
       manifest: {
