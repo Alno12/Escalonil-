@@ -1322,9 +1322,15 @@
 }
 
 /*
- * Pílula TINGIDA, nunca preenchida: o `+` do `ScreenHeader` é o único botão
- * cheio da tela, e dois roxos sólidos brigariam. O tingido dá o peso de botão
- * sem disputar essa posição — é a mesma família das pílulas de situação.
+ * TINGIDO, nunca preenchido: o `+` do `ScreenHeader` é o único botão cheio da
+ * tela, e dois roxos sólidos brigariam. O tingido dá peso de botão sem
+ * disputar essa posição.
+ *
+ * Canto de 12px, e NÃO pílula: neste app a pílula totalmente redonda quer
+ * dizer SITUAÇÃO — "A receber", "Agora", "Recebido" são todas pílulas, e
+ * nenhuma delas se toca. Um botão com a mesma forma vira erro de categoria:
+ * parece rótulo. Os 12px conversam com os 16px dos cartões; 8px fica duro ao
+ * lado deles.
  */
 .day-add {
   display: flex;
@@ -1332,7 +1338,7 @@
   align-items: center;
   gap: var(--sp-1);
   padding: var(--sp-1) var(--sp-3);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-md);
   background: var(--accent-soft);
   color: var(--accent-text);
   font-size: var(--text-footnote);

@@ -583,8 +583,10 @@ O app segue a linguagem do Apple Saúde:
   ACIMA da lista — a posição para de depender do conteúdo do dia, que era o
   problema. E não custa altura: entra num espaço que já estava vazio à direita
   da data.
-  A pílula é TINGIDA, nunca preenchida: o `+` do `ScreenHeader` é o único botão
-  cheio da tela. Pelo mesmo motivo o `EmptyState` do "Dia livre" perdeu o botão
+  O botão é TINGIDO, nunca preenchido: o `+` do `ScreenHeader` é o único cheio
+  da tela. E tem canto de 12px, não de pílula: aqui a pílula totalmente redonda
+  quer dizer SITUAÇÃO — "A receber", "Agora", "Recebido" são todas pílulas, e
+  nenhuma se toca. Um botão com a mesma forma parece rótulo. Pelo mesmo motivo o `EmptyState` do "Dia livre" perdeu o botão
   que tinha — seria a mesma ação duas vezes, e ele caía fora da tela enquanto a
   pílula aparecia. Na Semana não existe nada disso: são sete dias na tela ao
   mesmo tempo, e sete botões seriam mais ruído que ajuda.
