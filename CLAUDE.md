@@ -259,35 +259,10 @@ ligado, o bloco precisa de 1,42 de altura para cada 1 de largura, deixa de
 caber na caixa em que foi diagramado, e o Safari **remove o bloco inteiro** —
 sai uma folha em branco.
 
-**A saída não foi consertar o CSS, foi trocar de caminho.** No iPhone o botão
-Imprimir NÃO imprime a página: ele entrega um **PDF** ao sistema
-(`printsViaShareSheet` em `data/monthSheetFile.ts`), e quem toca em "Imprimir"
-na lista é o usuário. A pista que faltava estava na própria página de provas:
-ela imprimia bem nas DUAS orientações, porque é um documento simples; a folha
-do app, no mesmo aparelho e no mesmo papel, saía em branco. O problema nunca
-foi o iOS em Horizontal — era a impressão da PÁGINA DO APP.
-
-**PDF, e não a imagem do compartilhamento — isso também foi medido.** O iOS
-escolhe o papel padrão pelo TIPO do arquivo: imagem ele trata como FOTO e abre
-a caixa em **4×6 polegadas**; PDF ele trata como documento, e aí o papel é A4 e
-a orientação vem do próprio arquivo. Foi por isso que mandar o PNG não bastou.
-
-`data/monthSheetPdf.ts` escreve esse PDF à mão, sem dependência: são cinco
-objetos e um JPEG embutido cru por `/DCTDecode`. Ele **não redesenha nada** —
-recebe a mesma imagem que o compartilhamento gera, a 3× (287 DPI), e só a
-coloca numa página A4 deitada. Dois desenhos obrigados a concordar para sempre
-é o que este mesmo invariante proíbe. A parte frágil do formato é a tabela
-`xref`, que indexa os BYTES de cada objeto: um byte a mais em qualquer lugar e
-o arquivo abre quebrado — por isso ela tem teste próprio.
-
-No computador e no Android nada disso vale: lá a impressão da página funciona,
-está calibrada, e continua sendo o caminho. O ramo girado abaixo é para eles e
-para quem usa o app pelo navegador de um telefone que não seja iPhone.
-
-**O que segue impossível é imprimir a PÁGINA em papel deitado no iPhone.** O
-iOS abre em Vertical, que é o caso calibrado; o único conserto pelo CSS seria
-encolher a folha o bastante para sobreviver às duas orientações, e isso
-estragaria a impressão Vertical.
+**Isso é aceito, e foi decisão do dono do app com o problema na mesa.** O iOS
+abre em Vertical, que é o caso que importa e funciona; o único conserto
+possível seria encolher a folha o bastante para sobreviver às duas, e isso
+estragaria a impressão Vertical, que já está calibrada.
 
 Nem desligar o giro À MÃO resolve, e isso foi TESTADO no aparelho: chegou a
 existir uma chave "Papel deitado" em que o próprio usuário avisava qual papel

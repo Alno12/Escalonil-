@@ -9,7 +9,7 @@ import { useToast } from '@/state/toastContext'
 import { formatMonthYear, monthPartOf } from '@/domain/datetime'
 import { buildMonthSheet } from '@/domain/monthSheet'
 import { buildMonthSheetSvg } from '@/domain/monthSheetSvg'
-import { printMonthSheet, printsViaShareSheet, shareMonthSheet } from '@/data/monthSheetFile'
+import { printMonthSheet, shareMonthSheet } from '@/data/monthSheetFile'
 
 interface ShareMonthSheetProps {
   open: boolean
@@ -56,9 +56,6 @@ export function ShareMonthSheet({ open, month, onClose }: ShareMonthSheetProps) 
     ...locations.map((l) => ({ value: l.id, label: l.name, color: l.color })),
   ]
   const location = locations.find((l) => l.id === locationId) ?? null
-  // No iPhone, imprimir passa pela imagem — a folha avisa, senão o botão
-  // Imprimir abriria a lista do sistema sem explicação.
-  const viaShareSheet = printsViaShareSheet()
 
   const svg = () =>
     buildMonthSheetSvg(
@@ -84,16 +81,7 @@ export function ShareMonthSheet({ open, month, onClose }: ShareMonthSheetProps) 
   // A folha de opções continua aberta durante a impressão de propósito: o
   // `@media print` esconde o app inteiro, e fechá-la antes deixaria a tela
   // piscar atrás da caixa de impressão.
-  const print = async () => {
-    setBusy(true)
-    try {
-      await printMonthSheet(svg(), chosenMonth)
-    } catch {
-      toast.error('Não foi possível preparar a folha para impressão.')
-    } finally {
-      setBusy(false)
-    }
-  }
+  const print = () => printMonthSheet(svg())
 
   return (
     <>
@@ -108,14 +96,7 @@ export function ShareMonthSheet({ open, month, onClose }: ShareMonthSheetProps) 
             <Button variant="primary" size="lg" block icon="share" onClick={share} disabled={busy}>
               {busy ? 'Gerando…' : 'Compartilhar'}
             </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              block
-              icon="printer"
-              onClick={print}
-              disabled={busy}
-            >
+            <Button variant="secondary" size="lg" block icon="printer" onClick={print}>
               Imprimir
             </Button>
           </div>
@@ -154,13 +135,6 @@ export function ShareMonthSheet({ open, month, onClose }: ShareMonthSheetProps) 
               ? `A folha sai só com os plantões do ${location.name} — o resto do mês fica em branco.`
               : 'A escala inteira do mês em uma página só, para ler de lado.'}
           </p>
-
-          {viaShareSheet && (
-            <p className="form-note">
-              Imprimir abre a lista do sistema — escolha <strong>Imprimir</strong> nela. A
-              folha vai como PDF, já em A4 deitada.
-            </p>
-          )}
         </div>
       </Sheet>
 
