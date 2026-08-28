@@ -122,45 +122,46 @@ export function MonthView({ selected, onSelect, onShare }: MonthViewProps) {
       </Card>
 
       <section aria-label="Plantões do dia selecionado">
-        <h3 className="day-title">{formatLongDate(selected)}</h3>
+        {/*
+          O "Adicionar" mora no CABEÇALHO do dia, não no fim da lista.
+
+          No fim ele afundava: medido a 393×852, com dois plantões a linha já
+          caía atrás da barra de abas (y=793 de 852) e com quatro saía da tela
+          (y=927). Aqui ele fica em y=634 sempre, porque está ACIMA da lista —
+          a posição deixa de depender de quantos plantões o dia tem, que era
+          justamente o problema.
+
+          Pílula TINGIDA, não preenchida: o `+` do cabeçalho da tela é o único
+          botão cheio, e dois roxos sólidos na mesma tela brigariam. E não
+          custa altura nenhuma — entra num espaço que já estava vazio à direita
+          da data.
+        */}
+        <div className="day-head">
+          <h3 className="day-title">{formatLongDate(selected)}</h3>
+          <button type="button" className="day-add" onClick={() => sheets.newShift(selected)}>
+            <Icon name="plus" size={15} strokeWidth={2.4} />
+            Adicionar
+          </button>
+        </div>
         {daysShifts.length > 0 ? (
           <ul className="shift-list">
             {daysShifts.map((view) => (
               <ShiftRow key={view.shift.id} view={view} onClick={sheets.openShift} />
             ))}
-            {/*
-              A mesma porta do "Dia livre", para o dia que JÁ tem plantão: sem
-              ela, quem quisesse somar um plantão noturno a um dia de diurno
-              tinha de usar o `+` do cabeçalho, que abre na data de HOJE e
-              obrigava a corrigir o dia à mão. O dia selecionado já está na
-              tela — é ele que a folha deve propor.
-
-              Vai como última LINHA do cartão, não como o botão cheio do vazio:
-              ali o botão é a única coisa da tela, aqui ele competiria com os
-              plantões e repetiria o roxo do `+` em todo dia ocupado.
-            */}
-            <li>
-              <button
-                type="button"
-                className="shift-add"
-                onClick={() => sheets.newShift(selected)}
-              >
-                <Icon name="plus" size={15} className="shift-add__icon" />
-                <span>Adicionar plantão</span>
-              </button>
-            </li>
           </ul>
         ) : (
+          /*
+            Sem botão: o "Adicionar" do cabeçalho do dia está logo acima e vale
+            para o dia cheio e para o vazio. O botão cheio que morava aqui
+            existia porque era a única porta do dia livre — agora seria a mesma
+            ação duas vezes, e medindo a 393×852 ele caía FORA da tela
+            enquanto a pílula aparecia. Some o que não se alcança.
+          */
           <EmptyState
             compact
             icon="calendar"
             title="Dia livre"
             description="Nenhum plantão cadastrado para esta data."
-            action={
-              <Button variant="primary" icon="plus" onClick={() => sheets.newShift(selected)}>
-                Adicionar plantão
-              </Button>
-            }
           />
         )}
       </section>

@@ -573,17 +573,21 @@ O app segue a linguagem do Apple Saúde:
 - O cartão do próximo plantão é tingido com a COR DO LOCAL, em degradê que some
   para baixo. Chapado, as cores quentes embarram o tema escuro e o texto
   secundário perde contraste — foi por isso que virou degradê.
-- No Mês, o cartão do dia SEMPRE termina numa linha "Adicionar plantão", tenha
-  ele plantão ou não. O `+` do cabeçalho abre a folha em HOJE, então quem
-  estava olhando o dia 21 e quis somar um plantão noturno ao diurno tinha de
-  corrigir a data à mão — enquanto o dia livre, que já trazia o botão, abria
-  certo. A porta é a mesma; o que muda é o traje: no dia vazio ela é o botão
-  CHEIO do `EmptyState`, porque ali é a única coisa do cartão; no dia ocupado é
-  a última LINHA da lista (`.shift-add`), com o `+` na coluna da bolinha do
-  local para o rótulo alinhar com os nomes acima. Cheio nos dois, todo dia com
-  plantão ganharia um bloco roxo competindo com os próprios plantões e
-  repetindo o `+` do cabeçalho. Na Semana a linha NÃO existe: são sete dias na
-  tela ao mesmo tempo, e sete delas seriam mais ruído que ajuda.
+- No Mês, o "Adicionar" mora no CABEÇALHO do dia (`.day-head`), ao lado da
+  data, e é a ÚNICA porta do dia — vale para o dia cheio e para o vazio. Existe
+  porque o `+` do cabeçalho da tela abre a folha em HOJE: quem estava olhando o
+  dia 21 e quis somar um noturno ao diurno tinha de corrigir a data à mão.
+  Já esteve no FIM da lista, e afundava: medido a 393×852, com dois plantões a
+  linha caía atrás da barra de abas (y=793 de 852) e com quatro saía da tela
+  (y=927). No cabeçalho ela fica em y=634 com 0, 2 ou 4 plantões, porque está
+  ACIMA da lista — a posição para de depender do conteúdo do dia, que era o
+  problema. E não custa altura: entra num espaço que já estava vazio à direita
+  da data.
+  A pílula é TINGIDA, nunca preenchida: o `+` do `ScreenHeader` é o único botão
+  cheio da tela. Pelo mesmo motivo o `EmptyState` do "Dia livre" perdeu o botão
+  que tinha — seria a mesma ação duas vezes, e ele caía fora da tela enquanto a
+  pílula aparecia. Na Semana não existe nada disso: são sete dias na tela ao
+  mesmo tempo, e sete botões seriam mais ruído que ajuda.
 - No calendário do mês, o dia com plantão ganha um ANEL em volta do número E
   bolinhas embaixo dele. Os dois dizem coisas diferentes: o anel diz que TEM
   plantão e engrossa a partir de dois; as bolinhas dizem QUANTOS e de QUAL
