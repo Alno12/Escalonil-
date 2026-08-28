@@ -259,6 +259,21 @@ ligado, o bloco precisa de 1,42 de altura para cada 1 de largura, deixa de
 caber na caixa em que foi diagramado, e o Safari **remove o bloco inteiro** —
 sai uma folha em branco.
 
+E a conta fecha a discussão. Em pé, os 92% dão 160 mm de largura e 228 mm de
+altura, que cabem nos 297 mm do papel. Deitado, o papel tem 210 mm de altura:
+os mesmos 228 mm já não cabem — e isso vale mesmo que o iOS não redimensione
+nada, o que ele faz, piorando a conta. Para caber nos ~174 mm de corpo que ele
+entrega, a folha teria de ir a 122 mm de largura: 70% do corpo em vez de 92%,
+ou seja **pouco mais da metade da área de hoje**, bem abaixo dos 82% que já
+foram medidos como letra pequena demais para imprimir. Não existe porcentagem
+que sirva às duas orientações, e o navegador não diz em qual delas está.
+
+Tirar o `landscape` do `@page` — a única linha do CSS que fala de orientação —
+foi cogitado e NÃO resolve: o iPhone ignora o `size` inteiro (é o que abre esta
+seção), e no computador é justamente essa palavra que faz o papel sair deitado
+por padrão. Trocá-la seria perder o caso que funciona para não ganhar nada no
+que não funciona.
+
 **Isso é aceito, e foi decisão do dono do app com o problema na mesa.** O iOS
 abre em Vertical, que é o caso que importa e funciona; o único conserto
 possível seria encolher a folha o bastante para sobreviver às duas, e isso
