@@ -551,6 +551,17 @@ O app segue a linguagem do Apple Saúde:
 - O cartão do próximo plantão é tingido com a COR DO LOCAL, em degradê que some
   para baixo. Chapado, as cores quentes embarram o tema escuro e o texto
   secundário perde contraste — foi por isso que virou degradê.
+- No Mês, o cartão do dia SEMPRE termina numa linha "Adicionar plantão", tenha
+  ele plantão ou não. O `+` do cabeçalho abre a folha em HOJE, então quem
+  estava olhando o dia 21 e quis somar um plantão noturno ao diurno tinha de
+  corrigir a data à mão — enquanto o dia livre, que já trazia o botão, abria
+  certo. A porta é a mesma; o que muda é o traje: no dia vazio ela é o botão
+  CHEIO do `EmptyState`, porque ali é a única coisa do cartão; no dia ocupado é
+  a última LINHA da lista (`.shift-add`), com o `+` na coluna da bolinha do
+  local para o rótulo alinhar com os nomes acima. Cheio nos dois, todo dia com
+  plantão ganharia um bloco roxo competindo com os próprios plantões e
+  repetindo o `+` do cabeçalho. Na Semana a linha NÃO existe: são sete dias na
+  tela ao mesmo tempo, e sete delas seriam mais ruído que ajuda.
 - No calendário do mês, o dia com plantão ganha um ANEL em volta do número E
   bolinhas embaixo dele. Os dois dizem coisas diferentes: o anel diz que TEM
   plantão e engrossa a partir de dois; as bolinhas dizem QUANTOS e de QUAL

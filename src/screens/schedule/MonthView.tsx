@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Icon } from '@/components/ui/Icon'
 import { ShiftRow } from '@/components/shifts/ShiftRow'
 import { useAppData } from '@/state/appDataContext'
 import { useShiftSheets } from '@/state/shiftSheetsContext'
@@ -127,6 +128,27 @@ export function MonthView({ selected, onSelect, onShare }: MonthViewProps) {
             {daysShifts.map((view) => (
               <ShiftRow key={view.shift.id} view={view} onClick={sheets.openShift} />
             ))}
+            {/*
+              A mesma porta do "Dia livre", para o dia que JÁ tem plantão: sem
+              ela, quem quisesse somar um plantão noturno a um dia de diurno
+              tinha de usar o `+` do cabeçalho, que abre na data de HOJE e
+              obrigava a corrigir o dia à mão. O dia selecionado já está na
+              tela — é ele que a folha deve propor.
+
+              Vai como última LINHA do cartão, não como o botão cheio do vazio:
+              ali o botão é a única coisa da tela, aqui ele competiria com os
+              plantões e repetiria o roxo do `+` em todo dia ocupado.
+            */}
+            <li>
+              <button
+                type="button"
+                className="shift-add"
+                onClick={() => sheets.newShift(selected)}
+              >
+                <Icon name="plus" size={15} className="shift-add__icon" />
+                <span>Adicionar plantão</span>
+              </button>
+            </li>
           </ul>
         ) : (
           <EmptyState
