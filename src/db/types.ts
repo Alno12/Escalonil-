@@ -112,6 +112,16 @@ export interface Settings {
    * o que também é o estado de quem acabou de instalar.
    */
   lastSeenVersion: string | null
+  /**
+   * O usuário imprime em papel DEITADO — então a folha não precisa girar.
+   *
+   * Existe porque o navegador se recusa a contar: no iPhone, a consulta de
+   * mídia da impressão responde pela janela do telefone, não pelo papel
+   * (invariante 20). Quem sabe qual papel foi escolhido é o médico, e é ele
+   * quem avisa. Fica GUARDADO porque descreve a impressora de casa, que não
+   * muda de um mês para o outro.
+   */
+  printLandscape: boolean
   updatedAt: string
 }
 

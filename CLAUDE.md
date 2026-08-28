@@ -274,22 +274,43 @@ seção), e no computador é justamente essa palavra que faz o papel sair deitad
 por padrão. Trocá-la seria perder o caso que funciona para não ganhar nada no
 que não funciona.
 
-**Isso é aceito, e foi decisão do dono do app com o problema na mesa.** O iOS
-abre em Vertical, que é o caso que importa e funciona; o único conserto
-possível seria encolher a folha o bastante para sobreviver às duas, e isso
-estragaria a impressão Vertical, que já está calibrada.
+**Como o navegador não conta, quem conta é o USUÁRIO.** A folha de compartilhar
+tem uma chave **"Papel deitado"** (`Settings.printLandscape`) que põe
+`print-sheet--landscape` no elemento impresso, e o ramo girado é um `:not()`
+dela: ligada, o giro some e vale o ramo deitado, que é o certo para esse papel.
+**O que ela NÃO faz é aumentar a folha — pelo contrário.** No iPhone, papel
+deitado dá uma folha MENOR, e a conta é do próprio aparelho: ele come uma faixa
+fixa de ~55 mm de página (endereço e número), que numa A4 em pé sai de 297 mm e
+numa deitada sai de 210. Sobram 174 × 245 em pé contra 261 × 151 deitada. Como
+o desenho é 1,42 de largura para cada 1 de altura, em pé ele pode ir a 245 mm
+de largura (usamos 228), e deitado o limite é 151 × 1,42 = **215 mm**. Com o
+teto de 196 que fica valendo, são 196 contra os 228 de hoje: **86% do tamanho
+linear**, abaixo até dos 203 mm que já foram reprovados por letra pequena
+demais. Ou seja: em pé, girado, é o MAIOR que essa folha consegue ser num
+iPhone, e nenhuma porcentagem muda isso — quem manda é a faixa do iOS.
 
-Nem desligar o giro À MÃO resolve, e isso foi TESTADO no aparelho: chegou a
-existir uma chave "Papel deitado" em que o próprio usuário avisava qual papel
-tinha escolhido, e a folha continuou em branco. Ou seja, o problema não é o
-giro — é que o iOS diagrama a página antes de saber o papel, e o encaixe falha
-de qualquer jeito. A chave foi revertida por não entregar nada.
+É a única escolha dessa folha que fica GUARDADA, e por ser de outra natureza:
+descreve a impressora de casa, que não muda de um mês para o outro, enquanto
+"com valores" e "só um local" descrevem a folha e, lembrados, virariam uma
+escala errada enviada sem ninguém perceber. Errar na chave custa uma
+reimpressão. Ligada, a folha avisa que a caixa de impressão precisa combinar —
+as duas metades da informação são do usuário.
 
-Quatro tentativas caíram antes de chegar a esta conclusão (`height: 96%`, `max-height`,
-`container-type: size` — esta última chegou a zerar o desenho, porque contenção
-de tamanho sobre altura indefinida vale ZERO). Se alguém voltar aqui: o que
-falta não é uma regra de CSS mais esperta, é uma informação que o navegador não
-dá.
+**A chave já foi dada por morta uma vez, por um teste que não valia.** Ela
+nasceu, foi testada no aparelho, saiu em branco e foi revertida — tudo no dia
+27, ANTES de descobrirmos que o service worker do preview servia build velha (o
+`selfDestroying` do `vite.config.ts` é do dia 28). Aquele teste não diz nada
+sobre o código dela, e a conta diz o contrário: sem o giro a folha pede 0,70 de
+altura para cada 1 de largura, o que cabe com folga numa página deitada. Foi
+por isso que ela voltou. Se ela cair de novo, que seja por um teste feito em
+cima de uma build que o aparelho realmente baixou.
+
+Não tente adivinhar a orientação de novo. Quatro tentativas caíram antes de a
+chave existir: `height: 96%`, `max-height`, `container-type: size` — esta
+última chegou a zerar o desenho, porque contenção de tamanho sobre altura
+indefinida vale ZERO — e um `@container` medindo a largura real da página,
+implementado e testado no aparelho sem mudar nada. O que falta não é uma regra
+de CSS mais esperta, é uma informação que o navegador não dá.
 
 O teto do ramo deitado é um **`max-width` em milímetros**, porque a altura não
 dá para limitar direto: como ela sai da proporção do desenho, limitar a largura
@@ -297,7 +318,11 @@ dá para limitar direto: como ela sai da proporção do desenho, limitar a largu
 entrega numa página deitada. Um `@media (orientation: landscape) and
 (min-height: 190mm)` tira o teto onde a mídia fala do papel de verdade
 (computador, Android) e o desenho volta aos 261 × 184. No iPhone essa consulta
-nunca casa, e o teto fica de pé — que é o comportamento seguro.
+nunca casa, e o teto fica de pé — que é o comportamento seguro. A chave "Papel
+deitado" NÃO tira o teto: ela desliga o giro e mais nada. Numa A4 deitada os
+88% dariam 230 × 161 mm para 151 mm de altura disponível, que é o estouro de
+sempre — e o modo de falha é justamente a página em branco que a chave existe
+para consertar.
 
 **Não existe mais `break-inside: avoid` na folha, e a ausência é de propósito.**
 Ele custou duas páginas em branco: diante de um bloco que não cabe, o Safari
